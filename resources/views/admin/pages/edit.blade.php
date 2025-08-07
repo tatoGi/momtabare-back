@@ -1,4 +1,4 @@
-<x-Admin.AdminLayout>
+<x-admin.admin-layout>
 <div class="flex flex-wrap my-5 -mx-2">
     <div class="w-full bg-white mt-2 mb-2 rounded-md p-4 mx-auto">
         <h1 class="text-center mb-5">Update Pages</h1>
@@ -173,4 +173,4 @@
     });
 
 </script>
-</x-Admin.AdminLayout> 
+</x-admin.admin-layout> 

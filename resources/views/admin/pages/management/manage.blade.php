@@ -1,4 +1,4 @@
-<x-Admin.AdminLayout>
+<x-admin.admin-layout>
     <div class="container mx-auto px-4 py-8">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold">{{ __('admin.Manage_Page') }}: {{ $page->title }}</h1>
@@ -184,7 +184,7 @@
 
 
     </div>
-</x-Admin.AdminLayout>
+</x-admin.admin-layout>
 
 @push('scripts')
 <script>

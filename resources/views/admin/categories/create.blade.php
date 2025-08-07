@@ -1,4 +1,4 @@
-<x-Admin.AdminLayout>
+<x-admin.admin-layout>
     <div class="flex flex-wrap my-5 -mx-2 bg-slate-100 rounded-md">
         <div class="container mx-auto">
             <div class="card-box ">
@@ -175,4 +175,4 @@
             @endforeach
         });
     </script>
-</x-Admin.AdminLayout> 
+</x-admin.admin-layout> 
