@@ -85,7 +85,7 @@
                                             <button type="button" data-route="{{ route('category.icon.delete', [app()->getlocale(), $category->id] )}}" data-token="{{ csrf_token() }}" class="text-red-500 hover:text-red-700 focus:outline-none focus:text-red-700 delete-icon">
                                                 <i class="fas fa-trash"></i>
                                             </button>
-                                            <img src="{{ asset('storage/icons/' . $category->icon) }}" alt="Uploaded Image">
+                                            <img src="{{ asset('storage/' . $category->icon) }}" alt="Category Image" class="w-32 h-32 object-cover rounded-lg border">
                                         @endif
                                     </div>
                                 </div>

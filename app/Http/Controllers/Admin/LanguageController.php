@@ -214,12 +214,18 @@ class LanguageController extends Controller
         }
         
         try {
+            // Store the language code before deletion
+            $languageCode = $language->code;
+            
             // Delete the language (cascade will handle translations)
             $deleted = $language->delete();
             
             if (!$deleted) {
                 return back()->with('error', __('Failed to delete language. Please try again.'));
             }
+            
+            // Remove the language code from config/app.php locales array
+            $this->updateAppLocales('', $languageCode);
             
             // Clear all language-related caches
             $this->clearCache();
@@ -362,8 +368,8 @@ class LanguageController extends Controller
             $locales = array_diff($locales, [$oldCode]);
         }
         
-        // Add new language code if it doesn't exist
-        if (!in_array($newCode, $locales)) {
+        // Add new language code if it doesn't exist and is not empty
+        if (!empty($newCode) && !in_array($newCode, $locales)) {
             $locales[] = $newCode;
         }
         

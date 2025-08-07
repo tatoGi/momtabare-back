@@ -40,10 +40,6 @@
 
                                 <a href="#locale-{{ $locale }}" class="language-selector-link">
 
-                                    <!-- You can use small icons here for each language -->
-
-                                    <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}"
-                                        alt="{{ $locale }}" class="language-icon">
 
                                     <span class="language-name">{{ __('admin.locale_' . $locale) }}</span>
 
@@ -168,8 +164,6 @@
 
                 <!-- active -->
 
-                <!-- images -->
-
                 <div class="mt-2 border border-dashed border-gray-400 rounded-lg p-4">
                     <div class="flex flex-wrap imagePreview">
                         <label for="images" class="block font-medium text-gray-700">Images</label>
@@ -202,14 +196,22 @@
 
                     <div>
 
-                        <a href="/{{app()->getlocale()}}/admin/banners"
-                            class="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600">Back</a>
+                        @if(request('page_id'))
+                            <a href="{{ route('admin.pages.management.manage', ['locale' => app()->getLocale(), 'page' => request('page_id')]) }}"
+                               class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Back to Page</a>
+                        @else
+                            <a href="{{ route('banners.index', ['locale' => app()->getLocale()]) }}"
+                               class="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600">Back</a>
+                        @endif
 
                     </div>
 
                 </div>
 
                 <input type="hidden" name="author_id" value="{{ auth()->user()->id }}">
+                @if(request('page_id'))
+                    <input type="hidden" name="page_id" value="{{ request('page_id') }}">
+                @endif
 
             </form>
 

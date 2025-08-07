@@ -6,6 +6,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Section;
 use App\Models\Banner;
+use App\Models\Category;
 
 class FrontendService
 {
@@ -20,9 +21,17 @@ class FrontendService
             $query->where('active', 1);
         })->with(['translations' => function($query) {
             $query->where('active', 1);
-        }])->get();
+        }])
+        ->with('products')
+        ->with(['banners' => function($query) {
+            $query->with('images');
+        }])
+        ->get();
     }
-
+    public function getCategories()
+    {
+        return Category::all();
+    }
     /**
      * Get a product by URL with related data
      *

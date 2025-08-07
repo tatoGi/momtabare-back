@@ -16,6 +16,8 @@ Route::middleware(['auth', 'can:manage_languages'])->group(function () {
         ->name('admin.languages.update');
     Route::delete('languages/{language}', [LanguageController::class, 'destroy'])
         ->name('admin.languages.destroy');
+    Route::post('languages/sync', [LanguageController::class, 'sync'])
+        ->name('admin.languages.sync');
     // Additional routes for translations
     Route::post('languages/{language}/translations', [LanguageController::class, 'updateTranslations'])
         ->name('admin.languages.update.translations');

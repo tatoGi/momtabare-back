@@ -90,4 +90,21 @@ return [
     'subscribers' => 'subscribers',
     'Languages' => 'Languages',
     'categories' => 'categories',
+    
+    // Page Management
+    'Manage_Page' => 'Διαχείριση Σελίδας',
+    'Back_to_Pages' => 'Επιστροφή στις Σελίδες',
+    'Create New Banner' => 'Δημιουργία Νέου Banner',
+    'Icon' => 'Εικονίδιο',
+    'Title' => 'Τίτλος',
+    'Description' => 'Περιγραφή',
+    'Parent Banner' => 'Γονικό Banner',
+    'Sort Order' => 'Σειρά Ταξινόμησης',
+    'Status' => 'Κατάσταση',
+    'Actions' => 'Ενέργειες',
+    'Active' => 'Ενεργό',
+    'Inactive' => 'Ανενεργό',
+    'Edit' => 'Επεξεργασία',
+    'Product management interface will be converted to Tailwind CSS soon.' => 'Η διεπαφή διαχείρισης προϊόντων θα μετατραπεί σύντομα σε Tailwind CSS.',
+    'For now, please use the direct products management page.' => 'Προς το παρόν, παρακαλώ χρησιμοποιήστε την άμεση σελίδα διαχείρισης προϊόντων.',
 ];

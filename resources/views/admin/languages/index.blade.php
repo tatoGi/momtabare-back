@@ -98,11 +98,11 @@
                                 {{ $language->sort_order }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="/{{ app()->getLocale() }}/admin/languages/{{ $language->id }}/edit" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                <a href="{{ route('admin.languages.edit', ['locale' => app()->getLocale(), 'language' => $language]) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
                                 @if(!$language->is_default)
-                                    <form action="/{{ app()->getLocale() }}/admin/languages/{{ $language->id }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this language?');">
+                                    <form action="{{ route('admin.languages.destroy', ['locale' => app()->getLocale(), 'language' => $language]) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this language?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600 hover:text-red-900">

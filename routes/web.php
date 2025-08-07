@@ -73,6 +73,7 @@ Route::get('/pro/{url}', [FrontendController::class, 'show'])->name('single_prod
 Route::post('/subscribe', [FrontendController::class, 'subscribe'])->name('subscribe');
 Route::get('/home', [FrontendController::class, 'homePage']);
 Route::get('/pages', [FrontendController::class, 'pages']);
+Route::get('/categories', [FrontendController::class, 'categories']);
 // Keep catch-all route at the end
 
 

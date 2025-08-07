@@ -55,6 +55,11 @@ class FrontendController extends Controller
         return response()->json($data);
     }
 
+    public function categories()
+    {
+        $data = $this->frontendService->getCategories();
+        return response()->json($data);
+    }
     public function submitContactForm(Request $request)
     {
         // Validate the form data

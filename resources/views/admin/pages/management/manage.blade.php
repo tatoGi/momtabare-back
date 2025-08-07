@@ -3,7 +3,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold">{{ __('admin.Manage_Page') }}: {{ $page->title }}</h1>
                 <div class="flex gap-2">
-                    <a href="{{ route('admin.pages.management.index', [app()->getlocale(), $page->id]) }}" class="btn btn-primary">
+                    <a href="{{ route('pages.index', [app()->getlocale()]) }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
                         {{ __('admin.Back_to_Pages') }}
                     </a>
 
@@ -22,33 +22,174 @@
                 </div>
             @endif
 
-            <div class="container">
-                <div class="row">
-                    <div class="bg-white rounded-lg col-md-12">
-
+            <div class="w-full">
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg shadow-sm">
                         @include('admin.banners.index', [
                             'page_id' => $page->id,
                             'banners' => $banners
                         ])
                     </div>
-                    @if($page->type_id == 2 || $page->type_id == 1)
-                    <div class="bg-white rounded-lg col-md-12">
-
+                    {{-- Products section temporarily disabled due to Bootstrap/Tailwind styling conflicts --}}
+                    {{-- @if($page->type_id == 2 || $page->type_id == 1)
+                    <div class="bg-white rounded-lg shadow-sm">
                         @include('admin.products.index', [
                             'page_id' => $page->id,
                             'products' => $products
                         ])
+                    </div>
+                    @endif --}}
+                    
+                    @if($page->type_id == 1)
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold text-gray-800">{{ __('admin.Products') }}</h2>
+                            <a href="/{{ app()->getLocale() }}/admin/products/create/{{ $page->id }}"
+                               class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+                                <i class="fas fa-plus mr-2"></i>
+                                {{ __('admin.Add Product') }}
+                            </a>
+                        </div>
+                        <div class="text-center py-8 text-gray-500">
+                            <p>{{ __('admin.Product management interface will be converted to Tailwind CSS soon.') }}</p>
+                            <p class="text-sm mt-2">{{ __('admin.For now, please use the direct products management page.') }}</p>
+                        </div>
+                    </div>
+                    @endif
+                    
+                  
+                    
+                    {{-- Posts Section --}}
+                    @if($page->supportsPost())
+                    <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800">
+                                    <i class="fas fa-file-alt mr-2 text-green-500"></i>
+                                    {{ __('admin.Posts') }}
+                                </h2>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    {{ $pageTypeConfig['name'] ?? 'Posts' }} - 
+                                    <span class="font-medium">{{ $page->posts()->count() }}</span> {{ __('admin.total posts') }}
+                                </p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{{ route('admin.pages.posts.index', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+                                    <i class="fas fa-list mr-2"></i>
+                                    {{ __('admin.Manage All') }}
+                                </a>
+                                <a href="{{ route('admin.pages.posts.create', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    {{ __('admin.Create Post') }}
+                                </a>
+                            </div>
+                        </div>
+                        
+                        @php
+                            $recentPosts = $page->posts()->orderBy('created_at', 'desc')->take(5)->get();
+                            $pageTypeConfig = $page->getPageTypeConfig();
+                        @endphp
+                        
+                        @if($recentPosts->count() > 0)
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Title') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Status') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Sort Order') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Created') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Actions') }}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($recentPosts as $post)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    @php
+                                                        // Use Post model's dynamic attribute access
+                                                        $title = $post->title ?? $post->question ?? 'Untitled';
+                                                    @endphp
+                                                    {{ Str::limit($title, 50) }}
+                                                </div>
+                                                @if($post->slug)
+                                                    <div class="text-xs text-gray-500">{{ $post->slug }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $post->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                    {{ $post->active ? __('admin.Active') : __('admin.Inactive') }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ $post->sort_order ?? 0 }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ $post->created_at->format('M d, Y') }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <a href="{{ route('admin.pages.posts.edit', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}"
+                                                   class="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                   title="{{ __('admin.Edit') }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form method="POST" action="{{ route('admin.pages.posts.destroy', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-red-600 hover:text-red-900" 
+                                                            onclick="return confirm('{{ __('admin.Are you sure?') }}')"
+                                                            title="{{ __('admin.Delete') }}">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="mt-4 text-center">
+                                <a href="{{ route('admin.pages.posts.index', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="text-green-600 hover:text-green-800 font-medium">
+                                    {{ __('admin.View All Posts') }} ({{ $page->posts()->count() }})
+                                </a>
+                            </div>
+                        @else
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-file-alt text-4xl mb-4 text-gray-300"></i>
+                                <p class="text-lg font-medium">{{ __('admin.No posts yet') }}</p>
+                                <p class="text-sm mt-2">{{ __('admin.Create your first post to get started') }}</p>
+                            </div>
+                        @endif
                     </div>
                     @endif
                 </div>
 
             </div>
 
+
+
     </div>
 </x-Admin.AdminLayout>
 
 @push('scripts')
 <script>
+
+
     // Add banner to the list
     function addBanner() {
         const select = document.getElementById('new_banner_id');
