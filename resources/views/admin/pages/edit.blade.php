@@ -18,8 +18,7 @@
                                 <li class="language-selector-item border-red-600">
                             @endif
                                 <a href="#locale-{{ $locale }}" class="language-selector-link">
-                                    <!-- You can use small icons here for each language -->
-                                    <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}" alt="{{ $locale }}" class="language-icon">
+
                                     <span class="language-name">{{ __('admin.locale_' . $locale) }}</span>
                                 </a>
                             </li>
@@ -84,11 +83,25 @@
                         </div>
                         <div class="flex flex-col mb-2">
                             <label class="text-xl mr-2 mb-2 text-cyan-400 font-bold"> Active </label>
-                           
-                            <input type="checkbox" name="{{ $locale }}[active]"
-                            id="{{ $locale }}-active"
-                            @if ($page->translate($locale) !== null) {{ $page->translate($locale)->active == 1 ? 'checked' : '' }} @endif
-                            value="1" data-plugin="switchery" data-color="#3bafda" />
+                            <!-- Hidden input to ensure active field is always submitted -->
+                            <input type="hidden" name="{{ $locale }}[active]" value="0">
+                            <label class="relative inline-flex cursor-pointer items-center">
+                                <input 
+                                    type="checkbox" 
+                                    name="{{ $locale }}[active]" 
+                                    id="{{ $locale }}-active"
+                                    class="peer sr-only" 
+                                    value="1" 
+                                    @if ($page->translate($locale) !== null && $page->translate($locale)->active == 1) checked @endif
+                                />
+                                <div class="peer h-6 w-12 rounded-full border bg-gray-300 
+                                    after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 
+                                    after:rounded-full after:border after:border-gray-300 after:bg-white
+                                    after:transition-all after:content-[''] 
+                                    peer-checked:bg-blue-500 peer-checked:after:translate-x-full
+                                    peer-checked:after:border-white peer-focus:ring-blue-300">
+                                </div>
+                            </label>
                         </div>
                     </div>
                 @endforeach

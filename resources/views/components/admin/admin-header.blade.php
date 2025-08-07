@@ -12,12 +12,12 @@
                     @if($locale === 'en')
                         <!-- English Flag Icon -->
                         <a href="{{ $data }}" class="block h-4 mt-4 px-2 text-[#7f8890] hover:text-black transition-colors duration-300" title="{{ __('English') }}">
-                            <img src="{{ asset('storage/flags/united-states.png') }}" alt="{{ __('United States Flag') }}" class="w-full h-full mr-2 object-cover">
+                           {{__('admin.english')}}
                         </a>
                     @elseif($locale === 'ka')
                         <!-- Georgian Flag Icon -->
                         <a href="{{ $data }}" class="block h-4 mt-4 px-2 text-[#7f8890] hover:text-black transition-colors duration-300" title="{{ __('Georgian') }}">
-                            <img src="{{ asset('storage/flags/georgia.png') }}" alt="{{ __('Georgia Flag') }}" class="w-full h-full mr-2 object-cover">
+                          {{__('admin.georgian')}}
                         </a>
                     @endif
                 @endforeach
@@ -45,7 +45,7 @@
             
             <div class="w-8 flex-none flex justify-center relative">
                 <div class="w-8 h-8 flex">
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShta_GXR2xdnsxSzj_GTcJHcNykjVKrCBrZ9qouUl0usuJWG2Rpr_PbTDu3sA9auNUH64&usqp=CAU" alt="profile" class="shadow rounded-full object-cover" />
+                    
                 </div>
                 <!-- Dropdown menu -->
                 <div id="mobileDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden cursor-pointer">

@@ -66,10 +66,10 @@
 
                             
 
-                            @if(isset($category->icon))
-
-                            <img src="{{ asset('storage/icons/' . $category->icon)  }}" alt="Category Icon" class="w-8 h-8">
-
+                            @if($category->icon)
+                                <img src="{{ asset('storage/' . $category->icon) }}" alt="Category Icon" class="w-12 h-12 object-cover rounded-lg border mx-auto">
+                            @else
+                                <span class="text-gray-400 text-sm">No image</span>
                             @endif
 
                         </td>

@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">
-                    {{ __('admin.Edit') }} {{ $pageTypeConfig['name'] ?? 'Post' }}
+                    {{ __('admin.Create') }} {{ $pageTypeConfig['name'] ?? 'Post' }}
                 </h1>
                 <p class="text-gray-600 mt-1">{{ $page->title }}</p>
             </div>
@@ -24,10 +24,9 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.pages.posts.update', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}" 
+        <form action="{{ route('admin.pages.posts.store', ['locale' => app()->getLocale(), 'page' => $page->id]) }}" 
               method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
-            @method('PUT')
 
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('admin.Basic Information') }}</h3>
@@ -38,8 +37,8 @@
                             {{ __('admin.Status') }}
                         </label>
                         <select name="active" id="active" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                            <option value="1" {{ old('active', $post->active) == '1' ? 'selected' : '' }}>{{ __('admin.Active') }}</option>
-                            <option value="0" {{ old('active', $post->active) == '0' ? 'selected' : '' }}>{{ __('admin.Inactive') }}</option>
+                            <option value="1" {{ old('active', '1') == '1' ? 'selected' : '' }}>{{ __('admin.Active') }}</option>
+                            <option value="0" {{ old('active') == '0' ? 'selected' : '' }}>{{ __('admin.Inactive') }}</option>
                         </select>
                     </div>
                     
@@ -47,7 +46,7 @@
                         <label for="sort_order" class="block text-sm font-medium text-gray-700 mb-2">
                             {{ __('admin.Sort Order') }}
                         </label>
-                        <input type="number" name="sort_order" id="sort_order" value="{{ old('sort_order', $post->sort_order) }}"
+                        <input type="number" name="sort_order" id="sort_order" value="{{ old('sort_order', 0) }}"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                     </div>
                     
@@ -55,8 +54,7 @@
                         <label for="published_at" class="block text-sm font-medium text-gray-700 mb-2">
                             {{ __('admin.Publish Date') }}
                         </label>
-                        <input type="datetime-local" name="published_at" id="published_at" 
-                               value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}"
+                        <input type="datetime-local" name="published_at" id="published_at" value="{{ old('published_at', now()->format('Y-m-d\TH:i')) }}"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                     </div>
                 </div>
@@ -72,8 +70,9 @@
                     <nav class="-mb-px flex space-x-8">
                         @foreach(config('app.locales') as $locale)
                             <button type="button" 
-                                    class="language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
-                                    data-locale="{{ $locale }}">
+                                    class="language-tab py-3 px-4 border-b-2 font-medium text-sm cursor-pointer transition-colors duration-200 {{ $loop->first ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50' }}"
+                                    data-locale="{{ $locale }}"
+                                    onclick="switchLanguageTab('{{ $locale }}')">
                                 {{ __('admin.locale_' . $locale) }}
                                 <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}" 
                                      alt="{{ $locale }}" class="inline w-4 h-4 ml-1">
@@ -98,7 +97,7 @@
                                         <input type="text" 
                                                name="{{ $locale }}[{{ $key }}]" 
                                                id="{{ $locale }}_{{ $key }}"
-                                               value="{{ old($locale . '.' . $key, $post->getAttributeForLocale($key, $locale)) }}"
+                                               value="{{ old($locale . '.' . $key) }}"
                                                placeholder="{{ $config['placeholder'] ?? '' }}"
                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                     
@@ -107,14 +106,14 @@
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="3"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
-                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($locale . '.' . $key, $post->getAttributeForLocale($key, $locale)) }}</textarea>
+                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($locale . '.' . $key) }}</textarea>
                                     
                                     @elseif($config['type'] === 'editor')
                                         <textarea name="{{ $locale }}[{{ $key }}]" 
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="6"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
-                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 editor">{{ old($locale . '.' . $key, $post->getAttributeForLocale($key, $locale)) }}</textarea>
+                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 editor">{{ old($locale . '.' . $key) }}</textarea>
                                     @endif
                                 </div>
                             @endforeach
@@ -143,7 +142,7 @@
                                 <input type="text" 
                                        name="{{ $key }}" 
                                        id="{{ $key }}"
-                                       value="{{ old($key, $post->$key) }}"
+                                       value="{{ old($key, $config['default'] ?? '') }}"
                                        placeholder="{{ $config['placeholder'] ?? '' }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             
@@ -151,7 +150,7 @@
                                 <input type="number" 
                                        name="{{ $key }}" 
                                        id="{{ $key }}"
-                                       value="{{ old($key, $post->$key) }}"
+                                       value="{{ old($key, $config['default'] ?? '') }}"
                                        placeholder="{{ $config['placeholder'] ?? '' }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             
@@ -160,44 +159,31 @@
                                           id="{{ $key }}"
                                           rows="3"
                                           placeholder="{{ $config['placeholder'] ?? '' }}"
-                                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($key, $post->$key) }}</textarea>
+                                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($key, $config['default'] ?? '') }}</textarea>
                             
                             @elseif($config['type'] === 'select')
                                 <select name="{{ $key }}" 
                                         id="{{ $key }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                     @foreach($config['options'] ?? [] as $value => $label)
-                                        <option value="{{ $value }}" {{ old($key, $post->$key) == $value ? 'selected' : '' }}>
+                                        <option value="{{ $value }}" {{ old($key, $config['default'] ?? '') == $value ? 'selected' : '' }}>
                                             {{ $label }}
                                         </option>
                                     @endforeach
                                 </select>
                             
                             @elseif($config['type'] === 'image')
-                                <div class="space-y-2">
-                                    @if($post->$key)
-                                        <div class="mb-2">
-                                            <img src="{{ asset('storage/' . $post->$key) }}" 
-                                                 alt="Current {{ $key }}" 
-                                                 class="w-32 h-32 object-cover rounded-lg border">
-                                            <p class="text-sm text-gray-600 mt-1">Current image</p>
-                                        </div>
-                                    @endif
-                                    <input type="file" 
-                                           name="{{ $key }}" 
-                                           id="{{ $key }}"
-                                           accept="{{ $config['accept'] ?? 'image/*' }}"
-                                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                    @if($post->$key)
-                                        <p class="text-sm text-gray-600">Upload a new image to replace the current one</p>
-                                    @endif
-                                </div>
+                                <input type="file" 
+                                       name="{{ $key }}" 
+                                       id="{{ $key }}"
+                                       accept="{{ $config['accept'] ?? 'image/*' }}"
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             
                             @elseif($config['type'] === 'datetime-local')
                                 <input type="datetime-local" 
                                        name="{{ $key }}" 
                                        id="{{ $key }}"
-                                       value="{{ old($key, $post->$key ? (is_string($post->$key) ? $post->$key : $post->$key->format('Y-m-d\TH:i')) : '') }}"
+                                       value="{{ old($key, $config['default'] === 'now' ? now()->format('Y-m-d\TH:i') : ($config['default'] ?? '')) }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             @endif
                         </div>
@@ -211,41 +197,43 @@
                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
                     {{ __('admin.Cancel') }}
                 </a>
-                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors">
                     <i class="fas fa-save mr-2"></i>
-                    {{ __('admin.Update Post') }}
+                    {{ __('admin.Create Post') }}
                 </button>
             </div>
         </form>
     </div>
 
-    @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Language tab switching
+        function switchLanguageTab(locale) {
+            console.log('Switching to locale:', locale);
+            
+            // Update tab styles
             document.querySelectorAll('.language-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const locale = this.dataset.locale;
-                    
-                    // Update tab styles
-                    document.querySelectorAll('.language-tab').forEach(t => {
-                        t.classList.remove('border-green-500', 'text-green-600');
-                        t.classList.add('border-transparent', 'text-gray-500');
-                    });
-                    this.classList.add('border-green-500', 'text-green-600');
-                    this.classList.remove('border-transparent', 'text-gray-500');
-                    
-                    // Show/hide content
-                    document.querySelectorAll('.language-content').forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    const targetContent = document.querySelector(`[data-locale="${locale}"].language-content`);
-                    if (targetContent) {
-                        targetContent.classList.remove('hidden');
-                    }
-                });
+                tab.classList.remove('border-green-500', 'text-green-600', 'bg-green-50');
+                tab.classList.add('border-transparent', 'text-gray-500');
             });
-        });
+            
+            // Activate clicked tab
+            const activeTab = document.querySelector(`[data-locale="${locale}"].language-tab`);
+            if (activeTab) {
+                activeTab.classList.add('border-green-500', 'text-green-600', 'bg-green-50');
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+            }
+            
+            // Show/hide content
+            document.querySelectorAll('.language-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            const targetContent = document.querySelector(`[data-locale="${locale}"].language-content`);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+                console.log('Content switched to:', locale);
+            } else {
+                console.log('Target content not found for:', locale);
+            }
+        }
     </script>
-    @endpush
 </x-admin.admin-layout>

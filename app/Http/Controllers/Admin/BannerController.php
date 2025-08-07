@@ -36,8 +36,19 @@ class BannerController extends Controller
     }
     public function store(Request $request)
     {
+        $request->validate([
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+        ]);
 
         $data = $request->except('image');
+
+        // Handle main banner image upload
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $path = $image->storeAs('banners', $imageName, 'public');
+            $data['thumb'] = $path;
+        }
 
         // Create the banner
         $banner = Banner::create($data);
@@ -45,18 +56,6 @@ class BannerController extends Controller
         // Attach to page if page_id is provided
         if ($request->page_id && $request->page_id) {
             $banner->pages()->attach($request->page_id, ['sort' => 0]);
-        }
-
-        // Check if the request has a file and process the image upload
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $path = $image->storeAs('banners', $imageName, 'public');
-
-            $bannerImage = new BannerImage();
-            $bannerImage->image_name = $path;
-            $bannerImage->banner_id = $banner->id;
-            $bannerImage->save();
         }
 
         return redirect()->route('banners.index', [app()->getLocale()]);
@@ -86,12 +85,29 @@ class BannerController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
         $banner = Banner::findOrFail($id);
-        $banner->update($request->except('images'));
+        
+        // Handle main banner image upload
+        $updateData = $request->except(['image', 'images']);
+        if ($request->hasFile('image')) {
+            // Delete old thumbnail if exists
+            if ($banner->thumb && Storage::disk('public')->exists($banner->thumb)) {
+                Storage::disk('public')->delete($banner->thumb);
+            }
+            
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $imagePath = $image->storeAs('banners', $imageName, 'public');
+            $updateData['thumb'] = $imagePath;
+        }
+        
+        $banner->update($updateData);
 
+        // Handle additional images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 $imageName = time() . '_' . $image->getClientOriginalName();
@@ -104,7 +120,16 @@ class BannerController extends Controller
             }
         }
 
-        return redirect()->route('banners.index', [app()->getLocale()]);
+        // Check if we came from page management and redirect accordingly
+        if ($request->has('page_id') && $request->page_id) {
+            return redirect()->route('admin.pages.management.manage', [
+                'locale' => app()->getLocale(),
+                'page' => $request->page_id
+            ])->with('success', 'Banner updated successfully!');
+        }
+        
+        return redirect()->route('banners.index', [app()->getLocale()])
+            ->with('success', 'Banner updated successfully!');
     }
 
     /**

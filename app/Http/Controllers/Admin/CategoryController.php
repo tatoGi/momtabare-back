@@ -50,6 +50,14 @@ class CategoryController extends Controller
         // Retrieve validated data from the request
         $data = $request->validated();
         
+        // Handle file upload before creating category
+        if ($request->hasFile('icon')) {
+            $icon = $request->file('icon');
+            $iconFileName = time() . '_' . $icon->getClientOriginalName();
+            $iconPath = $icon->storeAs('categories', $iconFileName, 'public');
+            $data['icon'] = $iconPath;
+        }
+        
         // Create the category
         $category = Category::create($data);
         
@@ -68,14 +76,6 @@ class CategoryController extends Controller
             ];     
             // Update SEO data
             $seo->update($seoData);
-        }
-        
-        // Handle file upload
-        if ($request->hasFile('icon')) {
-            $icon = $request->file('icon');
-            $iconFileName = $icon->getClientOriginalName();
-            $icon->storeAs('icons', $iconFileName);
-            $data['icon'] = $iconFileName;
         }
         
         return redirect()->route('categories.index', app()->getLocale());
@@ -118,19 +118,23 @@ class CategoryController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $category = Category::findOrFail($id);
         $data = $request->all();
         
-        
-        if (isset($data['icon'])) {
-            $icon = $data['icon'];
-            $iconFileName = $icon->getClientOriginalName();
-            $icon->storeAs('icons', $iconFileName);
-            $data['icon'] = $iconFileName;
+        // Handle file upload
+        if ($request->hasFile('icon')) {
+            // Delete old icon if exists
+            if ($category->icon && Storage::disk('public')->exists($category->icon)) {
+                Storage::disk('public')->delete($category->icon);
+            }
+            
+            $icon = $request->file('icon');
+            $iconFileName = time() . '_' . $icon->getClientOriginalName();
+            $iconPath = $icon->storeAs('categories', $iconFileName, 'public');
+            $data['icon'] = $iconPath;
         }
-        $category = Category::findOrFail($id);
-        $seo = $category->seo;
-       
-        $category->update($request->all());
+        
+        $category->update($data);
         
 
         return redirect()->route('categories.index', [app()->getLocale()]);
@@ -157,7 +161,7 @@ class CategoryController extends Controller
 
         if ($category->icon) {
             // Delete the icon from storage
-            Storage::delete('public/icons/'.$category->icon);
+            Storage::disk('public')->delete($category->icon);
 
             // Remove the icon from the category
             $category->update(['icon' => null]);
