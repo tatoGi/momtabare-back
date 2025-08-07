@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
-use App\Models\Webuser;
+use App\Models\WebUser;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +24,7 @@ class DashboardController extends Controller
         $categories = Category::count();
         $activeCategories = Category::where('active', 1)->count();
         $inactiveCategories = Category::where('active', 0)->count();
-        $webusers = Webuser::count();
+        $webusers = WebUser::count();
 
         return view('admin.analytics.index', [
             'products' => $products,
