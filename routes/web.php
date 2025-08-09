@@ -45,6 +45,8 @@ require __DIR__.'/auth.php';
     Route::get('/home', [FrontendController::class, 'homePage']);
     Route::get('/pages', [FrontendController::class, 'pages']);
     Route::get('/blog-posts', [FrontendController::class, 'latestBlogPosts'])->name('api.blog.latest');
+    Route::get('/products', [FrontendController::class, 'products'])->name('api.products.list');
+    Route::get('/products/{id}', [FrontendController::class, 'productShow'])->name('api.products.show');
 
 
 // Set the locale for the application (without locale prefix)
