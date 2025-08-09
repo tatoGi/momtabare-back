@@ -59,6 +59,11 @@ class ProductController extends Controller
         // Handle active status
         $data['active'] = $request->has('active') ? 1 : 0;
 
+        // Generate unique product identify ID if not provided
+        if (empty($data['product_identify_id'])) {
+            $data['product_identify_id'] = 'PROD-' . strtoupper(Str::random(8));
+        }
+
         // Create the product
         $product = Product::create($data);
 
@@ -91,7 +96,16 @@ class ProductController extends Controller
             }
         }
 
-        return redirect()->route('products.index', app()->getLocale());
+        // Smart redirect based on context
+        if ($request->has('page_id') && $request->page_id) {
+            // If coming from page management, redirect back to page management
+            return redirect()->route('admin.pages.management.manage', ['page' => $request->page_id])
+                ->with('success', 'Product created successfully.');
+        } else {
+            // If coming from standalone product management, redirect to product index
+            return redirect()->route('products.index', app()->getLocale())
+                ->with('success', 'Product created successfully.');
+        }
     }
 
     /**
@@ -157,7 +171,8 @@ class ProductController extends Controller
                 $translation->title = $data[$locale]['title'] ?? '';
                 $translation->slug = $data[$locale]['slug'] ?? '';
                 $translation->description = $data[$locale]['description'] ?? '';
-                $translation->style = $data[$locale]['style'] ?? null;
+                $translation->location = $data[$locale]['location'] ?? null;
+                $translation->color = $data[$locale]['color'] ?? null;
                 $translation->save();
             }
         }
@@ -174,7 +189,16 @@ class ProductController extends Controller
             }
         }
 
-        return redirect()->route('products.index', app()->getLocale());
+        // Smart redirect based on context
+        if ($request->has('page_id') && $request->page_id) {
+            // If coming from page management, redirect back to page management
+            return redirect()->route('admin.pages.management.manage', ['page' => $request->page_id])
+                ->with('success', 'Product updated successfully.');
+        } else {
+            // If coming from standalone product management, redirect to product index
+            return redirect()->route('products.index', app()->getLocale())
+                ->with('success', 'Product updated successfully.');
+        }
     }
 
     /**
@@ -289,5 +313,134 @@ class ProductController extends Controller
 
         return redirect()->route('admin.products.pages.manage', $product->id)
             ->with('success', 'Page has been removed from the product.');
+    }
+
+    // ========== PAGE-SPECIFIC PRODUCT METHODS ==========
+
+    /**
+     * Display products for a specific page - redirects to page management.
+     *
+     * @param Page $page
+     * @return RedirectResponse
+     */
+    public function indexForPage(Page $page): RedirectResponse
+    {
+        return redirect()->route('admin.pages.management.manage', ['page' => $page->id])
+            ->with('success', 'Viewing page products in page management.');
+    }
+
+    /**
+     * Show form for creating a new product for a specific page.
+     *
+     * @param Page $page
+     * @return View
+     */
+    public function createForPage(Page $page): View
+    {
+        $categories = Category::all();
+        return view('admin.products.create', compact('categories', 'page'));
+    }
+
+    /**
+     * Store a new product and attach it to a specific page.
+     *
+     * @param ProductRequest $request
+     * @param Page $page
+     * @return RedirectResponse
+     */
+    public function storeForPage(ProductRequest $request, Page $page): RedirectResponse
+    {
+        // Validate the request data
+        $data = $request->validated();
+
+        // Handle active status
+        $data['active'] = $request->has('active') ? 1 : 0;
+
+        // Generate unique product identify ID if not provided
+        if (empty($data['product_identify_id'])) {
+            $data['product_identify_id'] = 'PROD-' . strtoupper(Str::random(8));
+        }
+
+        // Create the product
+        $product = Product::create($data);
+
+        // Attach the product to the page with sort order
+        $sortOrder = $request->input('sort_order', 0);
+        $page->products()->attach($product->id, ['sort' => $sortOrder]);
+
+        // Handle product images
+        if ($request->hasFile('images')) {
+            $firstImage = null;
+            foreach ($request->file('images') as $key => $image) {
+                $imageName = $image->getClientOriginalName();
+                $path = $image->storeAs('products', $imageName, 'public');
+                $productImage = new ProductImage;
+                $productImage->image_name = 'products/' . $imageName;
+                $productImage->product_id = $product->id;
+                $productImage->save();
+
+                if ($key === 0) {
+                    $firstImage = $imageName;
+                }
+            }
+
+            foreach (config('app.locales') as $locale) {
+                $seo = $product->translate($locale)->seo;
+                $seoData = [
+                    'title' => $data[$locale]['title'],
+                    'description' => $data[$locale]['description'],
+                    'image' => $firstImage,
+                    'author' => $data[$locale]['author'] ?? null,
+                    'robots' => $data[$locale]['robots'] ?? null,
+                ];
+                $seo->update($seoData);
+            }
+        }
+
+        return redirect()->route('admin.pages.management.manage', ['page' => $page->id])
+            ->with('success', 'Product created and attached to page successfully.');
+    }
+
+    /**
+     * Attach an existing product to a page.
+     *
+     * @param Request $request
+     * @param Page $page
+     * @return RedirectResponse
+     */
+    public function attachToPage(Request $request, Page $page): RedirectResponse
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'sort_order' => 'nullable|integer|min:0'
+        ]);
+
+        // Check if the product is already attached
+        if ($page->products()->where('product_id', $request->product_id)->exists()) {
+            return back()->with('error', 'This product is already attached to the page.');
+        }
+
+        // Attach the product with sort order
+        $page->products()->attach($request->product_id, [
+            'sort' => $request->sort_order ?? 0
+        ]);
+
+        return redirect()->route('admin.pages.management.manage', ['page' => $page->id])
+            ->with('success', 'Product has been attached to the page successfully.');
+    }
+
+    /**
+     * Detach a product from a page.
+     *
+     * @param Page $page
+     * @param Product $product
+     * @return RedirectResponse
+     */
+    public function detachFromPage(Page $page, Product $product): RedirectResponse
+    {
+        $page->products()->detach($product->id);
+
+        return redirect()->route('admin.pages.management.manage', ['page' => $page->id])
+            ->with('success', 'Product has been removed from the page.');
     }
 }

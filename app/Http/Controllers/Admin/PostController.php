@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\PostAttribute;
 use App\Services\PageTypeService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
@@ -41,8 +41,9 @@ class PostController extends Controller
         $pageTypeConfig = $page->getPageTypeConfig();
         $translatableAttributes = PageTypeService::getTranslatableAttributes($page->type_id);
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($page->type_id);
+        $categories = \App\Models\Category::where('active', true)->get();
         
-        return view('admin.posts.create', compact('page', 'pageTypeConfig', 'translatableAttributes', 'nonTranslatableAttributes'));
+        return view('admin.posts.create', compact('page', 'pageTypeConfig', 'translatableAttributes', 'nonTranslatableAttributes', 'categories'));
     }
 
     /**
@@ -54,11 +55,16 @@ class PostController extends Controller
             return redirect()->back()->with('error', 'This page type does not support posts.');
         }
 
-        // Get validation rules from PageTypeService
-        $rules = PageTypeService::getValidationRules($page->type_id);
+        // Get validation rules from PageTypeService, filtered by post type for homepage posts
+        if ($page->type_id == 1 && $request->has('post_type')) {
+            $rules = PageTypeService::getFilteredValidationRules($page->type_id, $request->post_type);
+        } else {
+            $rules = PageTypeService::getValidationRules($page->type_id);
+        }
         $rules['published_at'] = 'nullable|date';
         $rules['active'] = 'boolean';
         $rules['sort_order'] = 'nullable|integer';
+        $rules['category_id'] = 'nullable|exists:categories,id';
         
         $validator = Validator::make($request->all(), $rules);
         
@@ -69,6 +75,7 @@ class PostController extends Controller
         // Create the post
         $post = new Post();
         $post->page_id = $page->id;
+        $post->category_id = $request->input('category_id');
         $post->active = $request->boolean('active', true);
         $post->sort_order = $request->input('sort_order', 0);
         $post->published_at = $request->input('published_at') ? now() : null;
@@ -84,7 +91,11 @@ class PostController extends Controller
         }
 
         // Save attributes
-        $this->savePostAttributes($post, $request, $page->type_id);
+        try {
+            $this->savePostAttributes($post, $request, $page->type_id);
+        } catch (\Exception $e) {
+            throw $e; // Re-throw to see the error
+        }
 
         return redirect()->route('admin.pages.posts.index', ['locale' => app()->getLocale(), 'page' => $page->id])
             ->with('success', 'Post created successfully!');
@@ -105,7 +116,11 @@ class PostController extends Controller
         
         // Load existing attributes
         $existingAttributes = [];
-        foreach ($post->attributes as $attr) {
+        
+        // Load attributes directly from database to ensure we get all data
+        $attributes = PostAttribute::where('post_id', $post->id)->get();
+        
+        foreach ($attributes as $attr) {
             if ($attr->locale) {
                 $existingAttributes[$attr->locale][$attr->attribute_key] = $attr->attribute_value;
             } else {
@@ -113,7 +128,9 @@ class PostController extends Controller
             }
         }
         
-        return view('admin.posts.edit', compact('page', 'post', 'pageTypeConfig', 'translatableAttributes', 'nonTranslatableAttributes', 'existingAttributes'));
+        $categories = \App\Models\Category::where('active', true)->get();
+    
+        return view('admin.posts.edit', compact('page', 'post', 'pageTypeConfig', 'translatableAttributes', 'nonTranslatableAttributes', 'existingAttributes', 'categories'));
     }
 
     /**
@@ -130,6 +147,7 @@ class PostController extends Controller
         $rules['published_at'] = 'nullable|date';
         $rules['active'] = 'boolean';
         $rules['sort_order'] = 'nullable|integer';
+        $rules['category_id'] = 'nullable|exists:categories,id';
         
         $validator = Validator::make($request->all(), $rules);
         
@@ -138,6 +156,7 @@ class PostController extends Controller
         }
 
         // Update the post
+        $post->category_id = $request->input('category_id');
         $post->active = $request->boolean('active', true);
         $post->sort_order = $request->input('sort_order', 0);
         $post->published_at = $request->input('published_at') ? now() : null;
@@ -176,7 +195,6 @@ class PostController extends Controller
     {
         // Debug: Check if post has ID
         if (!$post->id) {
-            Log::error('Post ID is null in savePostAttributes', ['post' => $post->toArray()]);
             throw new \Exception('Post ID is null in savePostAttributes');
         }
         
@@ -189,7 +207,7 @@ class PostController extends Controller
                 $value = $request->input("{$locale}.{$key}");
                 
                 if ($value !== null) {
-                    PostAttribute::updateOrCreate(
+                    $attribute = PostAttribute::updateOrCreate(
                         [
                             'post_id' => $post->id,
                             'attribute_key' => $key,
@@ -227,7 +245,7 @@ class PostController extends Controller
             }
             
             if ($value !== null) {
-                PostAttribute::updateOrCreate(
+                $attribute = PostAttribute::updateOrCreate(
                     [
                         'post_id' => $post->id,
                         'attribute_key' => $key,
@@ -239,11 +257,21 @@ class PostController extends Controller
                 );
             }
         }
+        
+        // Always save post_type for homepage posts, regardless of filtering
+        if ($pageTypeId == 1 && $request->has('post_type')) {
+            PostAttribute::updateOrCreate(
+                [
+                    'post_id' => $post->id,
+                    'attribute_key' => 'post_type',
+                    'locale' => null
+                ],
+                [
+                    'attribute_value' => $request->input('post_type')
+                ]
+            );
+        }
     }
-    
-    /**
-     * Delete post files
-     */
     private function deletePostFiles(Post $post, $pageTypeId)
     {
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($pageTypeId);
@@ -259,6 +287,30 @@ class PostController extends Controller
                     Storage::disk('public')->delete($attribute->attribute_value);
                 }
             }
+        }
+    }
+
+    /**
+     * Handle image upload for TinyMCE editor
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048'
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('editor-images', $filename, 'public');
+
+            return response()->json([
+                'location' => asset('storage/' . $path)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Image upload failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

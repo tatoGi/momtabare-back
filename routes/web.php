@@ -22,6 +22,8 @@ use App\Http\Controllers\Admin\DashboardController;
 
 require __DIR__.'/auth.php';
 
+// Email API routes (outside locale group for direct access)
+
     // Admin routes with auth middleware
     Route::middleware(['auth'])->group(function () {
         Route::prefix('admin')->group(function () {
@@ -42,6 +44,7 @@ require __DIR__.'/auth.php';
     Route::post('/subscribe', [FrontendController::class, 'subscribe'])->name('subscribe');
     Route::get('/home', [FrontendController::class, 'homePage']);
     Route::get('/pages', [FrontendController::class, 'pages']);
+    Route::get('/blog-posts', [FrontendController::class, 'latestBlogPosts'])->name('api.blog.latest');
 
 
 // Set the locale for the application (without locale prefix)
@@ -73,6 +76,7 @@ Route::get('/pro/{url}', [FrontendController::class, 'show'])->name('single_prod
 Route::post('/subscribe', [FrontendController::class, 'subscribe'])->name('subscribe');
 Route::get('/home', [FrontendController::class, 'homePage']);
 Route::get('/pages', [FrontendController::class, 'pages']);
+Route::get('/pages-with-posts', [FrontendController::class, 'pagesWithPaginatedPosts'])->name('pages.with.posts');
 Route::get('/categories', [FrontendController::class, 'categories']);
 // Keep catch-all route at the end
 

@@ -24,6 +24,8 @@
             </div>
         @endif
 
+
+
         <form action="{{ route('admin.pages.posts.update', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}" 
               method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
@@ -31,6 +33,51 @@
 
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('admin.Basic Information') }}</h3>
+                
+                {{-- Post Type Selection for Homepage Posts --}}
+                @if($page->type_id == 1)
+                <div class="mb-4">
+                    <label for="post_type" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tags mr-2"></i>{{ __('admin.Post Type') }} <span class="text-red-500">*</span>
+                    </label>
+                    <select name="post_type" id="post_type" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">{{ __('admin.Select Post Type') }}</option>
+                        <option value="join_us" {{ old('post_type', $existingAttributes['post_type'] ?? '') == 'join_us' ? 'selected' : '' }}>
+                            {{ __('admin.Join Us Section') }}
+                            <span class="text-gray-500">- გამოიმუშავე დამატებითი</span>
+                        </option>
+                        <option value="rental_steps" {{ old('post_type', $existingAttributes['post_type'] ?? '') == 'rental_steps' ? 'selected' : '' }}>
+                            {{ __('admin.Rental Steps') }}
+                            <span class="text-gray-500">- იქირავე შენთვის სასურველი</span>
+                        </option>
+                    </select>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        {{ __('admin.Select the type of homepage post to show relevant fields') }}
+                    </p>
+                </div>
+                @endif
+
+                {{-- Category Selection for Blog Posts --}}
+                @if($page->type_id == 2)
+                <div class="mb-4">
+                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-folder mr-2"></i>{{ __('admin.Category') }}
+                    </label>
+                    <select name="category_id" id="category_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">{{ __('admin.Select Category') }} ({{ __('admin.Optional') }})</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ old('category_id', $post->category_id) == $category->id ? 'selected' : '' }}>
+                                {{ $category->title }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        {{ __('admin.Select a category to organize your blog post') }}
+                    </p>
+                </div>
+                @endif
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -71,13 +118,14 @@
                 <div class="border-b border-gray-200 mb-6">
                     <nav class="-mb-px flex space-x-8">
                         @foreach(config('app.locales') as $locale)
-                            <button type="button" 
-                                    class="language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
-                                    data-locale="{{ $locale }}">
+                            <a href="#" 
+                               class="language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+                               data-locale="{{ $locale }}"
+                               onclick="event.preventDefault();">
                                 {{ __('admin.locale_' . $locale) }}
                                 <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}" 
                                      alt="{{ $locale }}" class="inline w-4 h-4 ml-1">
-                            </button>
+                            </a>
                         @endforeach
                     </nav>
                 </div>
@@ -86,19 +134,21 @@
                     <div class="language-content {{ !$loop->first ? 'hidden' : '' }}" data-locale="{{ $locale }}">
                         <div class="grid grid-cols-1 gap-4">
                             @foreach($translatableAttributes as $key => $config)
-                                <div>
-                                    <label for="{{ $locale }}_{{ $key }}" class="block text-sm font-medium text-gray-700 mb-2">
-                                        {{ $config['label'] ?? ucfirst($key) }}
-                                        @if($config['required'] ?? false)
-                                            <span class="text-red-500">*</span>
-                                        @endif
-                                    </label>
+                            <div class="field-group" 
+                                 data-show-for-types="{{ isset($config['show_for_types']) ? json_encode($config['show_for_types']) : '[]' }}"
+                                 style="{{ isset($config['show_for_types']) && !in_array($existingAttributes['post_type'] ?? '', $config['show_for_types'] ?? []) ? 'display: none;' : '' }}">
+                                <label for="{{ $locale }}_{{ $key }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                    {{ $config['label'] ?? ucfirst($key) }}
+                                    @if($config['required'] ?? false)
+                                        <span class="text-red-500">*</span>
+                                    @endif
+                                </label>
                                     
                                     @if($config['type'] === 'text')
                                         <input type="text" 
                                                name="{{ $locale }}[{{ $key }}]" 
                                                id="{{ $locale }}_{{ $key }}"
-                                               value="{{ old($locale . '.' . $key, $post->getAttributeForLocale($key, $locale)) }}"
+                                               value="{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}"
                                                placeholder="{{ $config['placeholder'] ?? '' }}"
                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                     
@@ -107,14 +157,14 @@
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="3"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
-                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($locale . '.' . $key, $post->getAttributeForLocale($key, $locale)) }}</textarea>
+                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}</textarea>
                                     
                                     @elseif($config['type'] === 'editor')
                                         <textarea name="{{ $locale }}[{{ $key }}]" 
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="6"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
-                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 editor">{{ old($locale . '.' . $key, $post->getAttributeForLocale($key, $locale)) }}</textarea>
+                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 editor">{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}</textarea>
                                     @endif
                                 </div>
                             @endforeach
@@ -131,7 +181,9 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @foreach($nonTranslatableAttributes as $key => $config)
-                        <div class="{{ $config['type'] === 'editor' ? 'md:col-span-2' : '' }}">
+                        <div class="{{ $config['type'] === 'editor' ? 'md:col-span-2' : '' }} field-group" 
+                             data-show-for-types="{{ isset($config['show_for_types']) ? json_encode($config['show_for_types']) : '[]' }}"
+                             style="{{ isset($config['show_for_types']) && !in_array($existingAttributes['post_type'] ?? '', $config['show_for_types'] ?? []) ? 'display: none;' : '' }}">
                             <label for="{{ $key }}" class="block text-sm font-medium text-gray-700 mb-2">
                                 {{ $config['label'] ?? ucfirst($key) }}
                                 @if($config['required'] ?? false)
@@ -143,7 +195,7 @@
                                 <input type="text" 
                                        name="{{ $key }}" 
                                        id="{{ $key }}"
-                                       value="{{ old($key, $post->$key) }}"
+                                       value="{{ old($key, $existingAttributes[$key] ?? '') }}"
                                        placeholder="{{ $config['placeholder'] ?? '' }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             
@@ -151,7 +203,7 @@
                                 <input type="number" 
                                        name="{{ $key }}" 
                                        id="{{ $key }}"
-                                       value="{{ old($key, $post->$key) }}"
+                                       value="{{ old($key, $existingAttributes[$key] ?? '') }}"
                                        placeholder="{{ $config['placeholder'] ?? '' }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             
@@ -160,14 +212,14 @@
                                           id="{{ $key }}"
                                           rows="3"
                                           placeholder="{{ $config['placeholder'] ?? '' }}"
-                                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($key, $post->$key) }}</textarea>
+                                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($key, $existingAttributes[$key] ?? '') }}</textarea>
                             
                             @elseif($config['type'] === 'select')
                                 <select name="{{ $key }}" 
                                         id="{{ $key }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                     @foreach($config['options'] ?? [] as $value => $label)
-                                        <option value="{{ $value }}" {{ old($key, $post->$key) == $value ? 'selected' : '' }}>
+                                        <option value="{{ $value }}" {{ old($key, $existingAttributes[$key] ?? '') == $value ? 'selected' : '' }}>
                                             {{ $label }}
                                         </option>
                                     @endforeach
@@ -175,9 +227,9 @@
                             
                             @elseif($config['type'] === 'image')
                                 <div class="space-y-2">
-                                    @if($post->$key)
+                                    @if($existingAttributes[$key] ?? false)
                                         <div class="mb-2">
-                                            <img src="{{ asset('storage/' . $post->$key) }}" 
+                                            <img src="{{ asset('storage/' . $existingAttributes[$key]) }}" 
                                                  alt="Current {{ $key }}" 
                                                  class="w-32 h-32 object-cover rounded-lg border">
                                             <p class="text-sm text-gray-600 mt-1">Current image</p>
@@ -188,7 +240,7 @@
                                            id="{{ $key }}"
                                            accept="{{ $config['accept'] ?? 'image/*' }}"
                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                    @if($post->$key)
+                                    @if($existingAttributes[$key] ?? false)
                                         <p class="text-sm text-gray-600">Upload a new image to replace the current one</p>
                                     @endif
                                 </div>
@@ -197,7 +249,7 @@
                                 <input type="datetime-local" 
                                        name="{{ $key }}" 
                                        id="{{ $key }}"
-                                       value="{{ old($key, $post->$key ? (is_string($post->$key) ? $post->$key : $post->$key->format('Y-m-d\TH:i')) : '') }}"
+                                       value="{{ old($key, $existingAttributes[$key] ?? '') }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                             @endif
                         </div>
@@ -220,30 +272,133 @@
     </div>
 
     @push('scripts')
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
+        // Toggle fields based on post type selection
+        function togglePostTypeFields() {
+            const postTypeSelect = document.getElementById('post_type');
+            if (!postTypeSelect) return;
+            
+            const selectedType = postTypeSelect.value;
+            console.log('Selected post type:', selectedType);
+            
+            // Get all field groups (both translatable and non-translatable)
+            const fieldGroups = document.querySelectorAll('.field-group');
+            
+            fieldGroups.forEach(group => {
+                const showForTypes = group.getAttribute('data-show-for-types');
+                
+                if (showForTypes) {
+                    try {
+                        const types = JSON.parse(showForTypes);
+                        // If no post type is selected (empty string or "0"), hide fields with restrictions
+                        // If a post type is selected, show only fields that include that type
+                        if (!selectedType || selectedType === '' || selectedType === '0') {
+                            group.style.display = 'none';
+                            console.log('Hiding field group, no post type selected');
+                        } else if (types.includes(selectedType)) {
+                            group.style.display = '';
+                            console.log('Showing field group for type:', selectedType);
+                        } else {
+                            group.style.display = 'none';
+                            console.log('Hiding field group, not for type:', selectedType);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing show_for_types:', e);
+                        group.style.display = '';
+                    }
+                } else {
+                    // Show fields without restrictions
+                    group.style.display = '';
+                }
+            });
+        }
+
+        function switchLanguageTab(locale) {
+            // Remove active classes from all tabs
+            document.querySelectorAll('.language-tab').forEach(tab => {
+                tab.classList.remove('border-green-500', 'text-green-600', 'bg-green-50');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Add active classes to selected tab
+            document.querySelectorAll(`.language-tab[data-locale="${locale}"]`).forEach(tab => {
+                tab.classList.add('border-green-500', 'text-green-600', 'bg-green-50');
+                tab.classList.remove('border-transparent', 'text-gray-500');
+            });
+            
+            // Hide all content sections
+            document.querySelectorAll('.language-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show selected content section
+            document.querySelectorAll(`.language-content[data-locale="${locale}"]`).forEach(content => {
+                content.classList.remove('hidden');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize post type field toggling
+            const postTypeSelect = document.getElementById('post_type');
+            if (postTypeSelect) {
+                postTypeSelect.addEventListener('change', togglePostTypeFields);
+                // Initial toggle
+                setTimeout(togglePostTypeFields, 100);
+            }
+            
             // Language tab switching
             document.querySelectorAll('.language-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const locale = this.dataset.locale;
-                    
-                    // Update tab styles
-                    document.querySelectorAll('.language-tab').forEach(t => {
-                        t.classList.remove('border-green-500', 'text-green-600');
-                        t.classList.add('border-transparent', 'text-gray-500');
-                    });
-                    this.classList.add('border-green-500', 'text-green-600');
-                    this.classList.remove('border-transparent', 'text-gray-500');
-                    
-                    // Show/hide content
-                    document.querySelectorAll('.language-content').forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    const targetContent = document.querySelector(`[data-locale="${locale}"].language-content`);
-                    if (targetContent) {
-                        targetContent.classList.remove('hidden');
-                    }
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    switchLanguageTab(this.dataset.locale);
                 });
+            });
+            
+            // Initialize first language tab as active
+            const firstTab = document.querySelector('.language-tab');
+            if (firstTab) {
+                switchLanguageTab(firstTab.dataset.locale);
+            }
+            
+            // Initialize TinyMCE for editor fields
+            tinymce.init({
+                selector: 'textarea.editor',
+                height: 400,
+                menubar: false,
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                    'bold italic backcolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                images_upload_handler: function (blobInfo, success, failure) {
+                    var xhr, formData;
+                    xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '{{ route("admin.upload.image") }}');
+                    xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+                    xhr.onload = function() {
+                        var json;
+                        if (xhr.status != 200) {
+                            failure('HTTP Error: ' + xhr.status);
+                            return;
+                        }
+                        json = JSON.parse(xhr.responseText);
+                        if (!json || typeof json.location != 'string') {
+                            failure('Invalid JSON: ' + xhr.responseText);
+                            return;
+                        }
+                        success(json.location);
+                    };
+                    formData = new FormData();
+                    formData.append('file', blobInfo.blob(), blobInfo.filename());
+                    xhr.send(formData);
+                }
             });
         });
     </script>

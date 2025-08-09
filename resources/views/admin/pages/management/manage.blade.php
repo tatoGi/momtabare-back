@@ -40,20 +40,128 @@
                     </div>
                     @endif --}}
                     
-                    @if($page->type_id == 1)
+                    {{-- Page Products Section --}}
+                    @if($page->type_id == 1 )
                     <div class="bg-white rounded-lg shadow-sm p-6">
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold text-gray-800">{{ __('admin.Products') }}</h2>
-                            <a href="/{{ app()->getLocale() }}/admin/products/create/{{ $page->id }}"
-                               class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
-                                <i class="fas fa-plus mr-2"></i>
-                                {{ __('admin.Add Product') }}
-                            </a>
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800">
+                                    <i class="material-icons mr-2 text-blue-500">inventory_2</i>
+                                    {{ __('admin.Page Products') }}
+                                </h2>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    {{ __('admin.Products specific to this page') }} - 
+                                    <span class="font-medium">{{ $page->products()->count() }}</span> {{ __('admin.total products') }}
+                                </p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{{ route('admin.pages.products.index', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+                                    <i class="material-icons text-sm mr-2">list</i>
+                                    {{ __('admin.Manage Products') }}
+                                </a>
+                                <a href="{{ route('admin.pages.products.create', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+                                    <i class="material-icons text-sm mr-2">add</i>
+                                    {{ __('admin.Create Product') }}
+                                </a>
+                            </div>
                         </div>
-                        <div class="text-center py-8 text-gray-500">
-                            <p>{{ __('admin.Product management interface will be converted to Tailwind CSS soon.') }}</p>
-                            <p class="text-sm mt-2">{{ __('admin.For now, please use the direct products management page.') }}</p>
-                        </div>
+                        
+                        @php
+                            $recentProducts = $page->products()->with('category')->orderBy('created_at', 'desc')->take(5)->get();
+                        @endphp
+                        
+                        @if($recentProducts->count() > 0)
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Product ID') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Title') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Category') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Price') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Status') }}
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ __('admin.Actions') }}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($recentProducts as $product)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    {{ $product->product_identify_id }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">{{ $product->title }}</div>
+                                                <div class="text-sm text-gray-500">{{ Str::limit($product->description, 40) }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                @if($product->category)
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                                        {{ $product->category->title }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-gray-400">{{ __('admin.No Category') }}</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                @if($product->price)
+                                                    ${{ number_format((float)preg_replace('/[^0-9.]/', '', $product->price), 2) }}
+                                                @else
+                                                    <span class="text-gray-400">-</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $product->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                    {{ $product->active ? __('admin.Active') : __('admin.Inactive') }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <div class="flex space-x-2">
+                                                    <a href="{{ route('products.edit', [app()->getLocale(), $product->id]) }}?page_id={{ $page->id }}" 
+                                                       class="text-blue-600 hover:text-blue-900 transition-colors">
+                                                        <i class="material-icons text-sm">edit</i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="mt-4 text-center">
+                                <a href="{{ route('admin.pages.products.index', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                    {{ __('admin.View All Page Products') }} →
+                                </a>
+                            </div>
+                        @else
+                            <div class="text-center py-8">
+                                <i class="material-icons text-4xl text-gray-400 mb-4">inventory_2</i>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('admin.No Products') }}</h3>
+                                <p class="text-gray-500 mb-4">{{ __('admin.This page has no products attached yet.') }}</p>
+                                <a href="{{ route('admin.pages.products.create', ['locale' => app()->getLocale(), 'page' => $page->id]) }}"
+                                   class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg inline-flex items-center transition-colors">
+                                    <i class="material-icons text-sm mr-2">add</i>
+                                    {{ __('admin.Create First Product') }}
+                                </a>
+                            </div>
+                        @endif
                     </div>
                     @endif
                     
@@ -138,7 +246,7 @@
                                                 {{ $post->sort_order ?? 0 }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $post->created_at->format('M d, Y') }}
+                                                {{ $post->created_at ? $post->created_at->format('M d, Y') : 'N/A' }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <a href="{{ route('admin.pages.posts.edit', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}"

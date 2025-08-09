@@ -6,17 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Astrotomic\Translatable\Translatable;
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use App\Services\PageTypeService;
 use App\Models\Page;
+use App\Models\Category;
 
-class Post extends Model implements TranslatableContract
+class Post extends Model
 {
-    use HasFactory, Translatable;
+    use HasFactory;
 
     protected $fillable = [
         'page_id',
+        'category_id',
         'active',
         'sort_order',
         'published_at'
@@ -27,7 +27,10 @@ class Post extends Model implements TranslatableContract
         'published_at' => 'datetime'
     ];
 
-    public $translatedAttributes = []; // Will be set dynamically
+    // Explicitly define primary key
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     /**
      * Get the page that owns this post
@@ -35,6 +38,14 @@ class Post extends Model implements TranslatableContract
     public function page(): BelongsTo
     {
         return $this->belongsTo(Page::class);
+    }
+
+    /**
+     * Get the category that owns this post
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     /**
@@ -58,9 +69,18 @@ class Post extends Model implements TranslatableContract
      */
     public function getAttribute($key)
     {
-        // First check if it's a regular model attribute
-        if (in_array($key, $this->fillable) || $key === 'id' || $key === 'created_at' || $key === 'updated_at') {
+        // Handle core model attributes (including id, timestamps, etc.)
+        if (in_array($key, $this->fillable) || 
+            $key === 'id' || 
+            $key === 'created_at' || 
+            $key === 'updated_at' ||
+            in_array($key, array_keys($this->casts))) {
             return parent::getAttribute($key);
+        }
+
+        // Handle dynamic attributes only if post exists
+        if (!$this->exists) {
+            return null; // Don't try to load dynamic attributes for unsaved models
         }
 
         // Check if it's a dynamic attribute
@@ -77,11 +97,20 @@ class Post extends Model implements TranslatableContract
      */
     public function setAttribute($key, $value)
     {
-        if (in_array($key, $this->fillable)) {
+        // Handle core model attributes (including id, timestamps, etc.)
+        if (in_array($key, $this->fillable) || 
+            $key === 'id' || 
+            $key === 'created_at' || 
+            $key === 'updated_at' ||
+            in_array($key, array_keys($this->casts))) {
             return parent::setAttribute($key, $value);
         }
 
-        // Handle dynamic attributes
+        // Handle dynamic attributes only if post exists
+        if (!$this->exists) {
+            return; // Don't handle dynamic attributes for unsaved models
+        }
+
         $pageType = $this->getPageTypeConfig();
         if ($pageType && $this->isTranslatableAttribute($key, $pageType)) {
             return $this->setTranslatableAttribute($key, $value);

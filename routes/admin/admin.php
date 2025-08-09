@@ -19,10 +19,13 @@ Route::resource('/banners', BannerController::class)->parameters([
     'banners' => 'banner',
     'page_id' => 'page'
 ]);
-Route::get('/banners/create/{page_id?}', [BannerController::class, 'create'])->name('banners.create');
+Route::get('/banners/create/{page_id?}', [BannerController::class, 'create'])->name('banners.create.with.page');
 Route::delete('/category/icon/{id}', [CategoryController::class, 'deleteIcon'])->name('category.icon.delete');
 Route::get('/webusers', [WebUserController::class, 'index']);
 Route::delete('/banners/delete/image/{image_id}', [BannerController::class, 'deleteImage'])->name('banners.images.delete');
+
+// Image upload route for TinyMCE editor
+Route::post('/upload-image', [PostController::class, 'uploadImage'])->name('admin.upload.image');
 
 // Post management routes (nested under pages)
 Route::prefix('pages/{page}')->name('admin.pages.')->group(function () {
