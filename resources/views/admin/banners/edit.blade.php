@@ -162,24 +162,34 @@
 
 
 
-                <!-- active -->
-
-                <div class="mt-2 border border-dashed border-gray-400 rounded-lg p-4">
-                    <div class="flex flex-wrap imagePreview">
-                        <label for="images" class="block font-medium text-gray-700">Images</label>
-                        <input type="file" name="images[]" id="images" multiple class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2">
-                        @foreach ($banner->images as $image)
-                        <div class="w-1/2 md:w-1/4 lg:w-1/3 p-2">
-                            <div class="trash">
-                                <img src="{{ asset('storage/' . $image->image_name) }}" alt="Product Image" class="w-full h-full mr-2 object-cover">
-                                {{-- Delete Button --}}
-                                <button type="button" data-route="{{ route('banners.images.delete', [app()->getLocale(), $image->id]) }}" data-id="{{ $image->id }}" data-token="{{ csrf_token() }}" class="text-red-500 hover:text-red-700 focus:outline-none focus:text-red-700 delete-image" id="delete_image_{{ $image->id }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                <!-- Banner Images -->
+                <div class="mt-4 border border-dashed border-gray-400 rounded-lg p-4">
+                    <label for="images" class="block font-medium text-gray-700 mb-2">Banner Images</label>
+                    <input type="file" name="images[]" id="images" multiple accept="image/*" class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 mb-3">
+                    <p class="text-sm text-gray-500 mb-3">Add more images to the banner</p>
+                    
+                    @if($banner->images->count() > 0)
+                        <div class="flex flex-wrap imagePreview">
+                            <p class="w-full text-sm text-gray-600 mb-2">Current banner images:</p>
+                            @foreach ($banner->images as $image)
+                            <div class="w-1/2 md:w-1/4 lg:w-1/3 p-2">
+                                <div class="trash relative">
+                                    <img src="{{ asset('storage/' . $image->image_name) }}" alt="Banner Image" class="w-full h-24 object-cover rounded border">
+                                    {{-- Delete Button --}}
+                                    <button type="button" data-route="{{ route('banners.images.delete', [app()->getLocale(), $image->id]) }}" data-id="{{ $image->id }}" data-token="{{ csrf_token() }}" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 delete-image" id="delete_image_{{ $image->id }}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
+                            @endforeach
                         </div>
-                        @endforeach
-                    </div>
+                    @else
+                        <p class="text-sm text-gray-500 italic">No banner images yet.</p>
+                    @endif
+                    
+                    @error('images.*')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                    @enderror
                 </div>
                 
 

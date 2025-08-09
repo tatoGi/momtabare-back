@@ -141,14 +141,31 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button type="button" 
-                                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm flex items-center space-x-1 attach-banner transition-colors"
-                                    data-banner-id="{{ $banner->id }}"
-                                    data-page-id="{{ $page_id }}"
-                                    title="Attach to Page">
-                                <i class="material-icons-outlined text-sm">add_circle</i>
-                                <span>Attach</span>
-                            </button>
+                            <div class="flex justify-end space-x-2">
+                                <a href="{{ route('banners.edit', ['banner' => $banner->id, 'locale' => app()->getLocale(), 'page_id' => $page_id]) }}"
+                                   class="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                                   title="{{ __('admin.Edit') }}">
+                                    <i class="material-icons-outlined text-sm">edit</i>
+                                </a>
+                                <button type="button" 
+                                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm flex items-center space-x-1 attach-banner transition-colors"
+                                        data-banner-id="{{ $banner->id }}"
+                                        data-page-id="{{ $page_id }}"
+                                        title="Attach to Page">
+                                    <i class="material-icons-outlined text-sm">add_circle</i>
+                                    <span>Attach</span>
+                                </button>
+                                <form action="{{ route('banners.destroy', ['banner' => $banner->id, 'locale' => app()->getLocale(), 'page_id' => $page_id]) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                            onclick="return confirm('Are you sure you want to delete this banner? This action cannot be undone.')"
+                                            title="Delete Banner">
+                                        <i class="material-icons-outlined text-sm">delete</i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endforeach
