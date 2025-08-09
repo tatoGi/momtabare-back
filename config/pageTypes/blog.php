@@ -14,24 +14,19 @@ return [
                 'label' => 'Post Title',
                 'placeholder' => 'Enter blog post title'
             ],
-            'slug' => [
-                'type' => 'text',
-                'required' => true,
-                'label' => 'URL Slug',
-                'placeholder' => 'post-url-slug'
-            ],
-            'excerpt' => [
-                'type' => 'textarea',
-                'required' => false,
-                'label' => 'Short Description',
-                'placeholder' => 'Brief summary of the post'
-            ],
             'content' => [
                 'type' => 'editor',
                 'required' => true,
                 'label' => 'Post Content',
                 'placeholder' => 'Write your blog post content here'
             ],
+            'slug' => [
+                'type' => 'text',
+                'required' => false,
+                'label' => 'URL Slug',
+                'placeholder' => 'post-url-slug (auto-generated if empty)'
+            ],
+           
             'meta_title' => [
                 'type' => 'text',
                 'required' => false,
@@ -48,28 +43,26 @@ return [
         'non_translatable' => [
             'featured_image' => [
                 'type' => 'image',
-                'required' => false,
+                'required' => true,
                 'label' => 'Featured Image',
-                'accept' => 'image/*'
+                'accept' => 'image/*',
+                'help' => 'Main image displayed in blog post and listings'
             ],
+          
             'published_at' => [
                 'type' => 'datetime-local',
                 'required' => true,
                 'label' => 'Publish Date',
-                'default' => 'now'
+                'default' => 'now',
+                'help' => 'Date when the post should be published'
             ],
             'author' => [
                 'type' => 'text',
                 'required' => false,
                 'label' => 'Author Name',
-                'placeholder' => 'Post author'
+                'placeholder' => 'Post author (optional)'
             ],
-            'tags' => [
-                'type' => 'text',
-                'required' => false,
-                'label' => 'Tags',
-                'placeholder' => 'tag1, tag2, tag3'
-            ],
+           
             'status' => [
                 'type' => 'select',
                 'required' => true,

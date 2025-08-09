@@ -42,7 +42,8 @@ class PageManagementController extends Controller
             'page' => $page->load(['banners', 'products']),
             'banners' => $page->banners()->paginate(5), // Page's current banners
             'availableBanners' => $availableBanners,   // Available banners to add
-            'products' => $availableProducts
+            'products' => $page->products()->with('category')->paginate(5), // Page's current products
+            'availableProducts' => $availableProducts  // Available products to add
         ]);
     }
 

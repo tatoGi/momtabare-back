@@ -88,7 +88,7 @@
                                     {{ $post->sort_order }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $post->created_at->format('M d, Y H:i') }}
+                                    {{ $post->created_at ? $post->created_at->format('M d, Y H:i') : 'N/A' }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <a href="{{ route('admin.pages.posts.edit', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}"

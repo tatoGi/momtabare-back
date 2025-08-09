@@ -18,7 +18,8 @@ class ProductTranslation extends Model
         'slug',
         'description',
         'brand', 
-        'model',
+        'location',
+        'color',
         'warranty_period'
     ];
 

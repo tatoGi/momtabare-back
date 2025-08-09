@@ -35,19 +35,47 @@ class FrontendController extends Controller
         }
 
         $data = $this->frontendService->getSectionData($slug);
+        
         return response()->json($data);
     }
 
     public function pages()
     {
         $pages = $this->frontendService->getActivePages();
+      
+        return response()->json($pages);
+    }
+
+    /**
+     * Get latest blog posts for homepage
+     *
+     * @param int $limit Number of posts to return (default: 10)
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function latestBlogPosts(Request $request)
+    {
+        $limit = $request->get('limit', 10);
+        $data = $this->frontendService->getLatestBlogPosts($limit);
+        
+        return response()->json($data);
+    }
+
+    /**
+     * Get pages with paginated posts
+     */
+    public function pagesWithPaginatedPosts(Request $request)
+    {
+        $page = $request->get('page', 1);
+        $postsPerPage = $request->get('posts_per_page', 10);
+        
+        $pages = $this->frontendService->getActivePagesWithPaginatedPosts($page, $postsPerPage);
         return response()->json($pages);
     }
 
     public function show($url)
     {
         $data = $this->frontendService->getProductByUrl($url);
-        
+       
         if (isset($data['error'])) {
             return response()->json($data, 404);
         }

@@ -31,10 +31,15 @@ return [
                 'default' => 0
             ],
             'category' => [
-                'type' => 'text',
-                'required' => false,
+                'type' => 'select',
+                'required' => true,
                 'label' => 'FAQ Category',
-                'placeholder' => 'General, Technical, Billing, etc.'
+                'default' => 'CLIENT',
+                'options' => [
+                    'CLIENT' => 'Client Questions',
+                    'ADMIN' => 'Admin Questions',
+                    'RETAILER' => 'Retailer Questions'
+                ]
             ],
             'status' => [
                 'type' => 'select',

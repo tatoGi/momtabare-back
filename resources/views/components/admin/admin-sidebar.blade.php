@@ -14,6 +14,7 @@
                
             
         ],
+        ['icon' => 'fa-file-alt', 'title' => __('admin.Products'), 'url' => 'admin/products'],
         // ['icon' => 'fa-briefcase', 'title' => __('admin.Companies'), 'url' => '#'],
         ['icon' => 'fa-id-card-alt', 'title' => __('admin.Users'), 'url' => 'admin/webusers'],
         // ['icon' => 'fa-donate', 'title' => __('admin.Payments'), 'url' => '#'],

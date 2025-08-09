@@ -3,71 +3,102 @@
 return [
     'id' => 5,
     'type' => 5,
-    'folder' => 'projcet',
-    'name' => 'Routes/News Page',
+    'folder' => 'routes',
+    'name' => 'Hiking Routes Page',
     'slug' => 'routes',
     'has_posts' => true,
     'post_attributes' => [
         'translatable' => [
-            'title' => [
+            'route_name' => [
                 'type' => 'text',
                 'required' => true,
-                'label' => 'News Title',
-                'placeholder' => 'Enter news title'
+                'label' => 'Route Name',
+                'placeholder' => 'Enter hiking route name'
             ],
             'slug' => [
                 'type' => 'text',
                 'required' => true,
                 'label' => 'URL Slug',
-                'placeholder' => 'news-url-slug'
+                'placeholder' => 'route-url-slug'
             ],
-            'summary' => [
+            'description' => [
                 'type' => 'textarea',
                 'required' => true,
-                'label' => 'News Summary',
-                'placeholder' => 'Brief summary of the news'
+                'label' => 'Route Description',
+                'placeholder' => 'Describe the hiking route, difficulty, highlights, etc.'
             ],
-            'content' => [
-                'type' => 'editor',
+            'location' => [
+                'type' => 'text',
                 'required' => true,
-                'label' => 'Full Content',
-                'placeholder' => 'Write the full news content here'
+                'label' => 'Location/Starting Point',
+                'placeholder' => 'Starting location or region'
             ]
         ],
         'non_translatable' => [
-            'featured_image' => [
+            'map_link' => [
+                'type' => 'text',
+                'required' => true,
+                'label' => 'Map Link',
+                'placeholder' => 'https://maps.google.com/... or GPX file URL'
+            ],
+            'route_image' => [
                 'type' => 'image',
                 'required' => false,
-                'label' => 'Featured Image',
+                'label' => 'Route Image',
                 'accept' => 'image/*'
             ],
-            'published_at' => [
-                'type' => 'datetime-local',
-                'required' => true,
-                'label' => 'Publish Date',
-                'default' => 'now'
-            ],
-            'priority' => [
+            'difficulty_level' => [
                 'type' => 'select',
                 'required' => true,
-                'label' => 'Priority',
-                'default' => 'medium',
+                'label' => 'Difficulty Level',
+                'default' => 'moderate',
                 'options' => [
-                    'low' => 'Low',
-                    'medium' => 'Medium',
-                    'high' => 'High',
-                    'urgent' => 'Urgent'
+                    'easy' => 'Easy',
+                    'moderate' => 'Moderate',
+                    'hard' => 'Hard',
+                    'expert' => 'Expert'
+                ]
+            ],
+            'duration_hours' => [
+                'type' => 'number',
+                'required' => false,
+                'label' => 'Duration (Hours)',
+                'placeholder' => '3.5'
+            ],
+            'distance_km' => [
+                'type' => 'number',
+                'required' => false,
+                'label' => 'Distance (KM)',
+                'placeholder' => '12.5'
+            ],
+            'elevation_gain' => [
+                'type' => 'number',
+                'required' => false,
+                'label' => 'Elevation Gain (m)',
+                'placeholder' => '800'
+            ],
+            'season' => [
+                'type' => 'select',
+                'required' => false,
+                'label' => 'Best Season',
+                'default' => 'all_year',
+                'options' => [
+                    'all_year' => 'All Year',
+                    'spring' => 'Spring',
+                    'summer' => 'Summer',
+                    'autumn' => 'Autumn',
+                    'winter' => 'Winter'
                 ]
             ],
             'status' => [
                 'type' => 'select',
                 'required' => true,
                 'label' => 'Status',
-                'default' => 'draft',
+                'default' => 'active',
                 'options' => [
-                    'draft' => 'Draft',
-                    'published' => 'Published',
-                    'archived' => 'Archived'
+                    'active' => 'Active',
+                    'inactive' => 'Inactive',
+                    'maintenance' => 'Under Maintenance'
                 ]
             ]
         ]

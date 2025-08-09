@@ -14,12 +14,15 @@ class Product extends Model implements TranslatableContract
     use HasFactory,Translatable,HasSEO;
 
     protected $fillable = [
+        'product_identify_id',
         'category_id',
+        'size',
         'price',
         'active',
+        'sort_order',
     ];
 
-    public $translatedAttributes = ['title', 'slug', 'description', 'style'];
+    public $translatedAttributes = ['title', 'slug', 'description', 'brand', 'location', 'color'];
 
     public function category()
     {
