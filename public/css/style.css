@@ -1352,3 +1352,6 @@ overflow-y: auto;
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+.remove-image{
+  background-color: red !important;
+}

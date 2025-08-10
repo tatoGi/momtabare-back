@@ -144,6 +144,14 @@ class PostController extends Controller
 
         // Get validation rules from PageTypeService
         $rules = PageTypeService::getValidationRules($page->type_id);
+        // For update: make image fields optional to allow keeping existing image without re-upload
+        $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($page->type_id);
+        foreach ($nonTranslatableAttributes as $key => $config) {
+            if (($config['type'] ?? null) === 'image') {
+                // Override image rules to be nullable on update
+                $rules[$key] = 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp';
+            }
+        }
         $rules['published_at'] = 'nullable|date';
         $rules['active'] = 'boolean';
         $rules['sort_order'] = 'nullable|integer';
@@ -224,9 +232,29 @@ class PostController extends Controller
         // Save non-translatable attributes
         foreach ($nonTranslatableAttributes as $key => $config) {
             $value = $request->input($key);
-            
+
+            // Handle image removal request
+            if (($config['type'] ?? null) === 'image' && $request->boolean('remove_' . $key)) {
+                $oldAttribute = PostAttribute::where('post_id', $post->id)
+                    ->where('attribute_key', $key)
+                    ->whereNull('locale')
+                    ->first();
+
+                if ($oldAttribute && $oldAttribute->attribute_value) {
+                    Storage::disk('public')->delete($oldAttribute->attribute_value);
+                }
+
+                // Delete attribute row entirely
+                if ($oldAttribute) {
+                    $oldAttribute->delete();
+                }
+
+                // Skip further handling for this key since it's removed
+                continue;
+            }
+
             // Handle file uploads
-            if ($config['type'] === 'image' && $request->hasFile($key)) {
+            if (($config['type'] ?? null) === 'image' && $request->hasFile($key)) {
                 // Delete old file if exists
                 $oldAttribute = PostAttribute::where('post_id', $post->id)
                     ->where('attribute_key', $key)
@@ -243,7 +271,7 @@ class PostController extends Controller
                 $path = $file->storeAs('posts', $filename, 'public');
                 $value = $path;
             }
-            
+
             if ($value !== null) {
                 $attribute = PostAttribute::updateOrCreate(
                     [

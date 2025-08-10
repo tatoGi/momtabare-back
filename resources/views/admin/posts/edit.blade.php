@@ -115,23 +115,23 @@
                 <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('admin.Content') }}</h3>
                 
                 <!-- Language Tabs -->
-                <div class="border-b border-gray-200 mb-6">
-                    <nav class="-mb-px flex space-x-8">
+                <div class="border-b border-gray-200 mb-6" id="language-tabs-container">
+                    <nav class="-mb-px flex space-x-8" id="language-tabs-nav">
                         @foreach(config('app.locales') as $locale)
-                            <a href="#" 
-                               class="language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+                            <button type="button"
+                               class="post-language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
                                data-locale="{{ $locale }}"
-                               onclick="event.preventDefault();">
+                               id="lang-tab-{{ $locale }}">
                                 {{ __('admin.locale_' . $locale) }}
                                 <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}" 
                                      alt="{{ $locale }}" class="inline w-4 h-4 ml-1">
-                            </a>
+                            </button>
                         @endforeach
                     </nav>
                 </div>
 
                 @foreach(config('app.locales') as $locale)
-                    <div class="language-content {{ !$loop->first ? 'hidden' : '' }}" data-locale="{{ $locale }}">
+                    <div class="post-language-content {{ !$loop->first ? 'hidden' : '' }}" data-locale="{{ $locale }}" id="lang-content-{{ $locale }}">
                         <div class="grid grid-cols-1 gap-4">
                             @foreach($translatableAttributes as $key => $config)
                             <div class="field-group" 
@@ -164,7 +164,7 @@
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="6"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
-                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 editor">{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}</textarea>
+                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}</textarea>
                                     @endif
                                 </div>
                             @endforeach
@@ -228,11 +228,18 @@
                             @elseif($config['type'] === 'image')
                                 <div class="space-y-2">
                                     @if($existingAttributes[$key] ?? false)
-                                        <div class="mb-2">
+                                        <div class="mb-2 current-image" data-attr-key="{{ $key }}">
                                             <img src="{{ asset('storage/' . $existingAttributes[$key]) }}" 
                                                  alt="Current {{ $key }}" 
                                                  class="w-32 h-32 object-cover rounded-lg border">
                                             <p class="text-sm text-gray-600 mt-1">Current image</p>
+                                            <input type="hidden" name="remove_{{ $key }}" value="0">
+                                            <button type="button" 
+                                                    class="mt-2 inline-flex items-center px-3 py-1.5 remove-image text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 btn-remove-image focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                    data-attr-key="{{ $key }}">
+                                                Remove image
+                                            </button>
+                                            <p class="text-xs text-red-600 mt-1 hidden removal-note">Marked for removal. Save to apply.</p>
                                         </div>
                                     @endif
                                     <input type="file" 
@@ -244,7 +251,6 @@
                                         <p class="text-sm text-gray-600">Upload a new image to replace the current one</p>
                                     @endif
                                 </div>
-                            
                             @elseif($config['type'] === 'datetime-local')
                                 <input type="datetime-local" 
                                        name="{{ $key }}" 
@@ -271,8 +277,6 @@
         </form>
     </div>
 
-    @push('scripts')
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
         // Toggle fields based on post type selection
         function togglePostTypeFields() {
@@ -314,93 +318,184 @@
             });
         }
 
-        function switchLanguageTab(locale) {
-            // Remove active classes from all tabs
-            document.querySelectorAll('.language-tab').forEach(tab => {
+        function switchPostLanguageTab(locale) {
+            console.log('=== SWITCHING POST LANGUAGE TAB ===');
+            console.log('Target locale:', locale);
+            console.log('Available tabs:', document.querySelectorAll('.post-language-tab'));
+            console.log('Available content:', document.querySelectorAll('.post-language-content'));
+            
+            // Remove active classes from all post language tabs
+            const allTabs = document.querySelectorAll('.post-language-tab');
+            console.log('Found tabs count:', allTabs.length);
+            
+            allTabs.forEach((tab, index) => {
+                console.log(`Tab ${index}: locale="${tab.dataset.locale}", id="${tab.id}"`);
                 tab.classList.remove('border-green-500', 'text-green-600', 'bg-green-50');
                 tab.classList.add('border-transparent', 'text-gray-500');
             });
             
             // Add active classes to selected tab
-            document.querySelectorAll(`.language-tab[data-locale="${locale}"]`).forEach(tab => {
-                tab.classList.add('border-green-500', 'text-green-600', 'bg-green-50');
-                tab.classList.remove('border-transparent', 'text-gray-500');
-            });
+            const activeTab = document.getElementById(`lang-tab-${locale}`);
+            console.log('Looking for tab with ID:', `lang-tab-${locale}`);
+            console.log('Found active tab:', activeTab);
             
-            // Hide all content sections
-            document.querySelectorAll('.language-content').forEach(content => {
+            if (activeTab) {
+                activeTab.classList.add('border-green-500', 'text-green-600', 'bg-green-50');
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+                console.log('✓ Activated post tab for locale:', locale);
+            } else {
+                console.error('✗ Post tab not found for locale:', locale);
+                console.log('Available tab IDs:', Array.from(allTabs).map(t => t.id));
+            }
+            
+            // Hide all post language content sections
+            const allContent = document.querySelectorAll('.post-language-content');
+            console.log('Found content sections count:', allContent.length);
+            
+            allContent.forEach((content, index) => {
+                console.log(`Content ${index}: locale="${content.dataset.locale}", id="${content.id}"`);
                 content.classList.add('hidden');
             });
             
             // Show selected content section
-            document.querySelectorAll(`.language-content[data-locale="${locale}"]`).forEach(content => {
-                content.classList.remove('hidden');
-            });
+            const activeContent = document.getElementById(`lang-content-${locale}`);
+            console.log('Looking for content with ID:', `lang-content-${locale}`);
+            console.log('Found active content:', activeContent);
+            
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+                console.log('✓ Showed post content for locale:', locale);
+            } else {
+                console.error('✗ Post content not found for locale:', locale);
+                console.log('Available content IDs:', Array.from(allContent).map(c => c.id));
+            }
+            
+            console.log('=== END SWITCH ===');
+        }
+
+        // Initialize language tabs immediately when script loads
+        function initializeLanguageTabs() {
+            console.log('🚀 INITIALIZING LANGUAGE TABS 🚀');
+            
+            // Wait a bit for DOM to be ready
+            setTimeout(() => {
+                console.log('DOM should be ready now, setting up tabs...');
+                
+                // Post language tab switching - isolated from other tab systems
+                const postLanguageTabs = document.querySelectorAll('.post-language-tab');
+                console.log('Found post language tabs:', postLanguageTabs.length);
+                console.log('Tabs found:', postLanguageTabs);
+                
+                if (postLanguageTabs.length === 0) {
+                    console.error('❌ NO LANGUAGE TABS FOUND!');
+                    console.log('Available elements with class containing "tab":', document.querySelectorAll('[class*="tab"]'));
+                    return;
+                }
+                
+                postLanguageTabs.forEach((tab, index) => {
+                    console.log(`Setting up post tab ${index}:`, tab.dataset.locale, 'ID:', tab.id);
+                    
+                    // Remove any existing event listeners by cloning the element
+                    const newTab = tab.cloneNode(true);
+                    tab.parentNode.replaceChild(newTab, tab);
+                    
+                    // Add click event listener to the new element
+                    newTab.addEventListener('click', function(e) {
+                        console.log('🔥 CLICK EVENT FIRED! 🔥');
+                        console.log('Clicked tab locale:', this.dataset.locale);
+                        console.log('Clicked tab ID:', this.id);
+                        
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        switchPostLanguageTab(this.dataset.locale);
+                    });
+                    
+                    // Make sure it's clickable
+                    newTab.style.cursor = 'pointer';
+                    newTab.style.userSelect = 'none';
+                    
+                    console.log('✅ Tab setup complete for:', newTab.dataset.locale);
+                });
+                
+                // Initialize first post language tab as active
+                const firstPostTab = document.querySelector('.post-language-tab');
+                if (firstPostTab) {
+                    console.log('Initializing first post tab:', firstPostTab.dataset.locale);
+                    switchPostLanguageTab(firstPostTab.dataset.locale);
+                } else {
+                    console.error('No post language tabs found after setup!');
+                }
+                
+            }, 500); // Increased delay to ensure DOM is fully ready
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Initializing components');
+            
             // Initialize post type field toggling
             const postTypeSelect = document.getElementById('post_type');
             if (postTypeSelect) {
                 postTypeSelect.addEventListener('change', togglePostTypeFields);
-                // Initial toggle
                 setTimeout(togglePostTypeFields, 100);
             }
             
-            // Language tab switching
-            document.querySelectorAll('.language-tab').forEach(tab => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    switchLanguageTab(this.dataset.locale);
-                });
-            });
+            // Initialize language tabs with multiple fallback methods
+            initializeLanguageTabs();
             
-            // Initialize first language tab as active
-            const firstTab = document.querySelector('.language-tab');
-            if (firstTab) {
-                switchLanguageTab(firstTab.dataset.locale);
-            }
-            
-            // Initialize TinyMCE for editor fields
-            tinymce.init({
-                selector: 'textarea.editor',
-                height: 400,
-                menubar: false,
-                plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
-                ],
-                toolbar: 'undo redo | blocks | ' +
-                    'bold italic backcolor | alignleft aligncenter ' +
-                    'alignright alignjustify | bullist numlist outdent indent | ' +
-                    'removeformat | help',
-                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                images_upload_handler: function (blobInfo, success, failure) {
-                    var xhr, formData;
-                    xhr = new XMLHttpRequest();
-                    xhr.withCredentials = false;
-                    xhr.open('POST', '{{ route("admin.upload.image") }}');
-                    xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
-                    xhr.onload = function() {
-                        var json;
-                        if (xhr.status != 200) {
-                            failure('HTTP Error: ' + xhr.status);
-                            return;
-                        }
-                        json = JSON.parse(xhr.responseText);
-                        if (!json || typeof json.location != 'string') {
-                            failure('Invalid JSON: ' + xhr.responseText);
-                            return;
-                        }
-                        success(json.location);
-                    };
-                    formData = new FormData();
-                    formData.append('file', blobInfo.blob(), blobInfo.filename());
-                    xhr.send(formData);
+            // Fallback method 1: Try again after a longer delay
+            setTimeout(() => {
+                console.log('🔄 FALLBACK 1: Trying to initialize tabs again...');
+                if (document.querySelectorAll('.post-language-tab').length > 0) {
+                    initializeLanguageTabs();
                 }
+            }, 1000);
+            
+            // Fallback method 2: Manual click handler setup
+            setTimeout(() => {
+                console.log('🔄 FALLBACK 2: Setting up manual click handlers...');
+                const tabs = document.querySelectorAll('.post-language-tab');
+                tabs.forEach(tab => {
+                    if (!tab.hasAttribute('data-click-setup')) {
+                        tab.setAttribute('data-click-setup', 'true');
+                        tab.onclick = function(e) {
+                            console.log('📱 MANUAL CLICK HANDLER FIRED!');
+                            e.preventDefault();
+                            switchPostLanguageTab(this.dataset.locale);
+                        };
+                    }
+                });
+            }, 1500);
+            
+            // Using plain textareas now; no TinyMCE initialization
+
+            // Handle image remove buttons in post edit form
+            document.querySelectorAll('.btn-remove-image').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var key = this.getAttribute('data-attr-key');
+                    var container = this.closest('.current-image');
+                    if (!container) return;
+                    var hidden = container.querySelector('input[type="hidden"][name="remove_' + key + '"]');
+                    if (hidden) {
+                        hidden.value = '1';
+                    }
+                    var img = container.querySelector('img');
+                    if (img) {
+                        img.style.display = 'none';
+                    }
+                    var note = container.querySelector('.removal-note');
+                    if (note) {
+                        note.classList.remove('hidden');
+                    }
+                    // Optionally disable file input if you want to force removal only
+                    // Find sibling file input in the same field block
+                    var fieldBlock = container.parentElement;
+                    var fileInput = fieldBlock.querySelector('input[type="file"][name="' + key + '"]');
+                    if (fileInput) {
+                        fileInput.value = '';
+                    }
+                });
             });
         });
     </script>
-    @endpush
 </x-admin.admin-layout>

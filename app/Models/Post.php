@@ -78,6 +78,11 @@ class Post extends Model
             return parent::getAttribute($key);
         }
 
+        // Handle relationships - CRITICAL: Let Eloquent handle relationships
+        if (method_exists($this, $key) && $this->isPostRelation($key)) {
+            return parent::getAttribute($key);
+        }
+
         // Handle dynamic attributes only if post exists
         if (!$this->exists) {
             return null; // Don't try to load dynamic attributes for unsaved models
@@ -90,6 +95,15 @@ class Post extends Model
         }
 
         return $this->getNonTranslatableAttribute($key);
+    }
+
+    /**
+     * Check if a method is a Post relationship
+     */
+    protected function isPostRelation($method)
+    {
+        $relationMethods = ['page', 'category', 'attributes', 'translations'];
+        return in_array($method, $relationMethods);
     }
 
     /**
@@ -125,8 +139,11 @@ class Post extends Model
     public function getPageTypeConfig()
     {
         // If we have a loaded page relationship, use it
-        if ($this->relationLoaded('page') && $this->page) {
-            return PageTypeService::getPageTypeConfig($this->page->type_id);
+        if ($this->relationLoaded('page')) {
+            $page = $this->getRelation('page');
+            if ($page) {
+                return PageTypeService::getPageTypeConfig($page->type_id);
+            }
         }
         
         // If we have a page_id but no loaded relationship, load it directly from database
