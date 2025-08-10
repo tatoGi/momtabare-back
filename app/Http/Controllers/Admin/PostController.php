@@ -143,7 +143,24 @@ class PostController extends Controller
         }
 
         // Get validation rules from PageTypeService
-        $rules = PageTypeService::getValidationRules($page->type_id);
+        // For homepage posts (type_id == 1), filter rules by post_type to avoid validating unrelated fields
+        if ($page->type_id == 1) {
+            // Prefer the incoming post_type, otherwise use the stored attribute value
+            $effectivePostType = $request->input('post_type');
+            if (!$effectivePostType) {
+                $effectivePostType = PostAttribute::where('post_id', $post->id)
+                    ->where('attribute_key', 'post_type')
+                    ->whereNull('locale')
+                    ->value('attribute_value');
+            }
+            if ($effectivePostType) {
+                $rules = PageTypeService::getFilteredValidationRules($page->type_id, $effectivePostType);
+            } else {
+                $rules = PageTypeService::getValidationRules($page->type_id);
+            }
+        } else {
+            $rules = PageTypeService::getValidationRules($page->type_id);
+        }
         // For update: make image fields optional to allow keeping existing image without re-upload
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($page->type_id);
         foreach ($nonTranslatableAttributes as $key => $config) {
