@@ -22,10 +22,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// API Registration route (no CSRF required)
-Route::post('/send-registration-email', [App\Http\Controllers\Api\EmailController::class, 'sendRegistrationEmail'])->name('api.email.registration');
-Route::post('/send-welcome-email', [App\Http\Controllers\Api\EmailController::class, 'sendWelcomeEmail'])->name('api.email.welcome');
-
-Route::post('/register', [WebsiteRegisterController::class, 'register']);
-
+// Registration route
+Route::post('/register', [\App\Http\Controllers\Website\AuthController::class, 'sendRegistrationEmail']);
 

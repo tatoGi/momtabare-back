@@ -8,7 +8,6 @@ use App\Http\Controllers\Website\wishlistController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -21,6 +20,8 @@ use App\Http\Controllers\Admin\DashboardController;
 */
 
 require __DIR__.'/auth.php';
+
+
 
 // Email API routes (outside locale group for direct access)
 
@@ -44,22 +45,34 @@ require __DIR__.'/auth.php';
     Route::post('/subscribe', [FrontendController::class, 'subscribe'])->name('subscribe');
     Route::get('/home', [FrontendController::class, 'homePage']);
     Route::get('/pages', [FrontendController::class, 'pages']);
+    Route::post('/locale/sync', [FrontendController::class, 'localeSync'])->name('locale.sync');
+    Route::get('/languages', [FrontendController::class, 'languages'])->name('api.languages');
+    Route::post('/auth/send-welcome-email', [FrontendController::class, 'sendWelcomeEmail'])
+        ->middleware('throttle:5,1')
+        ->name('auth.email.welcome');
+    // Web user auth endpoints
     Route::get('/blog-posts', [FrontendController::class, 'latestBlogPosts'])->name('api.blog.latest');
     Route::get('/products', [FrontendController::class, 'products'])->name('api.products.list');
     Route::get('/products/{id}', [FrontendController::class, 'productShow'])->name('api.products.show');
 
 
+
+Route::get('/clear-optimization', function () {
+    Artisan::call('optimize:clear');
+    // Display a message or redirect back
+    return 'Optimization cache cleared!';
+});
 // Set the locale for the application (without locale prefix)
 Route::get('/change-locale/{lang}', function ($lang) {
     if (in_array($lang, array_keys(config('app.locales')))) {
         session(['locale' => $lang]);
         app()->setLocale($lang);
-        
+
         // Get the redirect path and clean it from any locale prefixes
         $redirect = request('redirect', '/');
         $redirect = ltrim(preg_replace('#^[a-z]{2}(?:-[A-Z]{2})?/#', '', $redirect), '/');
         $redirect = $lang === 'en' ? $redirect : $lang . '/' . $redirect;
-        
+
         return redirect()->to($redirect);
     }
     return back();
@@ -85,13 +98,10 @@ Route::get('/categories', [FrontendController::class, 'categories']);
 
 Route::get('/{slug}', [FrontendController::class, 'index'])->where('slug', '.*');
 
-
 require __DIR__.'/website/basket.php';
 
-Route::get('/clear-optimization', function () {
 
-    Artisan::call('optimize:clear');
 
-    // Display a message or redirect back
-    return 'Optimization cache cleared!';
-});
+// Example of running multiple database queries sequentially (without Boost)
+
+

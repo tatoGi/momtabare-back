@@ -13,7 +13,21 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'register',
+        'send-registration-email',
+        'verify-email',
+        'verify-email/*',
+        'resend-verification',
+        'resend-email-verification',
+        'complete-registration',
+        'login',
+        'logout',
         'api/*',
+        '*/send-registration-email*',
+        '*/verify-email*',
+        '*/resend-verification*',
+        '*/complete-registration*',
+        '*/login*',
+        '*/logout*',
         '*/register',
         '*/login',
         '*/logout',
@@ -30,5 +44,9 @@ class VerifyCsrfToken extends Middleware
         '*/clear-optimization',
         '*/search',
         '*/wishlist',  
+        '*/locale/sync',
+        '*/auth/send-welcome-email',
+        '*/profile',
+        '*/profile/*',
     ];
 }

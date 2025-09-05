@@ -15,6 +15,7 @@ class EmailController extends Controller
      */
     public function sendRegistrationEmail(Request $request)
     {
+        dd($request->all());
         // Validate request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|max:255',

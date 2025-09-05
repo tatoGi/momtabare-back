@@ -121,7 +121,7 @@ class FrontendService
     }
     public function getCategories()
     {
-        return Category::all();
+        return Category::with('products')->get();
     }
 
     /**

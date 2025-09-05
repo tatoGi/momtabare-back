@@ -7,6 +7,9 @@ use App\Models\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
@@ -22,19 +25,36 @@ class RegisterController extends Controller
                 'password' => 'required|string|min:8|confirmed',
             ]);
 
+            $verificationToken = Str::random(60);
+            
             $user = WebUser::create([
                 'first_name' => $request->first_name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'email_verification_token' => $verificationToken,
+                'email_verified_at' => config('app.env') === 'testing' ? now() : null
             ]);
 
+            if (config('app.env') !== 'testing') {
+                // Send verification email in non-testing environments
+                $user->sendEmailVerificationNotification();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Registration successful! Please check your email to verify your account.',
+                    'requires_verification' => true
+                ], 201);
+            }
+
+            // In testing mode, auto-login the user
             Auth::guard('webuser')->login($user);
 
             return response()->json([
                 'success' => true,
-                'message' => 'User registered successfully',
+                'message' => 'User registered and verified successfully (testing mode)',
                 'user' => $user,
-                'redirect' => '/'
+                'redirect' => '/',
+                'verification_token' => $verificationToken // Only for testing
             ], 201);
 
         } catch (ValidationException $e) {

@@ -13,6 +13,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\ContactFormMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use App\Models\Language;
+use App\Mail\WelcomeMail;
 
 class FrontendController extends Controller
 {
@@ -89,6 +92,97 @@ class FrontendController extends Controller
         $data = $this->frontendService->getCategories();
         return response()->json($data);
     }
+
+    /**
+     * Sync locale with frontend via headers.
+     * Reads X-Language or Accept-Language, resolves to supported locales,
+     * sets session and app locale, and returns selection with supported list.
+     */
+    public function localeSync(Request $request)
+    {
+        $supported = array_keys(config('app.locales', [config('app.locale')]));
+        $fallback = config('app.fallback_locale', 'en');
+
+        $header = $request->header('X-Language') ?: $request->header('Accept-Language');
+        $raw = is_string($header) ? trim($header) : '';
+
+        $picked = null;
+        $matchedVia = 'default';
+
+        if ($raw !== '') {
+            // Take the first language token from Accept-Language if present
+            $first = explode(',', $raw)[0] ?? $raw;
+            $first = trim(explode(';', $first)[0] ?? $first);
+            $first = str_replace('_', '-', $first);
+
+            // Normalize to lower/upper pattern like en or en-US
+            $norm = strtolower($first);
+
+            // Try exact match
+            if (in_array($norm, $supported, true)) {
+                $picked = $norm;
+                $matchedVia = 'exact';
+            } else {
+                // Try by primary subtag (e.g., en-US -> en)
+                $primary = substr($norm, 0, 2);
+                if ($primary && in_array($primary, $supported, true)) {
+                    $picked = $primary;
+                    $matchedVia = 'primary';
+                }
+            }
+        }
+
+        if (!$picked) {
+            // Use session if already set and supported
+            $sessionLocale = session('locale');
+            if ($sessionLocale && in_array($sessionLocale, $supported, true)) {
+                $picked = $sessionLocale;
+                $matchedVia = 'session';
+            } else {
+                $picked = in_array($fallback, $supported, true) ? $fallback : ($supported[0] ?? 'en');
+                $matchedVia = 'default';
+            }
+        }
+
+        // Persist selection
+        session(['locale' => $picked]);
+        app()->setLocale($picked);
+
+        // Build supported locales payload with labels if available
+        $localesConfig = config('app.locales', []);
+        $supportedPayload = [];
+        foreach ($supported as $lc) {
+            $supportedPayload[] = [
+                'code' => $lc,
+                'label' => is_array($localesConfig) && array_key_exists($lc, $localesConfig) ? $localesConfig[$lc] : strtoupper($lc),
+            ];
+        }
+
+        return response()->json([
+            'current_locale' => $picked,
+            'matched_via' => $matchedVia,
+            'supported_locales' => $supportedPayload,
+            'received' => [
+                'x_language' => $request->header('X-Language'),
+                'accept_language' => $request->header('Accept-Language'),
+            ],
+        ]);
+    }
+
+    /**
+     * Return languages from Languages CRUD for frontend to display.
+     * Only active languages, ordered by sort_order.
+     */
+    public function languages()
+    {
+        $items = Language::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['code', 'name', 'native_name', 'is_default', 'is_active', 'sort_order']);
+
+        return response()->json([
+            'data' => $items,
+        ]);
+    }
     public function submitContactForm(Request $request)
     {
         // Validate the form data
@@ -112,6 +206,29 @@ class FrontendController extends Controller
         $contact->save();
 
         return response()->json(['message' => 'Thank you for your message! We will get back to you soon.'], 200);
+    }
+
+    /**
+     * Test endpoint to send a Welcome email using configured SMTP (e.g., SendGrid).
+     * Body: { email: string, name?: string }
+     */
+    public function sendWelcomeEmail(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'name'  => 'nullable|string|max:255',
+        ]);
+
+        $user = (object) [
+            'email' => $data['email'],
+            'name'  => $data['name'] ?? null,
+        ];
+
+        Mail::to($user->email)->send(new WelcomeMail($user));
+
+        return response()->json([
+            'message' => 'Welcome email queued for sending (synchronously sent).',
+        ]);
     }
     public function subscribe(Request $request)
     {
