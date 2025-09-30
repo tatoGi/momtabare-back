@@ -28,27 +28,27 @@ class AdminHeader extends Component
 
             $currentUrl = request()->fullUrl();
             $currentLocale = app()->getLocale();
-            
+
             // Replace the locale in the URL
             $this->locales[$locale] = preg_replace(
-                "/(^|\/)" . preg_quote($currentLocale, '/') . "(\/|$)/i",
-                '$1' . $locale . '$2',
+                "/(^|\/)".preg_quote($currentLocale, '/')."(\/|$)/i",
+                '$1'.$locale.'$2',
                 $currentUrl
             );
-            
+
             // If no replacement was made, we need to add the locale
             if ($this->locales[$locale] === $currentUrl) {
                 $parsedUrl = parse_url($currentUrl);
                 $path = $parsedUrl['path'] ?? '/';
-                $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
-                $fragment = isset($parsedUrl['fragment']) ? '#' . $parsedUrl['fragment'] : '';
-                
+                $query = isset($parsedUrl['query']) ? '?'.$parsedUrl['query'] : '';
+                $fragment = isset($parsedUrl['fragment']) ? '#'.$parsedUrl['fragment'] : '';
+
                 // Add locale to the beginning of the path
-                $newPath = '/' . $locale . ($path === '/' ? '' : $path);
-                $this->locales[$locale] = ($parsedUrl['scheme'] ?? 'http') . '://' . 
-                                        ($parsedUrl['host'] ?? '') . 
-                                        $newPath . 
-                                        $query . 
+                $newPath = '/'.$locale.($path === '/' ? '' : $path);
+                $this->locales[$locale] = ($parsedUrl['scheme'] ?? 'http').'://'.
+                                        ($parsedUrl['host'] ?? '').
+                                        $newPath.
+                                        $query.
                                         $fragment;
             }
         }

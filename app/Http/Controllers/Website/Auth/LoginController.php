@@ -22,7 +22,7 @@ class LoginController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
-                'user' => Auth::guard('webuser')->user()
+                'user' => Auth::guard('webuser')->user(),
             ], 200);
         }
 
@@ -30,10 +30,9 @@ class LoginController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Invalid email or password. Please try again.',
-            'errors' => ['email' => ['Invalid email or password. Please try again.']]
+            'errors' => ['email' => ['Invalid email or password. Please try again.']],
         ], 401);
     }
-
 
     public function logout()
     {
@@ -41,7 +40,7 @@ class LoginController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logout successful'
+            'message' => 'Logout successful',
         ], 200);
     }
 }

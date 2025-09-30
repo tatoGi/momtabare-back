@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\WebUser;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Carbon;
 
 class WebUserSeeder extends Seeder
 {

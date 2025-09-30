@@ -21,10 +21,10 @@ class Translation extends Model
     public static function getTranslation($group, $key, $locale = null)
     {
         $locale = $locale ?? app()->getLocale();
-        
-        return static::whereHas('language', function($query) use ($locale) {
-                $query->where('code', $locale);
-            })
+
+        return static::whereHas('language', function ($query) use ($locale) {
+            $query->where('code', $locale);
+        })
             ->where('group', $group)
             ->where('key', $key)
             ->value('value');

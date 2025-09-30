@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\PageTypeService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Services\PageTypeService;
-use App\Models\Page;
-use App\Models\Category;
 
 class Post extends Model
 {
@@ -19,17 +17,19 @@ class Post extends Model
         'category_id',
         'active',
         'sort_order',
-        'published_at'
+        'published_at',
     ];
 
     protected $casts = [
         'active' => 'boolean',
-        'published_at' => 'datetime'
+        'published_at' => 'datetime',
     ];
 
     // Explicitly define primary key
     protected $primaryKey = 'id';
+
     public $incrementing = true;
+
     protected $keyType = 'int';
 
     /**
@@ -70,9 +70,9 @@ class Post extends Model
     public function getAttribute($key)
     {
         // Handle core model attributes (including id, timestamps, etc.)
-        if (in_array($key, $this->fillable) || 
-            $key === 'id' || 
-            $key === 'created_at' || 
+        if (in_array($key, $this->fillable) ||
+            $key === 'id' ||
+            $key === 'created_at' ||
             $key === 'updated_at' ||
             in_array($key, array_keys($this->casts))) {
             return parent::getAttribute($key);
@@ -84,7 +84,7 @@ class Post extends Model
         }
 
         // Handle dynamic attributes only if post exists
-        if (!$this->exists) {
+        if (! $this->exists) {
             return null; // Don't try to load dynamic attributes for unsaved models
         }
 
@@ -103,6 +103,7 @@ class Post extends Model
     protected function isPostRelation($method)
     {
         $relationMethods = ['page', 'category', 'attributes', 'translations'];
+
         return in_array($method, $relationMethods);
     }
 
@@ -112,16 +113,16 @@ class Post extends Model
     public function setAttribute($key, $value)
     {
         // Handle core model attributes (including id, timestamps, etc.)
-        if (in_array($key, $this->fillable) || 
-            $key === 'id' || 
-            $key === 'created_at' || 
+        if (in_array($key, $this->fillable) ||
+            $key === 'id' ||
+            $key === 'created_at' ||
             $key === 'updated_at' ||
             in_array($key, array_keys($this->casts))) {
             return parent::setAttribute($key, $value);
         }
 
         // Handle dynamic attributes only if post exists
-        if (!$this->exists) {
+        if (! $this->exists) {
             return; // Don't handle dynamic attributes for unsaved models
         }
 
@@ -145,7 +146,7 @@ class Post extends Model
                 return PageTypeService::getPageTypeConfig($page->type_id);
             }
         }
-        
+
         // If we have a page_id but no loaded relationship, load it directly from database
         if ($this->page_id) {
             try {
@@ -203,18 +204,18 @@ class Post extends Model
     private function setTranslatableAttribute($key, $value)
     {
         // Don't save attributes if the post doesn't have an ID yet
-        if (!$this->exists) {
+        if (! $this->exists) {
             return;
         }
-        
+
         $locale = app()->getLocale();
         $this->attributes()->updateOrCreate(
             [
                 'attribute_key' => $key,
-                'locale' => $locale
+                'locale' => $locale,
             ],
             [
-                'attribute_value' => $value
+                'attribute_value' => $value,
             ]
         );
     }
@@ -225,17 +226,17 @@ class Post extends Model
     private function setNonTranslatableAttribute($key, $value)
     {
         // Don't save attributes if the post doesn't have an ID yet
-        if (!$this->exists) {
+        if (! $this->exists) {
             return;
         }
-        
+
         $this->attributes()->updateOrCreate(
             [
                 'attribute_key' => $key,
-                'locale' => null
+                'locale' => null,
             ],
             [
-                'attribute_value' => $value
+                'attribute_value' => $value,
             ]
         );
     }
@@ -247,27 +248,27 @@ class Post extends Model
     {
         $locale = $locale ?? app()->getLocale();
         $pageType = $this->getPageTypeConfig();
-        
-        if (!$pageType) {
+
+        if (! $pageType) {
             return [];
         }
 
         $attributes = [];
-        
+
         // Get translatable attributes
         if (isset($pageType['post_attributes']['translatable'])) {
             foreach ($pageType['post_attributes']['translatable'] as $key => $config) {
                 $attributes[$key] = $this->getTranslatableAttribute($key);
             }
         }
-        
+
         // Get non-translatable attributes
         if (isset($pageType['post_attributes']['non_translatable'])) {
             foreach ($pageType['post_attributes']['non_translatable'] as $key => $config) {
                 $attributes[$key] = $this->getNonTranslatableAttribute($key);
             }
         }
-        
+
         return $attributes;
     }
 
@@ -278,8 +279,8 @@ class Post extends Model
     {
         $locale = $locale ?? app()->getLocale();
         $pageType = $this->getPageTypeConfig();
-        
-        if (!$pageType) {
+
+        if (! $pageType) {
             return null;
         }
 
@@ -289,18 +290,20 @@ class Post extends Model
                 ->where('attribute_key', $key)
                 ->where('locale', $locale)
                 ->first();
+
             return $attribute ? $attribute->attribute_value : null;
         }
-        
+
         // Check if it's a non-translatable attribute
         if (isset($pageType['post_attributes']['non_translatable'][$key])) {
             $attribute = $this->attributes()
                 ->where('attribute_key', $key)
                 ->whereNull('locale')
                 ->first();
+
             return $attribute ? $attribute->attribute_value : null;
         }
-        
+
         return null;
     }
 

@@ -2,13 +2,14 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use App\Services\SlugService;
+use App\View\Components\LanguageSwitcher;
+use App\View\Components\website\header;
+use App\View\Components\website\layout;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Schema;
-use App\View\Components\website\layout;
-use App\View\Components\website\header;
-use App\View\Components\LanguageSwitcher;
+use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton(SlugService::class, function ($app) {
-            return new SlugService();
+            return new SlugService;
         });
     }
 
@@ -35,7 +36,8 @@ class AppServiceProvider extends ServiceProvider
         Blade::component('website.layout', layout::class);
         Blade::component('website.header', header::class);
         Blade::component('language-switcher', LanguageSwitcher::class);
-        
+        // Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
         // Set default string length for migrations
         Schema::defaultStringLength(191);
     }

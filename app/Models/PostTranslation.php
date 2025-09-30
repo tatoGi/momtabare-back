@@ -12,7 +12,7 @@ class PostTranslation extends Model
 
     protected $fillable = [
         'post_id',
-        'locale'
+        'locale',
     ];
 
     /**

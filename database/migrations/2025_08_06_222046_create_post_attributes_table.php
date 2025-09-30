@@ -18,7 +18,7 @@ return new class extends Migration
             $table->longText('attribute_value')->nullable();
             $table->string('locale', 5)->nullable(); // null for non-translatable attributes
             $table->timestamps();
-            
+
             $table->index(['post_id', 'attribute_key']);
             $table->index(['post_id', 'attribute_key', 'locale']);
         });

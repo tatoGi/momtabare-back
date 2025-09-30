@@ -1,13 +1,12 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
+
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\WebUser;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -18,6 +17,7 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
+        dd('dfsadssa');
         $products = Product::count();
         $activeProducts = Product::where('active', 1)->count();
         $inactiveProducts = Product::where('active', 0)->count();
@@ -33,7 +33,7 @@ class DashboardController extends Controller
             'categories' => $categories,
             'activeCategories' => $activeCategories,
             'inactiveCategories' => $inactiveCategories,
-            'webusers' => $webusers
+            'webusers' => $webusers,
         ]);
     }
 }

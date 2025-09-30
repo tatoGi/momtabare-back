@@ -42,7 +42,9 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Features</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('admin.Price') }}</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Retailer</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('admin.Status') }}</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">⭐ Favorite</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('admin.Actions') }}</th>
                     </tr>
                 </thead>
@@ -104,12 +106,40 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ number_format((float)$product->price, 2) }} {{ config('app.currency', '$') }}
+                            {{ number_format((float)$product->price, 2) }} {{ $product->currency ?? config('app.currency', '$') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($product->retailer_id)
+                                <div class="text-sm">
+                                    <div class="font-medium text-gray-900">{{ $product->retailer->first_name }} {{ $product->retailer->surname }}</div>
+                                    <div class="text-gray-500">{{ $product->retailer->email }}</div>
+                                    @if($product->status)
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 
+                                            {{ $product->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                               ($product->status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') }}">
+                                            {{ ucfirst($product->status) }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-sm text-gray-400">Admin Product</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $product->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                 {{ $product->active ? __('admin.Active') : __('admin.Inactive') }}
                             </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            @if($product->is_favorite ?? false)
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    ⭐ Featured
+                                </span>
+                            @else
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
+                                    Regular
+                                </span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div class="flex justify-end space-x-2">
@@ -130,7 +160,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10" class="px-6 py-12 text-center">
+                        <td colspan="12" class="px-6 py-12 text-center">
                             <div class="text-gray-400">
                                 <i class="fas fa-box-open text-4xl mb-4"></i>
                                 <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('admin.No products found') }}</h3>

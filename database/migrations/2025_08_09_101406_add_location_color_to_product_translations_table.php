@@ -12,8 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('product_translations', function (Blueprint $table) {
-            $table->string('location')->nullable()->after('brand');
-            $table->string('color')->nullable()->after('location');
+            // First add the brand column if it doesn't exist
+            if (! Schema::hasColumn('product_translations', 'brand')) {
+                $table->string('brand')->nullable()->after('description');
+            }
+
+            // Then add location and color
+            if (! Schema::hasColumn('product_translations', 'location')) {
+                $table->string('location')->nullable()->after('brand');
+            }
+
+            if (! Schema::hasColumn('product_translations', 'color')) {
+                $table->string('color')->nullable()->after('location');
+            }
         });
     }
 
@@ -23,7 +34,19 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('product_translations', function (Blueprint $table) {
-            $table->dropColumn(['location', 'color']);
+            $columnsToDrop = [];
+
+            if (Schema::hasColumn('product_translations', 'color')) {
+                $columnsToDrop[] = 'color';
+            }
+
+            if (Schema::hasColumn('product_translations', 'location')) {
+                $columnsToDrop[] = 'location';
+            }
+
+            if (! empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 };

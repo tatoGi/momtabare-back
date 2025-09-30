@@ -7,9 +7,6 @@ use App\Http\Requests\CreateCategoryRequest;
 use App\Models\Category;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
-use App\Services\SlugService;
-use Spatie\Sluggable\HasSlug;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -49,22 +46,22 @@ class CategoryController extends Controller
     {
         // Retrieve validated data from the request
         $data = $request->validated();
-        
+
         // Handle file upload before creating category
         if ($request->hasFile('icon')) {
             $icon = $request->file('icon');
-            $iconFileName = time() . '_' . $icon->getClientOriginalName();
+            $iconFileName = time().'_'.$icon->getClientOriginalName();
             $iconPath = $icon->storeAs('categories', $iconFileName, 'public');
             $data['icon'] = $iconPath;
         }
-        
+
         // Create the category
         $category = Category::create($data);
-        
+
         // Loop through each locale to update SEO data for translations
         foreach (config('app.locales') as $locale) {
             // Retrieve the SEO model for the translation
-            $seo = $category->translate($locale)->seo;    
+            $seo = $category->translate($locale)->seo;
             // Prepare SEO data
             $seoData = [
                 'title' => $data[$locale]['title'],
@@ -73,15 +70,13 @@ class CategoryController extends Controller
                 'author' => isset($data[$locale]['author']) ? $data[$locale]['author'] : null,
                 'robots' => isset($data[$locale]['robots']) ? $data[$locale]['robots'] : null,
                 // Add more fields here as needed
-            ];     
+            ];
             // Update SEO data
             $seo->update($seoData);
         }
-        
+
         return redirect()->route('categories.index', app()->getLocale());
     }
-    
-    
 
     /**
      * Display the specified resource.
@@ -102,7 +97,7 @@ class CategoryController extends Controller
      */
     public function edit($id): Factory|View
     {
-      
+
         $category = Category::findOrFail($id);
         $categories = Category::where('id', '!=', $category->id)->get();
 
@@ -120,22 +115,21 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
         $data = $request->all();
-        
+
         // Handle file upload
         if ($request->hasFile('icon')) {
             // Delete old icon if exists
             if ($category->icon && Storage::disk('public')->exists($category->icon)) {
                 Storage::disk('public')->delete($category->icon);
             }
-            
+
             $icon = $request->file('icon');
-            $iconFileName = time() . '_' . $icon->getClientOriginalName();
+            $iconFileName = time().'_'.$icon->getClientOriginalName();
             $iconPath = $icon->storeAs('categories', $iconFileName, 'public');
             $data['icon'] = $iconPath;
         }
-        
+
         $category->update($data);
-        
 
         return redirect()->route('categories.index', [app()->getLocale()]);
     }

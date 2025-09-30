@@ -2,19 +2,19 @@
 
 namespace App\Services\Frontend;
 
-use App\Models\Page;
-use App\Models\Product;
-use App\Models\Section;
 use App\Models\Banner;
 use App\Models\Category;
+use App\Models\Page;
 use App\Models\Post;
+use App\Models\Product;
+use App\Models\Section;
 
 class FrontendService
 {
     /**
      * Get all active pages with their translations
      *
-     * @param int $postsPerPage Limit posts per page (default: 5)
+     * @param  int  $postsPerPage  Limit posts per page (default: 5)
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getActivePages($postsPerPage = 5)
@@ -63,6 +63,7 @@ class FrontendService
                         return $post;
                     });
                 }
+
                 return $page;
             });
     }
@@ -70,8 +71,8 @@ class FrontendService
     /**
      * Get all active pages with paginated posts
      *
-     * @param int $page Current page number
-     * @param int $postsPerPage Posts per page
+     * @param  int  $page  Current page number
+     * @param  int  $postsPerPage  Posts per page
      * @return array
      */
     public function getActivePagesWithPaginatedPosts($page = 1, $postsPerPage = 10)
@@ -113,12 +114,13 @@ class FrontendService
                     'from' => $posts->firstItem(),
                     'to' => $posts->lastItem(),
                     'has_more_pages' => $posts->hasMorePages(),
-                ]
+                ],
             ];
         }
 
         return $pages;
     }
+
     public function getCategories()
     {
         return Category::with('products')->get();
@@ -127,18 +129,18 @@ class FrontendService
     /**
      * Get latest blog posts for homepage
      *
-     * @param int $limit Number of posts to return (default: 10)
+     * @param  int  $limit  Number of posts to return (default: 10)
      * @return array
      */
     public function getLatestBlogPosts($limit = 10)
     {
         $blogPage = Page::where('type_id', 2)->first();
-        
-        if (!$blogPage) {
+
+        if (! $blogPage) {
             return [
                 'posts' => collect(),
                 'total' => 0,
-                'message' => 'Blog page not found'
+                'message' => 'Blog page not found',
             ];
         }
 
@@ -149,7 +151,7 @@ class FrontendService
             ->with([
                 'translations',
                 'attributes',
-                'category.translations'
+                'category.translations',
             ])
             ->limit($limit)
             ->get();
@@ -158,13 +160,14 @@ class FrontendService
             'posts' => $posts,
             'total' => $posts->count(),
             'blog_page' => $blogPage->only(['id', 'type_id']),
-            'message' => 'Latest blog posts retrieved successfully'
+            'message' => 'Latest blog posts retrieved successfully',
         ];
     }
+
     /**
      * Get a product by URL with related data
      *
-     * @param string $url
+     * @param  string  $url
      * @return array
      */
     public function getProductByUrl($url)
@@ -173,7 +176,7 @@ class FrontendService
             $query->where('slug', $url);
         })->with('category', 'images')->first();
 
-        if (!$product) {
+        if (! $product) {
             return ['error' => 'Product not found'];
         }
 
@@ -182,14 +185,14 @@ class FrontendService
         return [
             'product' => $product,
             'seo' => $product->seo,
-            'relatedProducts' => $relatedProducts
+            'relatedProducts' => $relatedProducts,
         ];
     }
 
     /**
      * Get related products
      *
-     * @param Product $product
+     * @param  Product  $product
      * @return \Illuminate\Database\Eloquent\Collection
      */
     protected function getRelatedProducts($product)
@@ -204,7 +207,7 @@ class FrontendService
     /**
      * Get section data by slug
      *
-     * @param string $slug
+     * @param  string  $slug
      * @return array
      */
     public function getSectionData($slug)
@@ -231,6 +234,7 @@ class FrontendService
             ->with('translations')
             ->with('attributes')
             ->paginate(10);
+
         return [
             'section' => $section,
             'categories' => $categories,
@@ -238,14 +242,14 @@ class FrontendService
             'products' => $products,
             'blogPosts' => $blogPosts,
             'slug' => $slug,
-            'breadcrumbs' => $this->generateBreadcrumbs($section)
+            'breadcrumbs' => $this->generateBreadcrumbs($section),
         ];
     }
 
     /**
      * Generate breadcrumbs for a section
      *
-     * @param Section $section
+     * @param  Section  $section
      * @return array
      */
     /**
@@ -258,6 +262,8 @@ class FrontendService
         $products = Product::where('active', '1')
             ->with('translations')
             ->with('category')
+            ->with('images')
+
             ->get();
 
         $mainBanner = Banner::whereHas('translations')
@@ -265,6 +271,7 @@ class FrontendService
             ->orderBy('created_at', 'desc')
             ->get();
         $blogpage = Page::where('type_id', 2)->first();
+
         return [
             'mainBanner' => $mainBanner,
             'categories' => $products->pluck('category')->unique(),
@@ -275,14 +282,14 @@ class FrontendService
     /**
      * Generate breadcrumbs for a section
      *
-     * @param mixed $section
+     * @param  mixed  $section
      * @return array
      */
     protected function generateBreadcrumbs($section)
     {
         return [
             ['url' => '', 'label' => 'Home'],
-            ['url' => $section->slug ?? '', 'label' => $section->title ?? '']
+            ['url' => $section->slug ?? '', 'label' => $section->title ?? ''],
         ];
     }
 }

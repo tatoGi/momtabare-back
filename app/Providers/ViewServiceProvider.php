@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
+use App\Http\View\Composers\WebsiteComposer;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use App\Http\View\Composers\WebsiteComposer;
 
 class ViewServiceProvider extends ServiceProvider
 {

@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -30,7 +30,7 @@ class AuthServiceProvider extends ServiceProvider
             // For now, allow all authenticated users to manage languages
             // You can replace this with your actual role/permission check
             return $user !== null;
-            
+
             // If you have roles, you can use something like:
             // return $user->hasRole('admin');
         });

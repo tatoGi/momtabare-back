@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RegistrationEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use App\Mail\RegistrationEmail;
 
 class EmailController extends Controller
 {
@@ -27,7 +27,7 @@ class EmailController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -41,13 +41,13 @@ class EmailController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Registration email sent successfully!'
+                'message' => 'Registration email sent successfully!',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send registration email: ' . $e->getMessage()
+                'message' => 'Failed to send registration email: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -68,7 +68,7 @@ class EmailController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -82,13 +82,13 @@ class EmailController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Welcome email sent successfully!'
+                'message' => 'Welcome email sent successfully!',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send welcome email: ' . $e->getMessage()
+                'message' => 'Failed to send welcome email: '.$e->getMessage(),
             ], 500);
         }
     }

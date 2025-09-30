@@ -22,13 +22,13 @@ class WebsiteComposer
             ->orderBy('sort', 'asc')
             ->first();
 
-            $product = null;
-            if (Request::route()->getName() === 'single_product') {
-                $url = Request::route('url');
-                $product = Product::whereHas('translations', function ($query) use ($url) {
-                    $query->where('slug', $url);
-                })->with('category', 'images')->first();
-            }
+        $product = null;
+        if (Request::route()->getName() === 'single_product') {
+            $url = Request::route('url');
+            $product = Product::whereHas('translations', function ($query) use ($url) {
+                $query->where('slug', $url);
+            })->with('category', 'images')->first();
+        }
 
         $pages = Page::with('children.translation')
             ->whereHas('translation', function ($q) {
@@ -37,13 +37,13 @@ class WebsiteComposer
             ->where('parent_id', null)
             ->orderBy('sort', 'asc')
             ->get();
-            $seo = $page->seo ?? '';
-           
+        $seo = $page->seo ?? '';
+
         $view->with([
             'page' => $page,
             'pages' => $pages,
             'seo' => $seo,
-            'product' => $product
+            'product' => $product,
         ]);
     }
 }

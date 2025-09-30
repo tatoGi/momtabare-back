@@ -1,12 +1,12 @@
 <?php
 
-use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PageManagementController;
+use App\Http\Controllers\Admin\ProductController;
 use Illuminate\Support\Facades\Route;
 
 // Regular standalone product routes
 Route::resource('/products', ProductController::class)->parameters([
-    'products' => 'product'
+    'products' => 'product',
 ]);
 
 // Product image management

@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('web_users', function (Blueprint $table) {
-            $table->string('verification_code')->nullable()->after('email_verification_token');
-            $table->timestamp('verification_expires_at')->nullable()->after('verification_code');
+            if (! Schema::hasColumn('web_users', 'verification_code')) {
+                $table->string('verification_code')->nullable();
+            }
+            if (! Schema::hasColumn('web_users', 'verification_expires_at')) {
+                $table->timestamp('verification_expires_at')->nullable();
+            }
         });
     }
 

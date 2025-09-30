@@ -13,22 +13,22 @@ class EmailVerificationController extends Controller
     {
         $user = WebUser::where('email_verification_token', $token)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'message' => 'Invalid verification token.',
-                'success' => false
+                'success' => false,
             ], 400);
         }
 
         if ($user->hasVerifiedEmail()) {
             return response()->json([
                 'message' => 'Email already verified.',
-                'success' => true
+                'success' => true,
             ]);
         }
 
         $user->markEmailAsVerified();
-        
+
         // Generate an access token for the user
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -36,14 +36,14 @@ class EmailVerificationController extends Controller
             'message' => 'Email verified successfully.',
             'success' => true,
             'token' => $token,
-            'redirect' => '/profile' // Or your profile URL
+            'redirect' => '/profile', // Or your profile URL
         ]);
     }
 
     public function resend(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:web_users,email'
+            'email' => 'required|email|exists:web_users,email',
         ]);
 
         $user = WebUser::where('email', $request->email)->first();
@@ -51,12 +51,12 @@ class EmailVerificationController extends Controller
         if ($user->hasVerifiedEmail()) {
             return response()->json([
                 'message' => 'Email already verified.',
-                'success' => true
+                'success' => true,
             ]);
         }
 
         // Generate new verification token if not exists
-        if (!$user->email_verification_token) {
+        if (! $user->email_verification_token) {
             $user->email_verification_token = Str::random(60);
             $user->save();
         }
@@ -66,7 +66,7 @@ class EmailVerificationController extends Controller
 
         return response()->json([
             'message' => 'Verification email resent.',
-            'success' => true
+            'success' => true,
         ]);
     }
 }

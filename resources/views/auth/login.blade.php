@@ -38,7 +38,8 @@
                 </div>
             @endif
             
-            <form method="POST" action="{{ route('admin.login', app()->getLocale()) }}">
+            <form method="POST" action="{{ route('admin.login.submit', app()->getLocale()) }}">
+
                 @csrf
                 <h2>Sign in</h2>
                 

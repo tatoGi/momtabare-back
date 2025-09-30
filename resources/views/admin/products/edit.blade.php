@@ -63,8 +63,8 @@
                             </div>
                         </div>
 
-                        <!-- Price, Sort Order, and Status -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Price, Sort Order, Status, and Favorite -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
                                     <span class="text-red-500">*</span>Price
@@ -88,13 +88,72 @@
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
                             </div>
+                        </div>
 
+                        <!-- Status Toggles -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="active" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                <select name="active" id="active" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                    <option value="1" {{ old('active', $product->active) == '1' ? 'selected' : '' }}>{{ __('admin.Active') }}</option>
-                                    <option value="0" {{ old('active', $product->active) == '0' ? 'selected' : '' }}>{{ __('admin.Inactive') }}</option>
-                                </select>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="active"
+                                        value="1" {{ old('active', $product->active) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-green-300"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">
+                                        {{ $product->active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Blocked</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_blocked"
+                                        value="1" {{ old('is_blocked', $product->is_blocked) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-red-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-red-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">
+                                        {{ $product->is_blocked ? 'Blocked' : 'Not Blocked' }}
+                                    </span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Rented</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_rented"
+                                        value="1" {{ old('is_rented', $product->is_rented) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-blue-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">
+                                        {{ $product->is_rented ? 'Rented' : 'Available' }}
+                                    </span>
+                                </label>
+                                @if($product->is_rented && $product->rented_at)
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Rented on: {{ $product->rented_at->format('M d, Y H:i') }}
+                                        @if($product->renter)
+                                            <br>By: {{ $product->renter->name }}
+                                        @endif
+                                    </p>
+                                @endif
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Favorite</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_favorite"
+                                        value="1" {{ old('is_favorite', $product->is_favorite) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-yellow-400 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-yellow-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">
+                                        {{ $product->is_favorite ? 'Yes' : 'No' }}
+                                    </span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Popular</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_popular"
+                                        value="1" {{ old('is_popular', $product->is_popular) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-purple-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-purple-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">
+                                        {{ $product->is_popular ? 'Yes' : 'No' }}
+                                    </span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -156,22 +215,7 @@
                                         @enderror
                                     </div>
 
-                                    <!-- Brand -->
-                                    <div>
-                                        <label for="{{ $locale }}_brand" class="block text-sm font-medium text-gray-700 mb-2">
-                                            Brand ({{ __('admin.locale_' . $locale) }})
-                                        </label>
-                                        <input type="text" 
-                                               name="{{ $locale }}[brand]" 
-                                               id="{{ $locale }}_brand"
-                                               value="{{ old($locale . '.brand', $product->translate($locale)->brand ?? '') }}"
-                                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 @error($locale . '.brand') border-red-500 @enderror"
-                                               placeholder="Brand name">
-                                        @error($locale . '.brand')
-                                            <span class="text-red-500 text-sm">{{ $message }}</span>
-                                        @enderror
-                                    </div>
-
+                               
                                     <!-- Location -->
                                     <div>
                                         <label for="{{ $locale }}_location" class="block text-sm font-medium text-gray-700 mb-2">
@@ -234,7 +278,7 @@
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     @foreach($product->images as $image)
                                         <div class="relative group">
-                                            <img src="{{ asset('storage/' . $image->image_name) }}" 
+                                            <img src="{{ asset('storage/products/' . $image->image_name) }}" 
                                                  alt="Product Image" 
                                                  class="w-full h-32 object-cover rounded-lg border"
                                                  onerror="this.src='{{ asset('images/placeholder.jpg') }}'">

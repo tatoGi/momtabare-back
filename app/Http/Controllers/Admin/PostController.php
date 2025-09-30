@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\PostAttribute;
 use App\Services\PageTypeService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
@@ -19,13 +18,13 @@ class PostController extends Controller
      */
     public function index(Page $page)
     {
-        if (!$page->supportsPost()) {
+        if (! $page->supportsPost()) {
             return redirect()->back()->with('error', 'This page type does not support posts.');
         }
 
         $posts = $page->posts()->with('attributes')->paginate(10);
         $pageTypeConfig = $page->getPageTypeConfig();
-        
+
         return view('admin.posts.index', compact('page', 'posts', 'pageTypeConfig'));
     }
 
@@ -34,7 +33,7 @@ class PostController extends Controller
      */
     public function create(Page $page)
     {
-        if (!$page->supportsPost()) {
+        if (! $page->supportsPost()) {
             return redirect()->back()->with('error', 'This page type does not support posts.');
         }
 
@@ -42,7 +41,7 @@ class PostController extends Controller
         $translatableAttributes = PageTypeService::getTranslatableAttributes($page->type_id);
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($page->type_id);
         $categories = \App\Models\Category::where('active', true)->get();
-        
+
         return view('admin.posts.create', compact('page', 'pageTypeConfig', 'translatableAttributes', 'nonTranslatableAttributes', 'categories'));
     }
 
@@ -51,7 +50,7 @@ class PostController extends Controller
      */
     public function store(Request $request, Page $page)
     {
-        if (!$page->supportsPost()) {
+        if (! $page->supportsPost()) {
             return redirect()->back()->with('error', 'This page type does not support posts.');
         }
 
@@ -65,28 +64,28 @@ class PostController extends Controller
         $rules['active'] = 'boolean';
         $rules['sort_order'] = 'nullable|integer';
         $rules['category_id'] = 'nullable|exists:categories,id';
-        
+
         $validator = Validator::make($request->all(), $rules);
-        
+
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         // Create the post
-        $post = new Post();
+        $post = new Post;
         $post->page_id = $page->id;
         $post->category_id = $request->input('category_id');
         $post->active = $request->boolean('active', true);
         $post->sort_order = $request->input('sort_order', 0);
         $post->published_at = $request->input('published_at') ? now() : null;
-        
+
         // Save the post and check if it was successful
-        if (!$post->save()) {
+        if (! $post->save()) {
             return redirect()->back()->with('error', 'Failed to create post')->withInput();
         }
-        
+
         // Verify the post has an ID
-        if (!$post->id) {
+        if (! $post->id) {
             return redirect()->back()->with('error', 'Post was not saved properly')->withInput();
         }
 
@@ -106,20 +105,20 @@ class PostController extends Controller
      */
     public function edit(Page $page, Post $post)
     {
-        if (!$page->supportsPost() || $post->page_id !== $page->id) {
+        if (! $page->supportsPost() || $post->page_id !== $page->id) {
             return redirect()->back()->with('error', 'Invalid post or page.');
         }
 
         $pageTypeConfig = $page->getPageTypeConfig();
         $translatableAttributes = PageTypeService::getTranslatableAttributes($page->type_id);
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($page->type_id);
-        
+
         // Load existing attributes
         $existingAttributes = [];
-        
+
         // Load attributes directly from database to ensure we get all data
         $attributes = PostAttribute::where('post_id', $post->id)->get();
-        
+
         foreach ($attributes as $attr) {
             if ($attr->locale) {
                 $existingAttributes[$attr->locale][$attr->attribute_key] = $attr->attribute_value;
@@ -127,9 +126,9 @@ class PostController extends Controller
                 $existingAttributes[$attr->attribute_key] = $attr->attribute_value;
             }
         }
-        
+
         $categories = \App\Models\Category::where('active', true)->get();
-    
+
         return view('admin.posts.edit', compact('page', 'post', 'pageTypeConfig', 'translatableAttributes', 'nonTranslatableAttributes', 'existingAttributes', 'categories'));
     }
 
@@ -138,7 +137,7 @@ class PostController extends Controller
      */
     public function update(Request $request, Page $page, Post $post)
     {
-        if (!$page->supportsPost() || $post->page_id !== $page->id) {
+        if (! $page->supportsPost() || $post->page_id !== $page->id) {
             return redirect()->back()->with('error', 'Invalid post or page.');
         }
 
@@ -147,7 +146,7 @@ class PostController extends Controller
         if ($page->type_id == 1) {
             // Prefer the incoming post_type, otherwise use the stored attribute value
             $effectivePostType = $request->input('post_type');
-            if (!$effectivePostType) {
+            if (! $effectivePostType) {
                 $effectivePostType = PostAttribute::where('post_id', $post->id)
                     ->where('attribute_key', 'post_type')
                     ->whereNull('locale')
@@ -173,9 +172,9 @@ class PostController extends Controller
         $rules['active'] = 'boolean';
         $rules['sort_order'] = 'nullable|integer';
         $rules['category_id'] = 'nullable|exists:categories,id';
-        
+
         $validator = Validator::make($request->all(), $rules);
-        
+
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
@@ -199,13 +198,13 @@ class PostController extends Controller
      */
     public function destroy(Page $page, Post $post)
     {
-        if (!$page->supportsPost() || $post->page_id !== $page->id) {
+        if (! $page->supportsPost() || $post->page_id !== $page->id) {
             return redirect()->back()->with('error', 'Invalid post or page.');
         }
 
         // Delete associated files
         $this->deletePostFiles($post, $page->type_id);
-        
+
         // Delete the post (attributes will be deleted via cascade)
         $post->delete();
 
@@ -219,39 +218,39 @@ class PostController extends Controller
     private function savePostAttributes(Post $post, Request $request, $pageTypeId)
     {
         // Debug: Check if post has ID
-        if (!$post->id) {
+        if (! $post->id) {
             throw new \Exception('Post ID is null in savePostAttributes');
         }
-        
+
         $translatableAttributes = PageTypeService::getTranslatableAttributes($pageTypeId);
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($pageTypeId);
-        
+
         // Save translatable attributes
         foreach ($translatableAttributes as $key => $config) {
             foreach (config('app.locales') as $locale) {
                 $value = $request->input("{$locale}.{$key}");
-                
+
                 if ($value !== null) {
                     $attribute = PostAttribute::updateOrCreate(
                         [
                             'post_id' => $post->id,
                             'attribute_key' => $key,
-                            'locale' => $locale
+                            'locale' => $locale,
                         ],
                         [
-                            'attribute_value' => $value
+                            'attribute_value' => $value,
                         ]
                     );
                 }
             }
         }
-        
+
         // Save non-translatable attributes
         foreach ($nonTranslatableAttributes as $key => $config) {
             $value = $request->input($key);
 
             // Handle image removal request
-            if (($config['type'] ?? null) === 'image' && $request->boolean('remove_' . $key)) {
+            if (($config['type'] ?? null) === 'image' && $request->boolean('remove_'.$key)) {
                 $oldAttribute = PostAttribute::where('post_id', $post->id)
                     ->where('attribute_key', $key)
                     ->whereNull('locale')
@@ -277,14 +276,14 @@ class PostController extends Controller
                     ->where('attribute_key', $key)
                     ->whereNull('locale')
                     ->first();
-                    
+
                 if ($oldAttribute && $oldAttribute->attribute_value) {
                     Storage::disk('public')->delete($oldAttribute->attribute_value);
                 }
-                
+
                 // Store new file
                 $file = $request->file($key);
-                $filename = time() . '_' . $file->getClientOriginalName();
+                $filename = time().'_'.$file->getClientOriginalName();
                 $path = $file->storeAs('posts', $filename, 'public');
                 $value = $path;
             }
@@ -294,40 +293,41 @@ class PostController extends Controller
                     [
                         'post_id' => $post->id,
                         'attribute_key' => $key,
-                        'locale' => null
+                        'locale' => null,
                     ],
                     [
-                        'attribute_value' => $value
+                        'attribute_value' => $value,
                     ]
                 );
             }
         }
-        
+
         // Always save post_type for homepage posts, regardless of filtering
         if ($pageTypeId == 1 && $request->has('post_type')) {
             PostAttribute::updateOrCreate(
                 [
                     'post_id' => $post->id,
                     'attribute_key' => 'post_type',
-                    'locale' => null
+                    'locale' => null,
                 ],
                 [
-                    'attribute_value' => $request->input('post_type')
+                    'attribute_value' => $request->input('post_type'),
                 ]
             );
         }
     }
+
     private function deletePostFiles(Post $post, $pageTypeId)
     {
         $nonTranslatableAttributes = PageTypeService::getNonTranslatableAttributes($pageTypeId);
-        
+
         foreach ($nonTranslatableAttributes as $key => $config) {
             if ($config['type'] === 'image') {
                 $attribute = PostAttribute::where('post_id', $post->id)
                     ->where('attribute_key', $key)
                     ->whereNull('locale')
                     ->first();
-                    
+
                 if ($attribute && $attribute->attribute_value) {
                     Storage::disk('public')->delete($attribute->attribute_value);
                 }
@@ -341,20 +341,20 @@ class PostController extends Controller
     public function uploadImage(Request $request)
     {
         $request->validate([
-            'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048'
+            'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
         try {
             $file = $request->file('file');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time().'_'.$file->getClientOriginalName();
             $path = $file->storeAs('editor-images', $filename, 'public');
 
             return response()->json([
-                'location' => asset('storage/' . $path)
+                'location' => asset('storage/'.$path),
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Image upload failed: ' . $e->getMessage()
+                'error' => 'Image upload failed: '.$e->getMessage(),
             ], 500);
         }
     }

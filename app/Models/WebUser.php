@@ -2,17 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
-use App\Notifications\VerifyEmail as VerifyEmailNotification;
 
 class WebUser extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, HasApiTokens, MustVerifyEmailTrait;
+    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +26,7 @@ class WebUser extends Authenticatable implements MustVerifyEmail
         'phone',
         'avatar',
         'email_verification_token',
+        'retailer_requested_at',
         'email_verified_at',
         // Extra profile fields
         'personal_id',
@@ -39,12 +39,20 @@ class WebUser extends Authenticatable implements MustVerifyEmail
         'verification_code',
         'verification_expires_at',
     ];
-    
+
     /**
      * The attributes that should be hidden for arrays.
      *
      * @var array
      */
+    /**
+     * Get the retailer shop associated with the user.
+     */
+    public function retailerShop()
+    {
+        return $this->hasOne(RetailerShop::class, 'user_id');
+    }
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -60,7 +68,7 @@ class WebUser extends Authenticatable implements MustVerifyEmail
     {
         return $this->email;
     }
-    
+
     /**
      * Send the email verification notification.
      *
@@ -68,15 +76,15 @@ class WebUser extends Authenticatable implements MustVerifyEmail
      */
     public function sendEmailVerificationNotification()
     {
-        if (!$this->email_verification_token) {
+        if (! $this->email_verification_token) {
             $this->email_verification_token = \Illuminate\Support\Str::random(60);
             $this->save();
         }
-        
+
         $verificationUrl = url("/verify-email/{$this->email_verification_token}");
         $this->notify(new \App\Notifications\VerifyEmail($verificationUrl));
     }
-    
+
     /**
      * Get the verification token for the user.
      *
@@ -86,7 +94,7 @@ class WebUser extends Authenticatable implements MustVerifyEmail
     {
         return $this->email_verification_token;
     }
-    
+
     /**
      * Mark the given user's email as verified.
      *
@@ -101,7 +109,7 @@ class WebUser extends Authenticatable implements MustVerifyEmail
             'verification_expires_at' => null,
         ])->save();
     }
-    
+
     /**
      * Determine if the user has verified their email address.
      *
@@ -123,5 +131,17 @@ class WebUser extends Authenticatable implements MustVerifyEmail
         'is_retailer' => 'boolean',
         'retailer_requested_at' => 'datetime',
     ];
-    
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'retailer_id');
+    }
+
+    /**
+     * Get the comments written by this user
+     */
+    public function comments()
+    {
+        return $this->hasMany(ProductComment::class, 'user_id');
+    }
 }

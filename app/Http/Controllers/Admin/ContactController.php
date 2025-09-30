@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Contact;
 use App\Models\Subscriber;
-use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
@@ -15,6 +14,7 @@ class ContactController extends Controller
 
         return view('admin.contacts.index', compact('contacts'));
     }
+
     public function subscribers()
     {
         $subscribers = Subscriber::all();

@@ -14,7 +14,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Check BOG payments status every 5 minutes
+        $schedule->command('bog:check-payments')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
     }
 
     /**
@@ -22,6 +27,15 @@ class Kernel extends ConsoleKernel
      *
      * @return void
      */
+    /**
+     * The Artisan commands provided by your application.
+     *
+     * @var array
+     */
+    protected $commands = [
+        \App\Console\Commands\CheckBogPayments::class,
+    ];
+
     protected function commands()
     {
         $this->load(__DIR__.'/Commands');

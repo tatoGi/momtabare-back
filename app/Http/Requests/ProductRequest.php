@@ -25,16 +25,22 @@ class ProductRequest extends FormRequest
     {
         $rules = [
             // Base attributes
-            'product_identify_id' => 'nullable|string|unique:products,product_identify_id,' . $this->route('product'),
+            'product_identify_id' => 'nullable|string|unique:products,product_identify_id,'.$this->route('product'),
             'category_id' => 'nullable|exists:categories,id',
             'size' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
             'active' => 'nullable|boolean',
+            'is_favorite' => 'nullable|boolean',
+            'is_popular' => 'nullable|boolean',
+            'is_blocked' => 'nullable|boolean',
+            'is_rented' => 'nullable|boolean',
+            'rented_at' => 'nullable|date',
+            'rented_by' => 'nullable|exists:users,id',
             'images' => 'nullable|array',
             'images.*' => 'file|mimes:jpg,jpeg,png,webp|max:2048',
         ];
-    
+
         // Validation rules for translatable attributes
         foreach (config('app.locales') as $locale) {
             $rules["{$locale}.title"] = 'required|max:255';
@@ -44,7 +50,7 @@ class ProductRequest extends FormRequest
             $rules["{$locale}.location"] = 'nullable|string|max:255';
             $rules["{$locale}.color"] = 'nullable|string|max:100';
         }
-    
+
         return $rules;
     }
 }

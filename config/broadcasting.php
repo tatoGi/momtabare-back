@@ -29,7 +29,6 @@ return [
     */
 
     'connections' => [
-
         'pusher' => [
             'driver' => 'pusher',
             'key' => env('PUSHER_APP_KEY'),
@@ -60,5 +59,8 @@ return [
         ],
 
     ],
-
+    'options' => [
+        'cluster' => 'mt1',
+        'useTLS' => true,
+    ],
 ];

@@ -22,7 +22,7 @@ class PageSeeder extends Seeder
                 'active' => true,
                 'translations' => [
                     ['locale' => 'en', 'title' => 'Home', 'keywords' => 'home', 'slug' => 'home', 'active' => true, 'desc' => 'Home Page'],
-                    ['locale' => 'ka', 'title' => 'მთავარი', 'keywords' => 'მთავარი', 'slug' => 'მთავარი', 'active' => true, 'desc' => 'მთავარი გვერდი']
+                    ['locale' => 'ka', 'title' => 'მთავარი', 'keywords' => 'მთავარი', 'slug' => 'მთავარი', 'active' => true, 'desc' => 'მთავარი გვერდი'],
                 ],
             ],
             [
@@ -32,7 +32,7 @@ class PageSeeder extends Seeder
                 'active' => true,
                 'translations' => [
                     ['locale' => 'en', 'title' => 'About Us', 'keywords' => 'about us', 'slug' => 'about-us', 'active' => true, 'desc' => 'About Us Page'],
-                    ['locale' => 'ka', 'title' => 'ჩვენ შესახებ', 'keywords' => 'ჩვენ შესახებ', 'slug' => 'ჩვენ-შესახებ', 'active' => true, 'desc' => 'ჩვენ შესახებ']
+                    ['locale' => 'ka', 'title' => 'ჩვენ შესახებ', 'keywords' => 'ჩვენ შესახებ', 'slug' => 'ჩვენ-შესახებ', 'active' => true, 'desc' => 'ჩვენ შესახებ'],
                 ],
             ],
             [
@@ -42,7 +42,7 @@ class PageSeeder extends Seeder
                 'active' => true,
                 'translations' => [
                     ['locale' => 'en', 'title' => 'Shop', 'keywords' => 'shop', 'slug' => 'shop', 'active' => true, 'desc' => 'Shop Page'],
-                    ['locale' => 'ka', 'title' => 'მაღაზია', 'keywords' => 'მაღაზია', 'slug' => 'მაღაზია', 'active' => true, 'desc' => 'მაღაზია']
+                    ['locale' => 'ka', 'title' => 'მაღაზია', 'keywords' => 'მაღაზია', 'slug' => 'მაღაზია', 'active' => true, 'desc' => 'მაღაზია'],
                 ],
             ],
         ];
@@ -52,7 +52,7 @@ class PageSeeder extends Seeder
                 'parent_id' => $pageData['parent_id'],
                 'type_id' => $pageData['type_id'],
                 'sort' => $pageData['sort'],
-                'active' => $pageData['active']
+                'active' => $pageData['active'],
             ]);
 
             foreach ($pageData['translations'] as $translation) {

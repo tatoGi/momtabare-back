@@ -198,6 +198,53 @@
                                             <span class="text-red-500 text-sm">{{ $message }}</span>
                                         @enderror
                                     </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <!-- Product Status Toggles -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 p-4 bg-gray-50 rounded-lg">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="active" value="1" checked>
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-green-300"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">Active</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Blocked</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_blocked" value="1">
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-red-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-red-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">Not Blocked</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Rented</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_rented" value="1">
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-blue-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">Available</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Favorite</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_favorite" value="1">
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-yellow-400 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-yellow-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">No</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Popular</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_popular" value="1">
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-purple-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-purple-200"></div>
+                                    <span class="ml-2 text-sm font-medium text-gray-700">No</span>
+                                </label>
+                            </div>
+                        </div>
 
                                 </div>
                             @endforeach
@@ -286,6 +333,41 @@
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                             @enderror
 
+                        </div>
+
+                        <!-- Active and Favorite Status -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="flex flex-col">
+                                <label class="text-lg mb-2 text-gray-700 font-medium">Active</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="active"
+                                        value="1" {{ old('active', 1) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-blue-300"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-700">{{ old('active', 1) ? 'Active' : 'Inactive' }}</span>
+                                </label>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-lg mb-2 text-yellow-600 font-medium">⭐ Favorite</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_favorite"
+                                        value="1" {{ old('is_favorite', 0) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-yellow-300"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-700">{{ old('is_favorite', 0) ? 'Featured Product' : 'Regular Product' }}</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">Mark as favorite to feature this product</p>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-lg mb-2 text-purple-600 font-medium">🔥 Popular</label>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" class="peer sr-only" name="is_popular"
+                                        value="1" {{ old('is_popular', 0) ? 'checked' : '' }} />
+                                    <div class="peer h-6 w-12 rounded-full border bg-gray-300 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-purple-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:ring-4 peer-focus:ring-purple-300"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-700">{{ old('is_popular', 0) ? 'Popular Product' : 'Regular Product' }}</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">Mark as popular to highlight this product</p>
+                            </div>
                         </div>
 
                         @if ($errors->any())

@@ -3,20 +3,17 @@
 namespace App\Providers;
 
 use App\Models\Language;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class LanguageServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
      */
-    public function register()
-    {
-        
-    }
+    public function register() {}
 
     /**
      * Bootstrap services.
@@ -35,21 +32,22 @@ class LanguageServiceProvider extends ServiceProvider
 
                 // Share languages with all views
                 View::share('availableLocales', $languages->pluck('code')->toArray());
-                
+
                 // Set the application locale if not already set
-                if (!app()->runningInConsole()) {
+                if (! app()->runningInConsole()) {
                     $locale = session('locale', function () use ($languages) {
                         $default = $languages->where('is_default', true)->first();
+
                         return $default ? $default->code : config('app.locale');
                     });
-                    
+
                     app()->setLocale($locale);
                 }
             }
         } catch (\Exception $e) {
             // Handle the case where the database is not available yet
             // This is important for installation and migration processes
-            if (!app()->runningInConsole()) {
+            if (! app()->runningInConsole()) {
                 app()->setLocale(config('app.locale'));
             }
         }

@@ -114,7 +114,7 @@ return [
     'categories' => 'categories',
     'english' => 'English',
     'georgian' => 'Georgian',
-    
+
     // Page Management
     'Manage_Page' => 'Manage Page',
     'Back_to_Pages' => 'Back to Pages',

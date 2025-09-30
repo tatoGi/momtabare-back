@@ -12,33 +12,33 @@ return [
                 'type' => 'text',
                 'required' => true,
                 'label' => 'Post Title',
-                'placeholder' => 'Enter blog post title'
+                'placeholder' => 'Enter blog post title',
             ],
             'content' => [
                 'type' => 'editor',
                 'required' => true,
                 'label' => 'Post Content',
-                'placeholder' => 'Write your blog post content here'
+                'placeholder' => 'Write your blog post content here',
             ],
             'slug' => [
                 'type' => 'text',
                 'required' => false,
                 'label' => 'URL Slug',
-                'placeholder' => 'post-url-slug (auto-generated if empty)'
+                'placeholder' => 'post-url-slug (auto-generated if empty)',
             ],
-           
+
             'meta_title' => [
                 'type' => 'text',
                 'required' => false,
                 'label' => 'SEO Title',
-                'placeholder' => 'SEO optimized title'
+                'placeholder' => 'SEO optimized title',
             ],
             'meta_description' => [
                 'type' => 'textarea',
                 'required' => false,
                 'label' => 'SEO Description',
-                'placeholder' => 'SEO meta description'
-            ]
+                'placeholder' => 'SEO meta description',
+            ],
         ],
         'non_translatable' => [
             'featured_image' => [
@@ -46,23 +46,23 @@ return [
                 'required' => true,
                 'label' => 'Featured Image',
                 'accept' => 'image/*',
-                'help' => 'Main image displayed in blog post and listings'
+                'help' => 'Main image displayed in blog post and listings',
             ],
-          
+
             'published_at' => [
                 'type' => 'datetime-local',
                 'required' => true,
                 'label' => 'Publish Date',
                 'default' => 'now',
-                'help' => 'Date when the post should be published'
+                'help' => 'Date when the post should be published',
             ],
             'author' => [
                 'type' => 'text',
                 'required' => false,
                 'label' => 'Author Name',
-                'placeholder' => 'Post author (optional)'
+                'placeholder' => 'Post author (optional)',
             ],
-           
+
             'status' => [
                 'type' => 'select',
                 'required' => true,
@@ -71,9 +71,9 @@ return [
                 'options' => [
                     'draft' => 'Draft',
                     'published' => 'Published',
-                    'archived' => 'Archived'
-                ]
-            ]
-        ]
-    ]
+                    'archived' => 'Archived',
+                ],
+            ],
+        ],
+    ],
 ];

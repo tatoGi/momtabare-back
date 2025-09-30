@@ -5,16 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Models\Category;
+use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductImage;
-use App\Models\Page;
-use App\Models\ProductOption;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -43,6 +42,7 @@ class ProductController extends Controller
     public function create($page_id = null): Factory|View
     {
         $categories = Category::all(); // Optionally, list all categories for selection
+
         return view('admin.products.create', compact('categories', 'page_id'));
     }
 
@@ -56,12 +56,16 @@ class ProductController extends Controller
         // Validate the request data
         $data = $request->validated();
 
-        // Handle active status
+        // Handle status fields
         $data['active'] = $request->has('active') ? 1 : 0;
-
+        $data['sort_order'] = $request->has('sort_order') ? $request->sort_order : 0;
+        $data['is_favorite'] = $request->has('is_favorite') ? 1 : 0;
+        $data['is_popular'] = $request->has('is_popular') ? 1 : 0;
+        $data['is_blocked'] = $request->has('is_blocked') ? 1 : 0;
+        $data['is_rented'] = $request->has('is_rented') ? 1 : 0;
         // Generate unique product identify ID if not provided
         if (empty($data['product_identify_id'])) {
-            $data['product_identify_id'] = 'PROD-' . strtoupper(Str::random(8));
+            $data['product_identify_id'] = 'PROD-'.strtoupper(Str::random(8));
         }
 
         // Create the product
@@ -74,7 +78,7 @@ class ProductController extends Controller
                 $imageName = $image->getClientOriginalName();
                 $path = $image->storeAs('products', $imageName, 'public');
                 $productImage = new ProductImage;
-                $productImage->image_name = 'products/' . $imageName;
+                $productImage->image_name = 'products/'.$imageName;
                 $productImage->product_id = $product->id;
                 $productImage->save();
 
@@ -152,7 +156,7 @@ class ProductController extends Controller
 
         // Format slugs to ensure they're URL-friendly
         foreach (config('app.locales') as $locale) {
-            if (!empty($data[$locale]['slug'])) {
+            if (! empty($data[$locale]['slug'])) {
                 $data[$locale]['slug'] = str_replace(' ', '-', $data[$locale]['slug']);
             }
         }
@@ -161,7 +165,14 @@ class ProductController extends Controller
         $product->update([
             'category_id' => $data['category_id'] ?? null,
             'price' => $data['price'],
-            'active' => $data['active']
+            'active' => $data['active'],
+            'product_identify_id' => $data['product_identify_id'] ?? null,
+            'size' => $data['size'] ?? null,
+            'sort_order' => $data['sort_order'] ?? null,
+            'is_favorite' => $data['is_favorite'] ?? 0,
+            'is_popular' => $data['is_popular'] ?? 0,
+            'is_blocked' => $data['is_blocked'] ?? 0,
+            'is_rented' => $data['is_rented'] ?? 0,
         ]);
 
         // Update translations for each locale
@@ -180,10 +191,10 @@ class ProductController extends Controller
         // Handle product images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $key => $image) {
-                $imageName = time() . '_' . $image->getClientOriginalName();
+                $imageName = time().'_'.$image->getClientOriginalName();
                 $path = $image->storeAs('products', $imageName, 'public');
                 $productImage = new ProductImage;
-                $productImage->image_name = 'products/' . $imageName;
+                $productImage->image_name = 'products/'.$imageName;
                 $productImage->product_id = $product->id;
                 $productImage->save();
             }
@@ -244,7 +255,7 @@ class ProductController extends Controller
         $deletedCount = 0;
 
         foreach ($images as $image) {
-            if (!Storage::disk('public')->exists($image->image_name)) {
+            if (! Storage::disk('public')->exists($image->image_name)) {
                 $image->delete();
                 $deletedCount++;
             }
@@ -255,35 +266,28 @@ class ProductController extends Controller
 
     /**
      * Show the form for managing product pages.
-     *
-     * @param Product $product
-     * @return View
      */
     public function managePages(Product $product): View
     {
         // Get all pages that are not already attached to the product
-        $availablePages = Page::whereDoesntHave('products', function($query) use ($product) {
+        $availablePages = Page::whereDoesntHave('products', function ($query) use ($product) {
             $query->where('product_id', $product->id);
         })->get();
 
         return view('admin.product.options.index', [
             'product' => $product,
-            'availablePages' => $availablePages
+            'availablePages' => $availablePages,
         ]);
     }
 
     /**
      * Attach a page to the product.
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return RedirectResponse
      */
     public function attachPage(Request $request, Product $product): RedirectResponse
     {
         $request->validate([
             'page_id' => 'required|exists:pages,id',
-            'sort_order' => 'nullable|integer|min:0'
+            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         // Check if the page is already attached
@@ -293,7 +297,7 @@ class ProductController extends Controller
 
         // Attach the page with sort order
         $product->pages()->attach($request->page_id, [
-            'sort' => $request->sort_order ?? 0
+            'sort' => $request->sort_order ?? 0,
         ]);
 
         return redirect()->route('admin.products.pages.manage', $product->id)
@@ -302,10 +306,6 @@ class ProductController extends Controller
 
     /**
      * Detach a page from the product.
-     *
-     * @param Product $product
-     * @param int $pageId
-     * @return RedirectResponse
      */
     public function detachPage(Product $product, int $pageId): RedirectResponse
     {
@@ -319,9 +319,6 @@ class ProductController extends Controller
 
     /**
      * Display products for a specific page - redirects to page management.
-     *
-     * @param Page $page
-     * @return RedirectResponse
      */
     public function indexForPage(Page $page): RedirectResponse
     {
@@ -331,22 +328,16 @@ class ProductController extends Controller
 
     /**
      * Show form for creating a new product for a specific page.
-     *
-     * @param Page $page
-     * @return View
      */
     public function createForPage(Page $page): View
     {
         $categories = Category::all();
+
         return view('admin.products.create', compact('categories', 'page'));
     }
 
     /**
      * Store a new product and attach it to a specific page.
-     *
-     * @param ProductRequest $request
-     * @param Page $page
-     * @return RedirectResponse
      */
     public function storeForPage(ProductRequest $request, Page $page): RedirectResponse
     {
@@ -355,10 +346,12 @@ class ProductController extends Controller
 
         // Handle active status
         $data['active'] = $request->has('active') ? 1 : 0;
+        $data['is_favorite'] = $request->has('is_favorite') ? 1 : 0;
+        $data['is_popular'] = $request->has('is_popular') ? 1 : 0;
 
         // Generate unique product identify ID if not provided
         if (empty($data['product_identify_id'])) {
-            $data['product_identify_id'] = 'PROD-' . strtoupper(Str::random(8));
+            $data['product_identify_id'] = 'PROD-'.strtoupper(Str::random(8));
         }
 
         // Create the product
@@ -375,7 +368,7 @@ class ProductController extends Controller
                 $imageName = $image->getClientOriginalName();
                 $path = $image->storeAs('products', $imageName, 'public');
                 $productImage = new ProductImage;
-                $productImage->image_name = 'products/' . $imageName;
+                $productImage->image_name = 'products/'.$imageName;
                 $productImage->product_id = $product->id;
                 $productImage->save();
 
@@ -403,16 +396,12 @@ class ProductController extends Controller
 
     /**
      * Attach an existing product to a page.
-     *
-     * @param Request $request
-     * @param Page $page
-     * @return RedirectResponse
      */
     public function attachToPage(Request $request, Page $page): RedirectResponse
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'sort_order' => 'nullable|integer|min:0'
+            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         // Check if the product is already attached
@@ -422,7 +411,7 @@ class ProductController extends Controller
 
         // Attach the product with sort order
         $page->products()->attach($request->product_id, [
-            'sort' => $request->sort_order ?? 0
+            'sort' => $request->sort_order ?? 0,
         ]);
 
         return redirect()->route('admin.pages.management.manage', ['page' => $page->id])
@@ -431,10 +420,6 @@ class ProductController extends Controller
 
     /**
      * Detach a product from a page.
-     *
-     * @param Page $page
-     * @param Product $product
-     * @return RedirectResponse
      */
     public function detachFromPage(Page $page, Product $product): RedirectResponse
     {

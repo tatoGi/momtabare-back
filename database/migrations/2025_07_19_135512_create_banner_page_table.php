@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('page_id')->constrained()->onDelete('cascade');
             $table->integer('sort')->default(0);
             $table->timestamps();
-            
+
             $table->unique(['banner_id', 'page_id']);
         });
     }

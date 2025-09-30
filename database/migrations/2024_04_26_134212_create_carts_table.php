@@ -23,7 +23,7 @@ class CreateCartsTable extends Migration
             // Define foreign key constraints
             $table->foreign('user_id')->references('id')->on('web_users')->onDelete('cascade');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-        
+
         });
     }
 

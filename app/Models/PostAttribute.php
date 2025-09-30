@@ -14,7 +14,7 @@ class PostAttribute extends Model
         'post_id',
         'attribute_key',
         'attribute_value',
-        'locale'
+        'locale',
     ];
 
     /**

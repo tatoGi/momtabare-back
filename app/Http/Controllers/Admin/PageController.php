@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePageRequest;
 use App\Models\Page;
-use RalphJSmit\Laravel\SEO\Facades\SEO;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use App\Http\Requests\StorePageRequest;
+use RalphJSmit\Laravel\SEO\Facades\SEO;
 
 class PageController extends Controller
 {
@@ -44,32 +44,32 @@ class PageController extends Controller
     public function store(StorePageRequest $request)
     {
         $data = $request->all();
-    
+
         foreach (config('app.locales') as $locale) {
             if ($data[$locale]['slug'] != '') {
                 $data[$locale]['slug'] = str_replace(' ', '-', $data[$locale]['slug']);
             }
         }
-    
+
         $page = Page::create($data);
-    
+
         foreach (config('app.locales') as $locale) {
             if ($data[$locale]['slug'] != '') {
                 $data[$locale]['slug'] = str_replace(' ', '-', $data[$locale]['slug']);
             }
-            
+
             $seo = $page->translate($locale)->seo;
-            
+
             // Prepare SEO data
             $seoData = [
                 'title' => $data[$locale]['title'],
                 'description' => $data[$locale]['desc'],
-            ];     
-    
+            ];
+
             // Update SEO data
             $seo->update($seoData);
         }
-    
+
         return redirect()->route('pages.index', [app()->getLocale()]);
     }
 
@@ -94,7 +94,8 @@ class PageController extends Controller
     {
         $page = Page::findOrFail($id);
         $sectionTypes = SectionTypes();
-        return view('admin.pages.edit', compact('page','sectionTypes'));
+
+        return view('admin.pages.edit', compact('page', 'sectionTypes'));
     }
 
     /**
@@ -132,11 +133,10 @@ class PageController extends Controller
 
     public function arrange(Request $request)
     {
-       
+
         $array = $request->input('orderArr');
-        
+
         Page::rearrange($array);
-        
 
         return ['error' => false];
     }

@@ -81,7 +81,7 @@ return [
     */
 
     'locale' => 'ka',
-    'locales' => ['en', 'ka', 'ru'],
+    'locales' => ['en', 'ka'],
     /*
     |--------------------------------------------------------------------------
     | Application Fallback Locale
@@ -174,7 +174,7 @@ return [
         App\Providers\ViewServiceProvider::class,
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
@@ -194,7 +194,6 @@ return [
     'aliases' => [
 
         'App' => Illuminate\Support\Facades\App::class,
-        'Boost' => Laravel\Boost\Facades\Boost::class,
         'Arr' => Illuminate\Support\Arr::class,
         // 'Analytics' => Spatie\Analytics\AnalyticsFacade::class, // Removed for upgrade
         'Artisan' => Illuminate\Support\Facades\Artisan::class,

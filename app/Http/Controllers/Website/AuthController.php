@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Models\WebUser;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Mail\Message;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -24,14 +25,14 @@ class AuthController extends Controller
      */
     public function sendRegistrationEmail(Request $request)
     {
-       
+
         $request->validate([
             'email' => 'required|email|unique:web_users,email',
         ]);
 
         $verificationCode = rand(100000, 999999);
         $emailVerificationToken = Str::random(60);
-       
+
         // Create user with temporary hashed password
         $temporaryPassword = Str::random(16); // Generate a random temporary password
         $user = WebUser::create([
@@ -48,7 +49,7 @@ class AuthController extends Controller
             'email' => $user->email,
         ], function (Message $message) use ($user) {
             $message->to($user->email)
-                   ->subject('Your Verification Code');
+                ->subject('Your Verification Code');
         });
 
         return response()->json([
@@ -56,10 +57,10 @@ class AuthController extends Controller
             'user_id' => $user->id,
         ]);
     }
+
     /**
      * Verify email with verification code
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function verifyEmailCode(Request $request)
@@ -76,8 +77,8 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Invalid verification code.',
                 'errors' => [
-                    'verification_code' => ['The verification code is invalid.']
-                ]
+                    'verification_code' => ['The verification code is invalid.'],
+                ],
             ], 422);
         }
 
@@ -85,8 +86,8 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Verification code has expired.',
                 'errors' => [
-                    'verification_code' => ['The verification code has expired.']
-                ]
+                    'verification_code' => ['The verification code has expired.'],
+                ],
             ], 422);
         }
 
@@ -104,14 +105,12 @@ class AuthController extends Controller
 
     /**
      * Complete user registration after email verification
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     /**
      * Complete user registration after email verification
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function completeRegistration(Request $request)
@@ -135,7 +134,7 @@ class AuthController extends Controller
 
         // Create new auth token
         $token = $user->createToken('auth_token')->plainTextToken;
-        
+
         // Create a response with the token
         $response = [
             'success' => true,
@@ -149,41 +148,69 @@ class AuthController extends Controller
                     'first_name' => $user->first_name,
                     'surname' => $user->surname,
                     'email' => $user->email,
-                    'email_verified' => true
-                ]
-            ]
+                    'email_verified' => true,
+                ],
+            ],
         ];
 
         // Return with the token in the response
         return response()->json($response)->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Access-Control-Expose-Headers' => 'Authorization'
+            'Authorization' => 'Bearer '.$token,
+            'Access-Control-Expose-Headers' => 'Authorization',
         ]);
     }
+
     /**
      * POST /login
      * Body: { email?: string, phone_number?: string (not supported yet), password: string }
      */
     public function login(Request $request)
     {
+
+        // Check if user is already authenticated via token
+        if ($request->bearerToken()) {
+            $tokenUser = $request->user('sanctum');
+            if ($tokenUser) {
+                // User is already authenticated via token, return current user data
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Already logged in',
+                    'data' => [
+                        'token' => $request->bearerToken(),
+                        'token_type' => 'Bearer',
+                        'user' => [
+                            'id' => $tokenUser->id,
+                            'first_name' => $tokenUser->first_name,
+                            'surname' => $tokenUser->surname,
+                            'email' => $tokenUser->email,
+                            'email_verified' => true,
+                            'is_retailer' => $tokenUser->is_retailer,
+                            'retailer_status' => $tokenUser->retailer_status,
+                            'retailer_requested_at' => $tokenUser->retailer_requested_at?->toISOString(),
+                        ],
+                    ],
+                ]);
+            }
+        }
+
         // Check if this is a token-based login from registration
         if ($request->has('registration_token') && $request->has('user_id')) {
             $user = WebUser::find($request->input('user_id'));
-            
-            if (!$user) {
+
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not found.'
+                    'message' => 'User not found.',
                 ], 404);
             }
 
             // Get the user's most recent token
             $token = $user->tokens()->latest()->first();
-            
-            if (!$token || !hash_equals($token->token, hash('sha256', $request->input('registration_token')))) {
+
+            if (! $token || ! hash_equals($token->token, hash('sha256', $request->input('registration_token')))) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid or expired registration token.'
+                    'message' => 'Invalid or expired registration token.',
                 ], 401);
             }
         } else {
@@ -195,35 +222,33 @@ class AuthController extends Controller
 
             $credentials = [
                 'email' => $data['email'],
-                'password' => $data['password']
+                'password' => $data['password'],
             ];
 
-            if (!Auth::guard('webuser')->attempt($credentials)) {
+            if (! Auth::guard('webuser')->attempt($credentials)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid login credentials.'
+                    'message' => 'Invalid login credentials.',
                 ], 401);
             }
 
             $user = Auth::guard('webuser')->user();
         }
 
-        if (!$user instanceof WebUser) {
+        if (! $user instanceof WebUser) {
             return response()->json([
-                'message' => 'User not found.'
+                'message' => 'User not found.',
             ], 404);
         }
 
         // Check if email is verified
-        if (!$user->email_verified_at) {
+        if (! $user->email_verified_at) {
             return response()->json([
                 'message' => 'Please verify your email address before logging in.',
-                'requires_verification' => true
+                'requires_verification' => true,
             ], 403);
         }
 
-        // Log the user in using the webuser guard (session-based)
-        Auth::guard('webuser')->login($user, true);
         $request->session()->regenerate();
 
         // Create a new API token for the user
@@ -240,9 +265,9 @@ class AuthController extends Controller
                     'first_name' => $user->first_name,
                     'surname' => $user->surname,
                     'email' => $user->email,
-                    'email_verified' => true
-                ]
-            ]
+                    'email_verified' => true,
+                ],
+            ],
         ]);
     }
 
@@ -266,51 +291,16 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        // First try to get user from session (web)
-        $user = Auth::guard('webuser')->user();
-        
-        // If no session user, try token (API)
-        if (!$user && $request->bearerToken()) {
-            $user = $request->user('sanctum');
-            
-            // If we have a token user, refresh the token expiration
-            if ($user) {
-                $token = $user->currentAccessToken();
-                if ($token) {
-                    $token->forceFill([
-                        'expires_at' => now()->addMinutes(config('sanctum.expiration', 10080)),
-                    ])->save();
-                }
-                
-                // Return early with token user data
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'id' => $user->id,
-                        'first_name' => $user->first_name,
-                        'surname' => $user->surname,
-                        'email' => $user->email,
-                        'email_verified' => $user->hasVerifiedEmail(),
-                        'token' => $request->bearerToken(),
-                    ]
-                ]);
-            }
-        }
-        
-        // If no user is authenticated, return 204 No Content for web requests
-        // This prevents 401 errors on the frontend for unauthenticated users
+        $token = $request->bearerToken();
+        $tokenModel = $token ? \Laravel\Sanctum\PersonalAccessToken::findToken(explode('|', $token)[1] ?? '') : null;
+        $user = $tokenModel ? $tokenModel->tokenable : null;
         if (!$user) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->noContent();
-            }
-            
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated.',
             ], 401);
         }
-        
-        // For web users, return the full user data
+    
         return response()->json([
             'success' => true,
             'data' => [
@@ -319,24 +309,18 @@ class AuthController extends Controller
                 'surname' => $user->surname,
                 'email' => $user->email,
                 'email_verified' => $user->hasVerifiedEmail(),
-            ]
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'surname' => $user->surname,
-                'email' => $user->email,
-                'email_verified' => $user->email_verified_at !== null,
                 'phone' => $user->phone,
                 'personal_id' => $user->personal_id,
                 'birth_date' => $user->birth_date?->toDateString(),
                 'gender' => $user->gender,
                 'is_retailer' => $user->is_retailer,
                 'retailer_status' => $user->retailer_status,
-                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'retailer_requested_at' => $user->retailer_requested_at?->toISOString(),
+                'avatar' => $user->avatar,
+                'avatar_url' => $user->avatar ? asset('storage/'.$user->avatar) : null,
+                'email_verified_at' => $user->email_verified_at?->toISOString(),
+                'created_at' => $user->created_at?->toISOString(),
+                'updated_at' => $user->updated_at?->toISOString(),
             ],
         ]);
     }
@@ -347,7 +331,6 @@ class AuthController extends Controller
     /**
      * Handle email verification from form submission (POST request)
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function verifyEmailFromForm(Request $request)
@@ -369,7 +352,7 @@ class AuthController extends Controller
     {
         $user = WebUser::where('email_verification_token', $token)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid verification token.',
@@ -384,7 +367,7 @@ class AuthController extends Controller
         }
 
         $user->markEmailAsVerified();
-        
+
         // Log the user in
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -398,17 +381,17 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'email_verified_at' => $user->email_verified_at,
             ],
-            'redirect' => '/profile'
+            'redirect' => '/profile',
         ]);
     }
-    
+
     /**
      * POST /resend-verification - Resend verification email
      */
     public function resendVerification(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:web_users,email'
+            'email' => 'required|email|exists:web_users,email',
         ]);
 
         $user = WebUser::where('email', $request->email)->first();
@@ -416,7 +399,7 @@ class AuthController extends Controller
         if ($user->hasVerifiedEmail()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Email already verified.'
+                'message' => 'Email already verified.',
             ]);
         }
 
@@ -424,7 +407,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Verification email sent.'
+            'message' => 'Verification email sent.',
         ]);
     }
 }

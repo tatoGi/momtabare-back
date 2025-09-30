@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['page_id', 'active']);
             $table->index(['page_id', 'sort_order']);
         });

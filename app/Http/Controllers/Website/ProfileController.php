@@ -13,8 +13,8 @@ class ProfileController extends Controller
 {
     public function edit()
     {
-        $user = Auth::guard('webuser')->user();
-        if (!$user instanceof WebUser) {
+        $user = Auth::user();
+        if (! $user instanceof WebUser) {
             return redirect()->route('login');
         }
 
@@ -23,36 +23,90 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = Auth::guard('webuser')->user();
-        if (!$user instanceof WebUser) {
+        $user = Auth::user();
+        if (! $user instanceof WebUser) {
             if ($request->wantsJson()) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
+
             return redirect()->route('login');
         }
 
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'surname' => 'nullable|string|max:255',
-            'email' => 'required|string|email|max:255|unique:web_users,email,' . ($user?->id ?? 'NULL'),
-            'phone' => 'nullable|string|max:32',
-            'personal_id' => 'nullable|string|max:50',
-            'birth_date' => 'nullable|date',
-            'gender' => 'nullable|string|max:20',
-            'password' => 'nullable|string|min:8|confirmed',
-        ]);
+        // Define validation rules for each field
+        $validationRules = [];
+        $fieldsToUpdate = [];
 
-        /** @var WebUser $user */
-        $user->first_name = $validated['first_name'];
-        $user->surname = $validated['surname'] ?? null;
-        $user->email = $validated['email'];
-        $user->phone = $validated['phone'] ?? null;
-        $user->personal_id = $validated['personal_id'] ?? null;
-        $user->birth_date = $validated['birth_date'] ?? null;
-        $user->gender = $validated['gender'] ?? null;
-        if (!empty($validated['password'])) {
+        // Only validate and update fields that are present in the request
+        if ($request->has('first_name')) {
+            $validationRules['first_name'] = 'required|string|max:255';
+            $fieldsToUpdate[] = 'first_name';
+        }
+
+        if ($request->has('surname') || $request->has('last_name')) {
+            $validationRules['surname'] = 'nullable|string|max:255';
+            $validationRules['last_name'] = 'nullable|string|max:255';
+            $fieldsToUpdate[] = 'surname';
+        }
+
+        if ($request->has('email')) {
+            $validationRules['email'] = 'required|string|email|max:255|unique:web_users,email,'.$user->id;
+            $fieldsToUpdate[] = 'email';
+        }
+
+        if ($request->has('phone')) {
+            $validationRules['phone'] = 'nullable|string|max:32';
+            $fieldsToUpdate[] = 'phone';
+        }
+
+        if ($request->has('personal_id')) {
+            $validationRules['personal_id'] = 'nullable|string|max:50';
+            $fieldsToUpdate[] = 'personal_id';
+        }
+
+        if ($request->has('birth_date')) {
+            $validationRules['birth_date'] = 'nullable|date';
+            $fieldsToUpdate[] = 'birth_date';
+        }
+
+        if ($request->has('gender')) {
+            $validationRules['gender'] = 'nullable|string|max:20';
+            $fieldsToUpdate[] = 'gender';
+        }
+
+        if ($request->has('password')) {
+            $validationRules['password'] = 'required|string|min:8|confirmed';
+            $validationRules['current_password'] = 'required|string';
+            $fieldsToUpdate[] = 'password';
+        }
+
+        // Validate only the fields that are present
+        $validated = $request->validate($validationRules);
+
+        // Handle password change with current password verification
+        if (in_array('password', $fieldsToUpdate)) {
+            if (! Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'message' => 'Current password is incorrect.',
+                    'errors' => ['current_password' => ['The current password is incorrect.']],
+                ], 422);
+            }
             $user->password = Hash::make($validated['password']);
         }
+
+        // Update only the fields that were sent in the request
+        foreach ($fieldsToUpdate as $field) {
+            if ($field === 'password') {
+                continue;
+            } // Already handled above
+
+            if ($field === 'surname' && ($request->has('last_name') || $request->has('surname'))) {
+                // Handle both surname and last_name mapping to surname field
+                $user->surname = $validated['last_name'] ?? $validated['surname'] ?? null;
+            } else {
+                $user->$field = $validated[$field] ?? null;
+            }
+        }
+
         $user->save();
 
         if ($request->wantsJson()) {
@@ -71,7 +125,7 @@ class ProfileController extends Controller
                     'retailer_status' => $user->retailer_status,
                     'retailer_requested_at' => $user->retailer_requested_at,
                     'avatar' => $user->avatar,
-                    'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                    'avatar_url' => $user->avatar ? asset('storage/'.$user->avatar) : null,
                 ],
             ]);
         }
@@ -85,8 +139,8 @@ class ProfileController extends Controller
      */
     public function requestRetailer(Request $request)
     {
-        $user = Auth::guard('webuser')->user();
-        if (!$user instanceof WebUser) {
+        $user = Auth::user();
+        if (! $user instanceof WebUser) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
@@ -109,8 +163,8 @@ class ProfileController extends Controller
      */
     public function uploadAvatar(Request $request)
     {
-        $user = Auth::guard('webuser')->user();
-        if (!$user instanceof WebUser) {
+        $user = Auth::user();
+        if (! $user instanceof WebUser) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
@@ -123,7 +177,7 @@ class ProfileController extends Controller
         }
 
         $file = $request->file('avatar');
-        $filename = time() . '_' . $file->getClientOriginalName();
+        $filename = time().'_'.$file->getClientOriginalName();
         $path = $file->storeAs('avatars', $filename, 'public');
 
         $user->avatar = $path;
@@ -133,9 +187,8 @@ class ProfileController extends Controller
             'message' => 'Avatar updated successfully.',
             'data' => [
                 'avatar' => $user->avatar,
-                'avatar_url' => asset('storage/' . $user->avatar),
+                'avatar_url' => asset('storage/'.$user->avatar),
             ],
         ], 200);
     }
 }
-

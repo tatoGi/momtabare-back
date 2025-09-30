@@ -44,7 +44,14 @@ return [
             'driver' => 'session',
             'provider' => 'webuser',
         ],
-       
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'webuser',
+        ],
+        'api' => [  // Add this block
+            'driver' => 'sanctum',
+            'provider' => 'webuser',
+        ],
     ],
 
     /*

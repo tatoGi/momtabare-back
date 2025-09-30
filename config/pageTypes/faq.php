@@ -13,14 +13,14 @@ return [
                 'type' => 'text',
                 'required' => true,
                 'label' => 'Question',
-                'placeholder' => 'Enter the frequently asked question'
+                'placeholder' => 'Enter the frequently asked question',
             ],
             'answer' => [
                 'type' => 'editor',
                 'required' => true,
                 'label' => 'Answer',
-                'placeholder' => 'Provide a detailed answer'
-            ]
+                'placeholder' => 'Provide a detailed answer',
+            ],
         ],
         'non_translatable' => [
             'order' => [
@@ -28,7 +28,7 @@ return [
                 'required' => false,
                 'label' => 'Display Order',
                 'placeholder' => '1',
-                'default' => 0
+                'default' => 0,
             ],
             'category' => [
                 'type' => 'select',
@@ -38,8 +38,8 @@ return [
                 'options' => [
                     'CLIENT' => 'Client Questions',
                     'ADMIN' => 'Admin Questions',
-                    'RETAILER' => 'Retailer Questions'
-                ]
+                    'RETAILER' => 'Retailer Questions',
+                ],
             ],
             'status' => [
                 'type' => 'select',
@@ -48,9 +48,9 @@ return [
                 'default' => 'active',
                 'options' => [
                     'active' => 'Active',
-                    'inactive' => 'Inactive'
-                ]
-            ]
-        ]
-    ]
+                    'inactive' => 'Inactive',
+                ],
+            ],
+        ],
+    ],
 ];

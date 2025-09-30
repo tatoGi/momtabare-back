@@ -26,7 +26,7 @@ class CreateLanguagesTable extends Migration
             $table->text('value')->nullable();
             $table->foreignId('language_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-            
+
             $table->unique(['group', 'key', 'language_id']);
         });
     }

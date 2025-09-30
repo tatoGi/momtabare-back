@@ -1,7 +1,7 @@
 <?php
+
 namespace App\Services;
 
-use App\Models\CategoryTranslation;
 use Illuminate\Support\Str;
 use Spatie\Sluggable\SlugOptions;
 
@@ -21,7 +21,6 @@ class SlugService
             ->saveSlugsTo('slug')
             ->usingSeparator('/');
 
-            return Str::slug($value, $slugOptions);
+        return Str::slug($value, $slugOptions);
     }
-    
 }

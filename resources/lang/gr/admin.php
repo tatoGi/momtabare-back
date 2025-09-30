@@ -90,7 +90,7 @@ return [
     'subscribers' => 'subscribers',
     'Languages' => 'Languages',
     'categories' => 'categories',
-    
+
     // Page Management
     'Manage_Page' => 'Διαχείριση Σελίδας',
     'Back_to_Pages' => 'Επιστροφή στις Σελίδες',

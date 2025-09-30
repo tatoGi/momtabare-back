@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Page;
 use App\Models\Banner;
+use App\Models\Page;
 use App\Models\Product;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class PageManagementController extends Controller
 {
@@ -18,10 +17,9 @@ class PageManagementController extends Controller
     public function index()
     {
         $pages = Page::with(['banners', 'products'])->paginate(10);
+
         return view('admin.pages.management.index', compact('pages'));
     }
-
-
 
     /**
      * Show the form for managing a page's banners and products.
@@ -29,12 +27,12 @@ class PageManagementController extends Controller
     public function manage(Page $page)
     {
         // Get all banners not already attached to this page
-        $availableBanners = Banner::whereDoesntHave('pages', function($query) use ($page) {
+        $availableBanners = Banner::whereDoesntHave('pages', function ($query) use ($page) {
             $query->where('page_id', $page->id);
         })->paginate(5);
 
         // Get all products not already attached to this page
-        $availableProducts = Product::whereDoesntHave('pages', function($query) use ($page) {
+        $availableProducts = Product::whereDoesntHave('pages', function ($query) use ($page) {
             $query->where('page_id', $page->id);
         })->paginate(5);
 
@@ -43,7 +41,7 @@ class PageManagementController extends Controller
             'banners' => $page->banners()->paginate(5), // Page's current banners
             'availableBanners' => $availableBanners,   // Available banners to add
             'products' => $page->products()->with('category')->paginate(5), // Page's current products
-            'availableProducts' => $availableProducts  // Available products to add
+            'availableProducts' => $availableProducts,  // Available products to add
         ]);
     }
 
@@ -61,7 +59,7 @@ class PageManagementController extends Controller
         if ($page->banners()->where('banner_id', $request->banner_id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This banner is already attached to the page.'
+                'message' => 'This banner is already attached to the page.',
             ], 422);
         }
 
@@ -71,14 +69,14 @@ class PageManagementController extends Controller
 
         // Attach the banner with sort order
         $page->banners()->attach($request->banner_id, [
-            'sort' => $sortOrder
+            'sort' => $sortOrder,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Banner attached successfully',
             'banner' => Banner::find($request->banner_id),
-            'sort' => $sortOrder
+            'sort' => $sortOrder,
         ]);
     }
 
@@ -87,10 +85,10 @@ class PageManagementController extends Controller
      */
     public function detachBanner(Page $page, Banner $banner): JsonResponse
     {
-        if (!$page->banners()->where('banner_id', $banner->id)->exists()) {
+        if (! $page->banners()->where('banner_id', $banner->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This banner is not attached to the page.'
+                'message' => 'This banner is not attached to the page.',
             ], 404);
         }
 
@@ -98,7 +96,7 @@ class PageManagementController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Banner detached successfully'
+            'message' => 'Banner detached successfully',
         ]);
     }
 
@@ -110,7 +108,7 @@ class PageManagementController extends Controller
         if ($page->type_id != 2) {
             return response()->json([
                 'success' => false,
-                'message' => 'Products can only be added to product pages.'
+                'message' => 'Products can only be added to product pages.',
             ], 403);
         }
 
@@ -123,7 +121,7 @@ class PageManagementController extends Controller
         if ($page->products()->where('product_id', $request->product_id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This product is already attached to the page.'
+                'message' => 'This product is already attached to the page.',
             ], 422);
         }
 
@@ -133,14 +131,14 @@ class PageManagementController extends Controller
 
         // Attach the product with sort order
         $page->products()->attach($request->product_id, [
-            'sort' => $sortOrder
+            'sort' => $sortOrder,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Product attached successfully',
             'product' => Product::find($request->product_id),
-            'sort' => $sortOrder
+            'sort' => $sortOrder,
         ]);
     }
 
@@ -149,10 +147,10 @@ class PageManagementController extends Controller
      */
     public function detachProduct(Page $page, Product $product): JsonResponse
     {
-        if (!$page->products()->where('product_id', $product->id)->exists()) {
+        if (! $page->products()->where('product_id', $product->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This product is not attached to the page.'
+                'message' => 'This product is not attached to the page.',
             ], 404);
         }
 
@@ -160,9 +158,7 @@ class PageManagementController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Product detached successfully'
+            'message' => 'Product detached successfully',
         ]);
     }
-
-
 }

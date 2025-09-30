@@ -2,5 +2,5 @@
 
 return [
     'mainbanner' => 'მთავარი ბანერი',
-    'staticbanner' => 'სტატიკური ბანერი'
+    'staticbanner' => 'სტატიკური ბანერი',
 ];

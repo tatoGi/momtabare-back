@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use App\Models\PageOptionsImage;
+use App\Services\PageTypeService;
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Services\PageTypeService;
 
 class Page extends Model
 {
@@ -20,10 +19,12 @@ class Page extends Model
     ];
 
     public $translatedAttributes = ['title', 'locale', 'keywords', 'slug', 'active', 'desc'];
+
     public function options()
     {
         return $this->hasMany(PageOption::class);
     }
+
     public function children()
     {
         return $this->hasMany(Page::class, 'parent_id')
@@ -32,7 +33,7 @@ class Page extends Model
                 $query->orderBy('sort', 'asc');
             }]);
     }
-    
+
     public function products()
     {
         return $this->belongsToMany(Product::class, 'page_product')
@@ -59,28 +60,29 @@ class Page extends Model
 
         });
 
-      }
+    }
 
     private static function _rearrange($array, $count, $parent = null)
     {
 
-    foreach ($array as $a) {
+        foreach ($array as $a) {
 
-        $count++;
+            $count++;
 
-        self::where('id', $a['id'])->update(['parent_id' => $parent, 'sort' => $count]);
+            self::where('id', $a['id'])->update(['parent_id' => $parent, 'sort' => $count]);
 
-        if (isset($a['children'])) {
+            if (isset($a['children'])) {
 
-        $count = self::_rearrange($a['children'], $count, $a['id']);
+                $count = self::_rearrange($a['children'], $count, $a['id']);
+
+            }
 
         }
 
-    }
-
-    return $count;
+        return $count;
 
     }
+
     public function images()
     {
         return $this->hasMany(PageOptionsImage::class);
@@ -132,6 +134,7 @@ class Page extends Model
     public function supportsPost()
     {
         $pageType = $this->getPageTypeConfig();
+
         return $pageType && ($pageType['has_posts'] ?? false);
     }
 

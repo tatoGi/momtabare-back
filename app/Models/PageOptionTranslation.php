@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class PageOptionTranslation extends Model
 {
     use HasFactory;
-    protected $fillable = ['page_option_id', 'locale', 'title', 'type'];
 
-   
+    protected $fillable = ['page_option_id', 'locale', 'title', 'type'];
 }

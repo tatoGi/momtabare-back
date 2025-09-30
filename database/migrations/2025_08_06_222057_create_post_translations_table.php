@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');
             $table->string('locale', 5);
             $table->timestamps();
-            
+
             $table->unique(['post_id', 'locale']);
             $table->index(['post_id', 'locale']);
         });

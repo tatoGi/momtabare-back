@@ -1,11 +1,12 @@
 <?php
 
 namespace App\Http\Controllers\Website;
+
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Models\ProductTranslation;
 use App\Models\Category;
 use App\Models\CategoryTranslation;
+use App\Models\Product;
+use App\Models\ProductTranslation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -16,14 +17,14 @@ class SearchController extends Controller
         // Validate the search query
         $validatedData = $request->validate(['que' => 'required']);
         $searchText = $validatedData['que'];
-        
+
         // Language slugs
         $locale = app()->getLocale();
         $language_slugs = [$locale => "$locale/search?que=$searchText"];
-        
+
         // Search in ProductTranslations
         $productTranslationIds = ProductTranslation::whereLocale($locale)
-            ->where(function($query) use ($searchText) {
+            ->where(function ($query) use ($searchText) {
                 $query->where('title', 'LIKE', "%{$searchText}%")
                     ->orWhere('description', 'LIKE', "%{$searchText}%")
                     ->orWhere('brand', 'LIKE', "%{$searchText}%")
@@ -39,8 +40,9 @@ class SearchController extends Controller
             ->appends(['que' => $searchText]);
 
         // Prepare product data
-        $productData = $products->map(function($product) use ($locale) {
+        $productData = $products->map(function ($product) use ($locale) {
             $translation = $product->translate($locale);
+
             return [
                 'product' => $product,
                 'slug' => $translation->slug ?? '#',
@@ -65,8 +67,9 @@ class SearchController extends Controller
             ->get();
 
         // Prepare category data
-        $categoryData = $categories->map(function($category) use ($locale) {
+        $categoryData = $categories->map(function ($category) use ($locale) {
             $translation = $category->translate($locale);
+
             return [
                 'slug' => $translation->slug ?? '#',
                 'title' => $translation->title,

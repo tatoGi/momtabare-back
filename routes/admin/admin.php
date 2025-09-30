@@ -9,7 +9,6 @@ use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\WebUserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
 Route::resource('/categories', CategoryController::class);
 Route::get('/contact', [ContactController::class, 'index'])->name('admin.contact');
 Route::get('/subscribers', [ContactController::class, 'subscribers']);
@@ -17,11 +16,36 @@ Route::get('/languages', [LanguageController::class, 'index'])->name('languages.
 Route::post('/languages/update', [LanguageController::class, 'update'])->name('languages.update');
 Route::resource('/banners', BannerController::class)->parameters([
     'banners' => 'banner',
-    'page_id' => 'page'
+    'page_id' => 'page',
 ]);
 Route::get('/banners/create/{page_id?}', [BannerController::class, 'create'])->name('banners.create.with.page');
 Route::delete('/category/icon/{id}', [CategoryController::class, 'deleteIcon'])->name('category.icon.delete');
-Route::get('/webusers', [WebUserController::class, 'index']);
+Route::get('/webusers', [WebUserController::class, 'index'])->name('admin.webusers.index');
+Route::get('/webusers/{id}', [WebUserController::class, 'show'])->name('admin.webusers.show');
+Route::post('/webusers/{id}/approve-retailer', [WebUserController::class, 'approveRetailer'])->name('admin.webusers.approve-retailer');
+Route::post('/webusers/{id}/reject-retailer', [WebUserController::class, 'rejectRetailer'])->name('admin.webusers.reject-retailer');
+Route::post('/webusers/{id}/toggle-status', [WebUserController::class, 'toggleStatus'])->name('admin.webusers.toggle-status');
+
+// Comment management routes
+Route::get('/comments', [WebUserController::class, 'comments'])->name('admin.comments.index');
+Route::post('/comments/{id}/approve', [WebUserController::class, 'approveComment'])->name('admin.comments.approve');
+Route::delete('/comments/{id}/reject', [WebUserController::class, 'rejectComment'])->name('admin.comments.reject');
+
+// Retailer product management routes
+Route::get('/retailer-products', [WebUserController::class, 'retailerProducts'])->name('admin.retailer-products.index');
+Route::post('/retailer-products/{id}/approve', [WebUserController::class, 'approveProduct'])->name('admin.retailer-products.approve');
+
+// Retailer shops management
+Route::resource('retailer-shops', 'App\Http\Controllers\Admin\RetailerShopController')->names([
+    'index' => 'admin.retailer-shops.index',
+    'create' => 'admin.retailer-shops.create',
+    'store' => 'admin.retailer-shops.store',
+    'show' => 'admin.retailer-shops.show',
+    'edit' => 'admin.retailer-shops.edit',
+    'update' => 'admin.retailer-shops.update',
+    'destroy' => 'admin.retailer-shops.destroy',
+]);
+Route::post('/retailer-products/{id}/reject', [WebUserController::class, 'rejectProduct'])->name('admin.retailer-products.reject');
 Route::delete('/banners/delete/image/{image_id}', [BannerController::class, 'deleteImage'])->name('banners.images.delete');
 
 // Image upload route for TinyMCE editor

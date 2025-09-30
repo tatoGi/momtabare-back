@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -14,6 +13,7 @@ class RegistrationEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $userName;
+
     public $language;
 
     /**
@@ -30,8 +30,8 @@ class RegistrationEmail extends Mailable
      */
     public function envelope(): Envelope
     {
-        $subject = $this->language === 'ka' 
-            ? 'მოგესალმებით მომთაბარეში!' 
+        $subject = $this->language === 'ka'
+            ? 'მოგესალმებით მომთაბარეში!'
             : 'Welcome to Momtabare!';
 
         return new Envelope(

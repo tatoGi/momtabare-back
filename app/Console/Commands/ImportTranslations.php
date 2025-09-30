@@ -5,8 +5,8 @@ namespace App\Console\Commands;
 use App\Models\Language;
 use App\Models\Translation;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 
 class ImportTranslations extends Command
 {
@@ -32,23 +32,25 @@ class ImportTranslations extends Command
     public function handle()
     {
         $force = $this->option('force');
-        
+
         // Get all language directories
         $langPath = resource_path('lang');
-        if (!File::isDirectory($langPath)) {
+        if (! File::isDirectory($langPath)) {
             $this->error("Language directory not found: {$langPath}");
+
             return 1;
         }
 
         $locales = array_map('basename', File::directories($langPath));
-        
+
         if (empty($locales)) {
             $this->warn('No language directories found.');
+
             return 0;
         }
 
-        $this->info('Found locales: ' . implode(', ', $locales));
-        
+        $this->info('Found locales: '.implode(', ', $locales));
+
         // Create or update languages in the database
         foreach ($locales as $locale) {
             $language = Language::firstOrCreate(
@@ -73,8 +75,9 @@ class ImportTranslations extends Command
 
         // Clear the cache
         Cache::forget('active_locales');
-        
+
         $this->info('Translations imported successfully!');
+
         return 0;
     }
 
@@ -85,20 +88,22 @@ class ImportTranslations extends Command
     {
         $langPath = resource_path("lang/{$locale}");
         $files = File::allFiles($langPath);
-        
+
         if (empty($files)) {
             $this->warn("No translation files found for locale: {$locale}");
+
             return;
         }
 
         $language = Language::where('code', $locale)->first();
-        if (!$language) {
+        if (! $language) {
             $this->error("Language not found for locale: {$locale}");
+
             return;
         }
 
         $bar = $this->output->createProgressBar(count($files));
-        $bar->setFormat(" %current%/%max% [%bar%] %percent:3s%% %message%");
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
         $bar->setMessage('Starting import...');
         $bar->start();
 
@@ -109,11 +114,12 @@ class ImportTranslations extends Command
         foreach ($files as $file) {
             $group = $file->getBasename('.php');
             $translations = include $file->getPathname();
-            
-            if (!is_array($translations)) {
+
+            if (! is_array($translations)) {
                 $bar->advance();
                 $bar->setMessage("Skipping invalid file: {$file->getFilename()}");
                 $skipped++;
+
                 continue;
             }
 
@@ -157,17 +163,17 @@ class ImportTranslations extends Command
     protected function flattenTranslations(array $translations, string $prefix = ''): array
     {
         $result = [];
-        
+
         foreach ($translations as $key => $value) {
             $newKey = $prefix ? "{$prefix}.{$key}" : $key;
-            
+
             if (is_array($value)) {
                 $result = array_merge($result, $this->flattenTranslations($value, $newKey));
             } else {
                 $result[$newKey] = $value;
             }
         }
-        
+
         return $result;
     }
 

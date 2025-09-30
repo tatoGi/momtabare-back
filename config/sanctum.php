@@ -13,11 +13,8 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1, localhost:5173',
-        env('APP_URL') ? ','.parse_url(env('APP_URL'), PHP_URL_HOST) : ''
-    ))),
+   'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', '127.0.0.1:5173,localhost:5173')),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -60,6 +57,7 @@ return [
     'middleware' => [
         'verify_csrf_token' => App\Http\Middleware\VerifyCsrfToken::class,
         'encrypt_cookies' => App\Http\Middleware\EncryptCookies::class,
+        'handle_cors' => \Illuminate\Http\Middleware\HandleCors::class,
     ],
 
 ];

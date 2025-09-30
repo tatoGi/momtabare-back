@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
-use App\Services\Frontend\FrontendService;
-use App\Models\Contact;
-use App\Models\Subscriber;
-use App\Models\Basket;
-use App\Models\BasketItem;
-use App\Models\Product;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Mail\ContactFormMail;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
-use App\Models\Language;
 use App\Mail\WelcomeMail;
+use App\Models\Contact;
+use App\Models\Language;
+use App\Models\Product;
+use App\Models\RetailerShop;
+use App\Models\Subscriber;
+use App\Models\WebUser;
+use App\Services\Frontend\FrontendService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class FrontendController extends Controller
 {
@@ -26,9 +26,98 @@ class FrontendController extends Controller
         $this->frontendService = $frontendService;
     }
 
+    /**
+     * Store a newly created retailer shop in storage.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function storeRetailerShop(Request $request)
+    {
+        // Validate the request
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'location' => 'required|string|max:255',
+            'contact_person' => 'required|string|max:255',
+            'contact_phone' => 'required|string|max:20',
+            'avatar' => 'nullable|image|max:5120', // 5MB max
+            'cover_image' => 'nullable|image|max:5120', // 5MB max
+        ]);
+
+        try {
+            // Get the authenticated user using sanctum guard
+            $user = Auth::guard('sanctum')->user();
+
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated.',
+                ], 401);
+            }
+
+            // Handle file uploads
+            $avatarPath = null;
+            $coverPath = null;
+
+            if ($request->hasFile('avatar')) {
+                $avatarPath = $request->file('avatar')->store('retailer-shops/avatars', 'public');
+            }
+
+            if ($request->hasFile('cover_image')) {
+                $coverPath = $request->file('cover_image')->store('retailer-shops/covers', 'public');
+            }
+
+            // Create the retailer shop
+            $retailerShop = RetailerShop::create([
+                'user_id' => $user->id,
+                'avatar' => $avatarPath,
+                'cover_image' => $coverPath,
+                'location' => $validated['location'],
+                'contact_person' => $validated['contact_person'],
+                'contact_phone' => $validated['contact_phone'],
+                'is_active' => false, // Set to false initially, admin needs to approve
+            ]);
+
+            // Create translations
+            $locales = config('app.available_locales', ['en', 'ka']);
+
+            foreach ($locales as $locale) {
+                $retailerShop->translateOrNew($locale)->name = $validated['name'];
+                $retailerShop->translateOrNew($locale)->description = ''; // Add empty description
+            }
+
+            $retailerShop->save();
+
+            // Update user's retailer status
+            $user->retailer_status = 'pending';
+            $user->retailer_requested_at = now();
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Retailer shop submitted successfully. Waiting for admin approval.',
+                'data' => $retailerShop,
+            ]);
+
+        } catch (\Exception $e) {
+            // Delete uploaded files if there was an error
+            if (isset($avatarPath) && Storage::disk('public')->exists($avatarPath)) {
+                Storage::disk('public')->delete($avatarPath);
+            }
+            if (isset($coverPath) && Storage::disk('public')->exists($coverPath)) {
+                Storage::disk('public')->delete($coverPath);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create retailer shop: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function homepage()
     {
         $data = $this->frontendService->getHomePageData();
+
         return response()->json($data);
     }
 
@@ -39,28 +128,28 @@ class FrontendController extends Controller
         }
 
         $data = $this->frontendService->getSectionData($slug);
-        
+
         return response()->json($data);
     }
 
     public function pages()
     {
         $pages = $this->frontendService->getActivePages();
-      
+
         return response()->json($pages);
     }
 
     /**
      * Get latest blog posts for homepage
      *
-     * @param int $limit Number of posts to return (default: 10)
+     * @param  int  $limit  Number of posts to return (default: 10)
      * @return \Illuminate\Http\JsonResponse
      */
     public function latestBlogPosts(Request $request)
     {
         $limit = $request->get('limit', 10);
         $data = $this->frontendService->getLatestBlogPosts($limit);
-        
+
         return response()->json($data);
     }
 
@@ -71,25 +160,27 @@ class FrontendController extends Controller
     {
         $page = $request->get('page', 1);
         $postsPerPage = $request->get('posts_per_page', 10);
-        
+
         $pages = $this->frontendService->getActivePagesWithPaginatedPosts($page, $postsPerPage);
+
         return response()->json($pages);
     }
 
     public function show($url)
     {
         $data = $this->frontendService->getProductByUrl($url);
-       
+
         if (isset($data['error'])) {
             return response()->json($data, 404);
         }
-        
+
         return response()->json($data);
     }
 
     public function categories()
     {
         $data = $this->frontendService->getCategories();
+
         return response()->json($data);
     }
 
@@ -132,7 +223,7 @@ class FrontendController extends Controller
             }
         }
 
-        if (!$picked) {
+        if (! $picked) {
             // Use session if already set and supported
             $sessionLocale = session('locale');
             if ($sessionLocale && in_array($sessionLocale, $supported, true)) {
@@ -183,6 +274,7 @@ class FrontendController extends Controller
             'data' => $items,
         ]);
     }
+
     public function submitContactForm(Request $request)
     {
         // Validate the form data
@@ -198,7 +290,7 @@ class FrontendController extends Controller
         }
 
         // Save the contact form data to the database
-        $contact = new Contact();
+        $contact = new Contact;
         $contact->name = $request->customerName;
         $contact->email = $request->customerEmail;
         $contact->subject = $request->contactSubject;
@@ -216,12 +308,12 @@ class FrontendController extends Controller
     {
         $data = $request->validate([
             'email' => 'required|email',
-            'name'  => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255',
         ]);
 
         $user = (object) [
             'email' => $data['email'],
-            'name'  => $data['name'] ?? null,
+            'name' => $data['name'] ?? null,
         ];
 
         Mail::to($user->email)->send(new WelcomeMail($user));
@@ -230,6 +322,7 @@ class FrontendController extends Controller
             'message' => 'Welcome email queued for sending (synchronously sent).',
         ]);
     }
+
     public function subscribe(Request $request)
     {
         $request->validate([
@@ -250,12 +343,12 @@ class FrontendController extends Controller
     /**
      * Get products list for Vue frontend
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function products(Request $request)
     {
         $query = Product::with(['category', 'images'])
+            ->notBlocked()
             ->where('active', 1)
             ->orderBy('sort_order');
 
@@ -266,7 +359,7 @@ class FrontendController extends Controller
 
         // Search by title if provided
         if ($request->has('search') && $request->search) {
-            $query->whereTranslationLike('title', '%' . $request->search . '%');
+            $query->whereTranslationLike('title', '%'.$request->search.'%');
         }
 
         // Pagination
@@ -286,6 +379,8 @@ class FrontendController extends Controller
                 'color' => $product->color,
                 'size' => $product->size,
                 'price' => $product->price,
+                'is_favorite' => $product->is_favorite,
+                'is_popular' => $product->is_popular,
                 'category' => $product->category ? [
                     'id' => $product->category->id,
                     'title' => $product->category->title,
@@ -294,11 +389,11 @@ class FrontendController extends Controller
                 'images' => $product->images->map(function ($image) {
                     return [
                         'id' => $image->id,
-                        'url' => asset('storage/' . $image->image_name),
+                        'url' => asset('storage/products/'.$image->image_name),
                         'alt' => $image->alt_text ?? '',
                     ];
                 }),
-                'featured_image' => $product->images->first() ? asset('storage/' . $product->images->first()->image_name) : null,
+                'featured_image' => $product->images->first() ? asset('storage/products/'.$product->images->first()->image_name) : null,
             ];
         });
 
@@ -311,27 +406,29 @@ class FrontendController extends Controller
                 'total' => $products->total(),
                 'from' => $products->firstItem(),
                 'to' => $products->lastItem(),
-            ]
+            ],
         ]);
     }
 
     /**
      * Get single product details for Vue frontend
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function productShow($id)
     {
-        $product = Product::with(['category', 'images'])
+        $product = Product::with(['category', 'images', 'retailer.products']) // load retailer & their products
             ->where('active', 1)
             ->find($id);
 
-        if (!$product) {
+        if (! $product) {
             return response()->json([
-                'error' => 'Product not found'
+                'error' => 'Product not found',
             ], 404);
         }
+
+        $product_owner = $product->retailer;
 
         // Transform the product data
         $transformedProduct = [
@@ -355,18 +452,102 @@ class FrontendController extends Controller
             'images' => $product->images->map(function ($image) {
                 return [
                     'id' => $image->id,
-                    'url' => asset('storage/' . $image->image_name),
+                    'url' => asset('storage/products/'.$image->image_name),
                     'alt' => $image->alt_text ?? '',
                 ];
             }),
-            'featured_image' => $product->images->first() ? asset('storage/' . $product->images->first()->image_name) : null,
+            'featured_image' => $product->images->first() ? asset('storage/products/'.$product->images->first()->image_name) : null,
             'created_at' => $product->created_at,
             'updated_at' => $product->updated_at,
+            'product_owner' => $product_owner ? [
+                'id' => $product_owner->id,
+                'first_name' => $product_owner->first_name,
+                'surname' => $product_owner->surname,
+                'email' => $product_owner->email,
+                'products_count' => $product_owner->products->count(),
+            ] : null,
         ];
 
         return response()->json([
-            'data' => $transformedProduct
+            'data' => $transformedProduct,
         ]);
     }
 
+    public function userProducts(Request $request)
+    {
+        $user = WebUser::find($request->user_id);
+        $products = $user->products()
+            ->with(['category', 'images'])
+            ->notBlocked()
+            ->get();
+        $product_owner = $user->retailer;
+
+        return response()->json([
+            'data' => $products,
+            'product_owner' => $product_owner,
+        ]);
+    }
+
+    /**
+     * Block/Unblock a product (Admin only)
+     */
+    public function toggleBlockProduct(Request $request, $productId)
+    {
+        $product = Product::findOrFail($productId);
+        $product->is_blocked = ! $product->is_blocked;
+        $product->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $product->is_blocked ? 'Product has been blocked' : 'Product has been unblocked',
+            'is_blocked' => $product->is_blocked,
+        ]);
+    }
+
+    /**
+     * Mark product as rented/available
+     */
+    public function toggleRentProduct(Request $request, $productId)
+    {
+        $request->validate([
+            'is_rented' => 'required|boolean',
+        ]);
+
+        $product = Product::findOrFail($productId);
+        $product->is_rented = $request->is_rented;
+        $product->rented_at = $request->is_rented ? now() : null;
+        $product->rented_by = $request->is_rented ? Auth::id() : null;
+        $product->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $request->is_rented ? 'Product marked as rented' : 'Product marked as available',
+            'is_rented' => $product->is_rented,
+        ]);
+    }
+
+    public function retailerShops()
+    {
+        $retailerShops = RetailerShop::all();
+
+        return response()->json($retailerShops);
+    }
+
+    public function retailerShopCount()
+    {
+        $retailerShops = RetailerShop::count();
+
+        return response()->json($retailerShops);
+    }
+
+    public function retailerShopEdit()
+    {
+        $retailerShop = Auth::user()->retailerShop;
+        $countProduct = Auth::user()->products()->count();
+
+        return response()->json([
+            'retailerShop' => $retailerShop,
+            'countProduct' => $countProduct,
+        ]);
+    }
 }

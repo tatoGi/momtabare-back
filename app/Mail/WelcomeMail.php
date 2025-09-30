@@ -26,11 +26,11 @@ class WelcomeMail extends Mailable
     public function build()
     {
         return $this->subject(__('Welcome to Momtabare'))
-                    ->view('emails.welcome')
-                    ->with([
-                        'user' => $this->user,
-                        'userName' => $this->user->name ?? null,
-                        'language' => app()->getLocale(),
-                    ]);
+            ->view('emails.welcome')
+            ->with([
+                'user' => $this->user,
+                'userName' => $this->user->name ?? null,
+                'language' => app()->getLocale(),
+            ]);
     }
 }

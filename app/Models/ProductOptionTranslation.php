@@ -8,5 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class ProductOptionTranslation extends Model
 {
     use HasFactory;
+
     protected $fillable = ['product_option_id', 'locale', 'title', 'type'];
 }

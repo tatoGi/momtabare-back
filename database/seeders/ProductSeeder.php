@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\ProductImage;
+use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
@@ -88,7 +88,7 @@ class ProductSeeder extends Seeder
             for ($i = 0; $i < 3; $i++) {
                 ProductImage::create([
                     'product_id' => $product->id,
-                    'image_name' => 'fake_image_' . ($i + 1) . '.jpg', // Replace with actual image names or use a faker library for dummy images
+                    'image_name' => 'fake_image_'.($i + 1).'.jpg', // Replace with actual image names or use a faker library for dummy images
                 ]);
             }
         }

@@ -2,11 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Auth\LoginController;
-use App\Http\Controllers\Api\Auth\RegisterController;
-use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Website\Auth\RegisterController as WebsiteRegisterController;
-
+use App\Http\Controllers\Website\FrontendController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -18,10 +14,38 @@ use App\Http\Controllers\Website\Auth\RegisterController as WebsiteRegisterContr
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
 
-// Registration route
-Route::post('/register', [\App\Http\Controllers\Website\AuthController::class, 'sendRegistrationEmail']);
+require __DIR__.'/website/auth.php';
+
+Route::get('/sanctum/csrf-cookie', function () {
+    return response()->json(['status' => 'success']);
+});
+    // Include website routes
+    require __DIR__.'/website/basket.php';
+    require __DIR__.'/website/retailer.php';
+    require __DIR__.'/website/general.php';
+    require __DIR__.'/website/products.php';
+    require __DIR__.'/website/comments.php';
+    require __DIR__.'/website/bog.php';
+    // Set the locale for the application (without locale prefix)
+    Route::get('/change-locale/{lang}', function ($lang) {
+        if (in_array($lang, array_keys(config('app.locales')))) {
+            session(['locale' => $lang]);
+            app()->setLocale($lang);
+
+            // Get the redirect path and clean it from any locale prefixes
+            $redirect = request('redirect', '/');
+            $redirect = ltrim(preg_replace('#^[a-z]{2}(?:-[A-Z]{2})?/#', '', $redirect), '/');
+            $redirect = $lang === 'en' ? $redirect : $lang.'/'.$redirect;
+
+            return redirect()->to($redirect);
+        }
+
+        return back();
+    })
+        ->name('set.locale')
+        ->withoutMiddleware(['locale']);
+
+    // Keep catch-all route at the end
+    Route::get('/website/{slug}', [FrontendController::class, 'index'])->where('slug', '.*');
 

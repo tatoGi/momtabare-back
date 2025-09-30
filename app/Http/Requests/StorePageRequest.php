@@ -23,7 +23,7 @@ class StorePageRequest extends FormRequest
 
         // Get valid type IDs from config
         $validTypeIds = collect(config('pageTypes'))->pluck('id')->toArray();
-        $rules['type_id'] = 'required|in:' . implode(',', $validTypeIds);
+        $rules['type_id'] = 'required|in:'.implode(',', $validTypeIds);
         $rules['active'] = 'nullable|boolean';
 
         return $rules;

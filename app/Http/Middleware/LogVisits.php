@@ -2,16 +2,16 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Visit;
 use Closure;
 use Illuminate\Http\Request;
-use App\Models\Visit;
 use Stevebauman\Location\Facades\Location;
+
 class LogVisits
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
      * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
@@ -28,5 +28,4 @@ class LogVisits
 
         return $next($request);
     }
-
 }

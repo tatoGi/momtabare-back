@@ -4,23 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 use RalphJSmit\Laravel\SEO\Support\HasSEO;
 use RalphJSmit\Laravel\SEO\Support\SEOData;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 class ProductTranslation extends Model
 {
-    use HasFactory, HasSlug, HasSEO;
+    use HasFactory, HasSEO, HasSlug;
 
     protected $fillable = [
         'title',
         'slug',
         'description',
-        'brand', 
+        'brand',
         'location',
         'color',
-        'warranty_period'
+        'warranty_period',
     ];
 
     // Disable timestamps
@@ -45,7 +45,7 @@ class ProductTranslation extends Model
     public function getDynamicSEOData(): SEOData
     {
         $ogImage = $this->getOgImage();
-        
+
         return new SEOData(
             title: $this->title,
             description: $this->description,
@@ -57,16 +57,16 @@ class ProductTranslation extends Model
     {
         $product = $this->product;
         dd($product);
-        if (!$product) {
+        if (! $product) {
             return null;
         }
-    
+
         $firstImage = $product->images()->first();
-    
-        if (!$firstImage) {
+
+        if (! $firstImage) {
             return null;
         }
-    
-        return $firstImage->getImageUrl(); 
+
+        return $firstImage->getImageUrl();
     }
 }

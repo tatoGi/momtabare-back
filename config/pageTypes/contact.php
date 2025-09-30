@@ -7,5 +7,5 @@ return [
     'name' => 'Contact Page',
     'slug' => 'contact',
     'has_posts' => false,
-    'post_attributes' => []
+    'post_attributes' => [],
 ];

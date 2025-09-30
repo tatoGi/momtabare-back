@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Mail\Message;
+use Illuminate\Support\Facades\Mail;
 
 class TestEmailController extends Controller
 {
@@ -12,18 +11,18 @@ class TestEmailController extends Controller
     {
         try {
             $to = 'tato.laperashvili95@gmail.com'; // Replace with your test email
-            
+
             Mail::raw('This is a test email from Laravel', function (Message $message) use ($to) {
                 $message->to($to)
-                        ->subject('Test Email from Laravel');
+                    ->subject('Test Email from Laravel');
             });
-            
+
             return response()->json(['message' => 'Test email sent successfully!']);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to send test email',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

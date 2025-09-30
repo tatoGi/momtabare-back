@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
+
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -14,11 +15,12 @@ class ProductOptionController extends Controller
      */
     public function index(Request $request)
     {
-     
+
         // Find the page by its ID
         $product = Product::findOrFail($request->product_id);
-        
+
         $options = $product->options;
+
         // Pass the options to the view
         return view('admin.product.options.index', compact('options', 'product'));
     }
@@ -36,7 +38,6 @@ class ProductOptionController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -69,7 +70,6 @@ class ProductOptionController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */

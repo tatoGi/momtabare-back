@@ -3,9 +3,8 @@
 namespace App\View\Components;
 
 use App\Models\Language;
-use Illuminate\View\Component;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\View\Component;
 
 class LanguageSwitcher extends Component
 {
@@ -20,7 +19,7 @@ class LanguageSwitcher extends Component
     {
         // Get available locales from config or database
         $this->availableLocales = config('app.available_locales', []);
-        
+
         // If no locales in config, try to get from database
         if (empty($this->availableLocales) && class_exists('App\Models\Language')) {
             try {
