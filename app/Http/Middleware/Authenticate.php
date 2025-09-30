@@ -19,20 +19,25 @@ class Authenticate
      */
     public function handle($request, Closure $next, ...$guards)
     {
+        // Skip authentication check for login routes
+        if ($request->routeIs('admin.login.dashboard') || $request->routeIs('admin.login.submit')) {
+            return $next($request);
+        }
+    
         if (empty($guards)) {
             $guards = [config('auth.defaults.guard')];
         }
-
+    
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 return $next($request);
             }
         }
-
+    
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
-
-        return Redirect::route('admin.login', [app()->getLocale()]);
+    
+        return redirect()->route('admin.login.dashboard', [app()->getLocale()]);
     }
 }

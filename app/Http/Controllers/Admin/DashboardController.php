@@ -17,7 +17,7 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-        dd('dfsadssa');
+      
         $products = Product::count();
         $activeProducts = Product::where('active', 1)->count();
         $inactiveProducts = Product::where('active', 0)->count();

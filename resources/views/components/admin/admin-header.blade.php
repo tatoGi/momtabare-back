@@ -47,10 +47,17 @@
                 <div class="w-8 h-8 flex">
                     
                 </div>
-                <!-- Dropdown menu -->
+              <!-- Dropdown menu -->
                 <div id="mobileDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden cursor-pointer">
-                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{{ __('admin.Profile') }}</a>
-                    <a href="/{{ app()->getlocale() }}/admin/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{{ __('admin.Logout') }}</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {{ __('admin.Profile') }}
+                    </a>
+                    <form method="POST" action="{{ route('admin.logout', app()->getLocale()) }}" class="w-full">
+                        @csrf
+                        <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            {{ __('admin.Logout') }}
+                        </button>
+                    </form>
                 </div>
             </div>
             

@@ -4,26 +4,20 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
-// Redirect root to locale
-Route::get('/', function () {
-    return redirect(app()->getLocale());
-})->middleware('auth');
-
+Route::get('/', [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
 // Admin authentication routes (only accessible to guests)
-Route::middleware('guest')->prefix('admin')->group(function () {
+Route::middleware(['guest', 'web'])->prefix('admin')->group(function () {
     Route::get('login/dashboard', [AdminAuthController::class, 'index'])
-        ->name('admin.login');
+        ->name('admin.login.dashboard');
         
     Route::post('login', [AdminAuthController::class, 'store'])
         ->name('admin.login.submit');
 });
 
 // Protected admin routes (require authentication)
-Route::middleware('auth')->prefix('admin')->group(function () {
-    // Admin dashboard
-    Route::get('/', [DashboardController::class, 'index'])
-        ->name('admin.dashboard');
-        
+Route::middleware(['auth', 'web'])->prefix('admin')->group(function () {
+    // Admin dashboard 
     // Logout Route
     Route::post('logout', [AdminAuthController::class, 'destroy'])
         ->name('admin.logout');
