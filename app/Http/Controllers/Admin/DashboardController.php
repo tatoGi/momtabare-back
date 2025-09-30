@@ -17,7 +17,6 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-      
         $products = Product::count();
         $activeProducts = Product::where('active', 1)->count();
         $inactiveProducts = Product::where('active', 0)->count();
