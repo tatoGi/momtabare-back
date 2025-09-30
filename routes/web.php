@@ -15,7 +15,7 @@ Route::middleware(['guest', 'web'])->prefix('admin')->group(function () {
         ->name('admin.login.submit');
 });
 
-// Protected admin routes (require authentication)
+// Protected admin routes (require authentication for server)
 Route::middleware(['auth', 'web'])->prefix('admin')->group(function () {
     // Admin dashboard 
     // Logout Route
