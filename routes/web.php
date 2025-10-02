@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
-   Route::get('/', [DashboardController::class, 'index'])
+   Route::get('/admin', [DashboardController::class, 'index'])
         ->name('admin.dashboard')->middleware('auth');
 // Admin authentication routes (only accessible to guests)
 Route::middleware(['guest', 'web'])->prefix('admin')->group(function () {
