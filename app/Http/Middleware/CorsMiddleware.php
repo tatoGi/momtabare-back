@@ -14,31 +14,33 @@ class CorsMiddleware
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
-    {
-        $origin = $this->getAllowedOrigin($request);
+{
+    $origin = $this->getAllowedOrigin($request);
 
-        // Handle preflight OPTIONS requests
-        if ($request->getMethod() === 'OPTIONS') {
-            return response('', 200)
-                ->header('Access-Control-Allow-Origin', $origin)
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, X-XSRF-TOKEN, Accept, X-Localization')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Max-Age', '86400');
-        }
-
-        $response = $next($request);
-
-        // Only add CORS headers if we have a valid response
-        if ($response && method_exists($response, 'headers')) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, X-XSRF-TOKEN, Accept, X-Localization');
-            $response->headers->set('Access-Control-Allow-Credentials', 'true');
-        }
-
-        return $response;
+    // Handle preflight OPTIONS requests
+    if ($request->getMethod() === 'OPTIONS') {
+        return response('', 204)  // 204 No Content
+            ->header('Access-Control-Allow-Origin', $origin)
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, X-XSRF-TOKEN, Accept, X-Localization, X-Socket-ID')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Max-Age', '86400')
+            ->header('Vary', 'Origin');
     }
+
+    $response = $next($request);
+
+    // Only add CORS headers if we have a valid response
+    if ($response && method_exists($response, 'header')) {
+        $response->headers->set('Access-Control-Allow-Origin', $origin);
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, X-XSRF-TOKEN, Accept, X-Localization, X-Socket-ID');
+        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        $response->headers->set('Vary', 'Origin');
+    }
+
+    return $response;
+}
 
     /**
      * Get the allowed origin based on the request
@@ -55,6 +57,7 @@ class CorsMiddleware
             'https://*.momtabare.ge',
             'https://momtabare.ge',
             'http://momtabare.ge',
+            'https://momtabare-front.vercel.app',
         ];
 
         // Add production domain if set
