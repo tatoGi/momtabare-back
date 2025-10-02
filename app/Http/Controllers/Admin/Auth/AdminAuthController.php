@@ -45,6 +45,6 @@ class AdminAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login' , app()->getLocale());
+        return redirect()->route('admin.login.dashboard' , app()->getLocale());
     }
 }
