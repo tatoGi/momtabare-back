@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AdminAuthController extends Controller
 {
@@ -16,6 +17,8 @@ class AdminAuthController extends Controller
     
     public function store(Request $request)
     {
+        Log::info('Login attempt', ['email' => $request->email, 'ip' => $request->ip()]);
+        
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
@@ -23,9 +26,11 @@ class AdminAuthController extends Controller
     
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+            Log::info('Login successful', ['user_id' => Auth::id()]);
             return redirect()->intended(route('admin.dashboard', app()->getLocale()));
         }
     
+        Log::warning('Login failed', ['email' => $request->email]);
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ]);
