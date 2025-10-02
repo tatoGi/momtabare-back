@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
 Route::get('/', [DashboardController::class, 'index'])
-        ->name('admin.dashboard');
+        ->name('admin.dashboard')->middleware('auth');
 // Admin authentication routes (only accessible to guests)
 Route::middleware(['guest', 'web'])->prefix('admin')->group(function () {
     Route::get('login/dashboard', [AdminAuthController::class, 'index'])
