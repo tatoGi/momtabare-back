@@ -11,25 +11,25 @@ class AdminAuthController extends Controller
 {
     public function index()
     {
-        
+
         return view('auth.login');
     }
-    
+
     public function store(Request $request)
     {
         Log::info('Login attempt', ['email' => $request->email, 'ip' => $request->ip()]);
-        
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
-    
+
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             Log::info('Login successful', ['user_id' => Auth::id()]);
-            return redirect()->intended(route('admin.dashboard', app()->getLocale()));
+           return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
-    
+
         Log::warning('Login failed', ['email' => $request->email]);
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
@@ -44,7 +44,7 @@ class AdminAuthController extends Controller
      */
     public function destroy(Request $request)
     {
-       
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
