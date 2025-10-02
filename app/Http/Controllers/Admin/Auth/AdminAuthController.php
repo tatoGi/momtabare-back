@@ -29,6 +29,7 @@ class AdminAuthController extends Controller
             Log::info('Login successful', ['user_id' => Auth::id()]);
             //changes made here
            return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
+          return redirect()->route('admin.dashboard', app()->getLocale());
         }
 
         Log::warning('Login failed', ['email' => $request->email]);

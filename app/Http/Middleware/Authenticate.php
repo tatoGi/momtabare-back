@@ -19,6 +19,7 @@ class Authenticate
      */
     public function handle($request, Closure $next, ...$guards)
     {
+       
         // Skip authentication check for login routes
         if ($request->routeIs('admin.login.dashboard') || $request->routeIs('admin.login.submit')) {
             return $next($request);
