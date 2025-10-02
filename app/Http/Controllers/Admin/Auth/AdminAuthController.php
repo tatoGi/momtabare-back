@@ -27,6 +27,7 @@ class AdminAuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             Log::info('Login successful', ['user_id' => Auth::id()]);
+            //changes made here
            return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
 
