@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="{{ asset('css/admin-login.css') }}">
 
     <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}" defer></script>
 </head>
 
 <body>
