@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\WebUser;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -17,7 +18,7 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-       
+       dd(Auth::user());
         $products = Product::count();
         $activeProducts = Product::where('active', 1)->count();
         $inactiveProducts = Product::where('active', 0)->count();
