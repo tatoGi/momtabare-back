@@ -26,7 +26,7 @@ class AdminAuthController extends Controller
 
         if (Auth::guard('web')->attempt($credentials)) {
             $request->session()->regenerate();
-            dd(Auth::user());
+                dd($request->session()->regenerate(), $request->all());
             return redirect()->route('admin.dashboard', app()->getLocale());
         }
 
