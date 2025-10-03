@@ -24,12 +24,14 @@ class AdminAuthController extends Controller
             'password' => ['required'],
         ]);
 
-       if (Auth::guard('web')->attempt($credentials)) {
-                $request->session()->regenerate();
-                return redirect()->route('admin.dashboard', app()->getLocale());
-            }
+        if (Auth::guard('web')->attempt($credentials)) {
+            $request->session()->regenerate();
+
+            return redirect()->route('admin.dashboard', app()->getLocale());
+        }
 
         Log::warning('Login failed', ['email' => $request->email]);
+
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ]);
@@ -38,8 +40,7 @@ class AdminAuthController extends Controller
     /**
      * Log the user out of the application.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Request $request)
     {
@@ -49,6 +50,6 @@ class AdminAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login.dashboard' , app()->getLocale());
+        return redirect()->route('admin.login.dashboard', app()->getLocale());
     }
 }

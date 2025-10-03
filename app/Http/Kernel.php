@@ -43,7 +43,9 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
+            \Illuminate\Http\Middleware\HandleCors::class,
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \App\Http\Middleware\SetLocaleFromHeader::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
@@ -67,6 +69,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'locale' => \App\Http\Middleware\SetLocale::class,
+        'locale.header' => \App\Http\Middleware\SetLocaleFromHeader::class,
     ];
 
     /**
@@ -86,6 +89,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'locale' => \App\Http\Middleware\SetLocale::class,
+        'locale.header' => \App\Http\Middleware\SetLocaleFromHeader::class,
         'retailer' => \App\Http\Middleware\RetailerMiddleware::class,
     ];
 }

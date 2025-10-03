@@ -4,8 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
-   Route::get('/admin', [DashboardController::class, 'index'])
-        ->name('admin.dashboard')->middleware('auth');
+Route::get('/admin', [DashboardController::class, 'index'])
+    ->name('admin.dashboard')->middleware('auth');
 // Admin authentication routes (only accessible to guests)
 Route::middleware(['guest', 'web'])->prefix('admin')->group(function () {
     Route::get('login/dashboard', [AdminAuthController::class, 'index'])
@@ -24,9 +24,9 @@ Route::middleware(['auth', 'web'])->prefix('admin')->group(function () {
         ->name('admin.logout');
 
     // Other admin routes
-    require __DIR__.'/admin/admin.php';
-    require __DIR__.'/admin/products.php';
-    require __DIR__.'/admin/page.php';
-    require __DIR__.'/admin/settings.php';
-    require __DIR__.'/admin/languages.php';
+    require __DIR__ . '/admin/admin.php';
+    require __DIR__ . '/admin/products.php';
+    require __DIR__ . '/admin/page.php';
+    require __DIR__ . '/admin/settings.php';
+    require __DIR__ . '/admin/languages.php';
 });
