@@ -16,35 +16,41 @@ class AdminAuthController extends Controller
     }
 
     public function store(Request $request)
-    {
-        Log::info('Login attempt', ['email' => $request->email, 'ip' => $request->ip()]);
+{
+    Log::info('Login attempt', [
+        'email' => $request->email,
+        'ip' => $request->ip(),
+        'user_agent' => $request->header('User-Agent')
+    ]);
 
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+
+    // Try both guards if needed
+    $guard = Auth::guard('admin') ? 'admin' : 'web';
+
+    if (Auth::guard($guard)->attempt($credentials)) {
+        // Debug session data
+        Log::info('Login successful', [
+            'user_id' => Auth::guard($guard)->id(),
+            'session_id' => session()->getId(),
+            'session_data' => session()->all()
         ]);
 
-
-        if (Auth::guard('web')->attempt($credentials)) {
-            $request->session()->regenerate();
-                dd($request->session()->regenerate(), $request->all());
-            return redirect()->route('admin.dashboard', app()->getLocale());
-        }
-
-
-       if (Auth::guard('web')->attempt($credentials)) {
-          
-                $request->session()->regenerate();
-                return redirect()->route('admin.dashboard', app()->getLocale());
-            }
-
-
-        Log::warning('Login failed', ['email' => $request->email]);
-
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ]);
+        return redirect()->intended(route('admin.dashboard', app()->getLocale()));
     }
+
+    Log::warning('Login failed', [
+        'email' => $request->email,
+        'error' => 'Invalid credentials'
+    ]);
+
+    return back()->withErrors([
+        'email' => 'The provided credentials do not match our records.',
+    ])->onlyInput('email');
+}
 
     /**
      * Log the user out of the application.
