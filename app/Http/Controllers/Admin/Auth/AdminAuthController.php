@@ -24,11 +24,20 @@ class AdminAuthController extends Controller
             'password' => ['required'],
         ]);
 
+
         if (Auth::guard('web')->attempt($credentials)) {
             $request->session()->regenerate();
 
             return redirect()->route('admin.dashboard', app()->getLocale());
         }
+
+
+       if (Auth::guard('web')->attempt($credentials)) {
+          
+                $request->session()->regenerate();
+                return redirect()->route('admin.dashboard', app()->getLocale());
+            }
+
 
         Log::warning('Login failed', ['email' => $request->email]);
 
