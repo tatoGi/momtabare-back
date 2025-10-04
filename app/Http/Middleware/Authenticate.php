@@ -3,24 +3,50 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
 
-class Authenticate
+class Authenticate extends Middleware
 {
     /**
-     * Handle an incoming request.
+     * Handle an unauthenticated user.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string[]  ...$guards
-     * @return mixed
+     * @param  array  $guards
+     * @return void
+     *
+     * @throws \Illuminate\Auth\AuthenticationException
      */
-    protected function redirectTo($request)
+    protected function authenticate($request, array $guards)
     {
-        if (!$request->expectsJson()) {
-            return route('admin.login.dashboard', ['locale' => app()->getLocale()]);
+        if (empty($guards)) {
+            $guards = [null];
         }
+
+        foreach ($guards as $guard) {
+            if ($this->auth->guard($guard)->check()) {
+                return $this->auth->shouldUse($guard);
+            }
+        }
+
+        $this->unauthenticated($request, $guards);
+    }
+
+    /**
+     * Handle an unauthenticated user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  array  $guards
+     * @return void
+     *
+     * @throws \Illuminate\Auth\AuthenticationException
+     */
+    protected function unauthenticated($request, array $guards)
+    {
+        if ($request->expectsJson()) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        return redirect()->guest(route('admin.login.dashboard', ['locale' => app()->getLocale()]));
     }
 }
