@@ -38,7 +38,7 @@ class AdminAuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            
+            dd($request->session()->getId());
             return redirect()
                 ->intended(route('admin.dashboard', ['locale' => app()->getLocale()]))
                 ->with('status', 'You are now logged in!');
