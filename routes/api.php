@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// CORS preflight for all routes
+// CORS preflight for all routes for front
 Route::options('/{any}', function () {
     return response('', 200)
         ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
