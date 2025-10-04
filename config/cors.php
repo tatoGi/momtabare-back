@@ -20,8 +20,8 @@ return [
         'http://127.0.0.1:5173',
         'https://momtabare-front.vercel.app',
         'https://admin.momtabare.com',
-          'https://momtabare.com',
-            'https://www.momtabare.com' 
+        'https://momtabare.com',
+        'https://www.momtabare.com' 
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
