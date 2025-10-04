@@ -17,28 +17,10 @@ class Authenticate
      * @param  string[]  ...$guards
      * @return mixed
      */
-    public function handle($request, Closure $next, ...$guards)
+    protected function redirectTo($request)
     {
-       
-        // Skip authentication check for login routes
-        if ($request->routeIs('admin.login.dashboard') || $request->routeIs('admin.login.submit')) {
-            return $next($request);
+        if (!$request->expectsJson()) {
+            return route('admin.login.dashboard', ['locale' => app()->getLocale()]);
         }
-    
-        if (empty($guards)) {
-            $guards = [config('auth.defaults.guard')];
-        }
-    
-        foreach ($guards as $guard) {
-            if (Auth::guard($guard)->check()) {
-                return $next($request);
-            }
-        }
-    
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
-    
-        return redirect()->route('admin.login.dashboard', [app()->getLocale()]);
     }
 }

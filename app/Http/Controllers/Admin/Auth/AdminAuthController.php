@@ -17,36 +17,19 @@ class AdminAuthController extends Controller
 
     public function store(Request $request)
     {
-        Log::info('Login attempt', [
-            'email' => $request->email,
-            'ip' => $request->ip(),
-            'user_agent' => $request->header('User-Agent')
-        ]);
-    
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+            'email' => 'required|email',
+            'password' => 'required',
         ]);
     
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $request->remember)) {
             $request->session()->regenerate();
-            
-            Log::info('Login successful', [
-                'user_id' => Auth::id(),
-                'session_id' => session()->getId()
-            ]);
-    
-            return redirect()->intended(route('admin.dashboard', app()->getLocale()));
+            return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
         }
-    
-        Log::warning('Login failed', [
-            'email' => $request->email,
-            'error' => 'Invalid credentials'
-        ]);
     
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        ]);
     }
 
     /**
