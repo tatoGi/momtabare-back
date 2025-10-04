@@ -3,17 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
-
+use Illuminate\Support\Facades\Log;
 // Test session route (for debugging)
-Route::get('/test-session', function() {
-    return response()->json([
+Route::post('/login-debug', function (\Illuminate\Http\Request $request) {
+    $credentials = $request->only('email','password');
+    Log::info('Login attempt', [
+        'credentials' => $credentials,
         'session_id' => session()->getId(),
-        'session_test' => session('test', 'not_set'),
-        'auth_check' => auth()->check(),
-        'user' => auth()->user(),
-        'session_data' => session()->all()
+        'cookies' => $request->cookies->all()
     ]);
-})->name('test.session');
+    return 'Check laravel.log';
+});
 
 // Public routes (no authentication required)
 Route::middleware(['web'])->group(function () {
