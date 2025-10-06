@@ -31,45 +31,22 @@ class AdminAuthController extends Controller
      */
     public function login(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string',
-            ]);
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
 
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
 
-            $credentials = $request->only('email', 'password');
-            $remember = $request->filled('remember');
-
-
-            if (Auth::attempt($credentials, $remember)) {
-                $user = Auth::user();
-
-                $request->session()->regenerate();
-
-                return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
-            }
-
-            // If we get here, authentication failed
-            Log::warning('Authentication failed', [
-                'email' => $credentials['email'],
-                'error' => 'Invalid credentials'
-            ]);
-
-            return back()->withErrors([
-                'email' => __('auth.failed'),
-            ])->withInput($request->only('email', 'remember'));
-        } catch (\Exception $e) {
-            Log::error('Login error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return back()->withErrors([
-                'email' => 'An error occurred during login. Please try again.',
-            ])->withInput($request->only('email', 'remember'));
+            return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
         }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
     }
+
 
     /**
      * Log the user out of the application.
