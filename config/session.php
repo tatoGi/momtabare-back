@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'driver' => 'database',
+    'driver' => env('SESSION_DRIVER', 'database'),
 
     /*
     |--------------------------------------------------------------------------
@@ -72,7 +72,10 @@ return [
     |
     */
 
-    'connection' => env('DB_CONNECTION', 'mysql'),
+    'connection' => null, // Use default database connection
+    'table' => 'sessions',
+    'lottery' => [2, 100], // 2% chance of garbage collection on each request
+    'expire_on_close' => false,
 
     /*
     |--------------------------------------------------------------------------

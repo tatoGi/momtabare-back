@@ -14,6 +14,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // Clean up old sessions daily at midnight
+        $schedule->command('app:cleanup-sessions')
+            ->dailyAt('00:00')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
+            
         // Check BOG payments status every 5 minutes
         $schedule->command('bog:check-payments')
             ->everyFiveMinutes()

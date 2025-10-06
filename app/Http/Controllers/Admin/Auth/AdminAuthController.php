@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
@@ -53,27 +54,26 @@ class AdminAuthController extends Controller
             'remember' => 'boolean',
         ]);
 
-        if (Auth::attempt(
-            ['email' => $credentials['email'], 'password' => $credentials['password']],
-            $request->filled('remember')
-        )) {
-            // Debug session after authentication
-            $sessionData = [
-                'session_id' => Session::getId(),
-                'session_data' => session()->all(),
-                'user_id' => Auth::id(),
-            ];
-            Log::debug('Session After Auth', $sessionData);
+        // Get user by credentials without logging in
+        $user = Auth::getProvider()->retrieveByCredentials($credentials);
+        
+        if ($user && Auth::getProvider()->validateCredentials($user, $credentials)) {
+            // Manually log in the user
+            Auth::login($user, $request->filled('remember'));
             
+            // Regenerate session ID to prevent session fixation
             $request->session()->regenerate();
-
-            $request->session()->regenerate();
+            
+            // Clean up other sessions for this user
+            DB::table('sessions')
+                ->where('user_id', Auth::id())
+                ->where('id', '!=', $request->session()->getId())
+                ->delete();
             
             // Log the successful login
             Log::info('Admin login successful', [
                 'user_id' => Auth::id(),
                 'email' => $credentials['email'],
-                'session_id' => Session::getId(),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
