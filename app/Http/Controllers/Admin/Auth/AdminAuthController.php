@@ -46,7 +46,7 @@ class AdminAuthController extends Controller
 
         // Get user by credentials without logging in
         $user = Auth::getProvider()->retrieveByCredentials($credentials);
-        
+        dd($user);
         if ($user && Auth::getProvider()->validateCredentials($user, $credentials)) {
             // Manually log in the user
             Auth::login($user, $request->filled('remember'));
