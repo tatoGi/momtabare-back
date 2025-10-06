@@ -29,9 +29,9 @@ class Authenticate extends Middleware
         }
     
         foreach ($guards as $guard) {
-           
+            dd($guard);
             if (Auth::guard($guard)->check()) {
-                dd($guard);
+               
                 // Additional check for admin routes
                 if ($request->is('admin/*') && !Auth::user()->is_admin) {
                    
