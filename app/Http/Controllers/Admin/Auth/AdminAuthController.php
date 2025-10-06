@@ -39,8 +39,20 @@ class AdminAuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
+            // Debug session info
+            Log::info('Login successful', [
+                'user_id' => Auth::id(),
+                'session_id' => session()->getId(),
+                'session_data' => session()->all(),
+            ]);
+
             return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
         }
+
+        Log::warning('Login failed', [
+            'email' => $credentials['email'],
+            'session_id' => session()->getId(),
+        ]);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',

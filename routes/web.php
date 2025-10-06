@@ -13,6 +13,10 @@ Route::get('/test-session', function () {
         'auth_check' => Auth::check(),
         'user' => Auth::user(),
         'session_data' => session()->all(),
+        'session_driver' => config('session.driver'),
+        'session_lifetime' => config('session.lifetime'),
+        'session_path' => config('session.files'),
+        'cookies' => request()->cookies->all(),
     ]);
 })->name('test.session');
 
