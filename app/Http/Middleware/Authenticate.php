@@ -33,6 +33,7 @@ class Authenticate extends Middleware
                
                 // Additional check for admin routes
                 if ($request->is('admin/*') && !Auth::user()->is_admin) {
+                    dd($guard);
                     Auth::logout();
                     return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
                 }
