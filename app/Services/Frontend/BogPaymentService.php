@@ -311,6 +311,7 @@ class BogPaymentService
                 'error' => $this->lastError,
             ]);
         }
+
         return $response;
     }
 

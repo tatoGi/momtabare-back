@@ -37,8 +37,7 @@
             </div>
                @endif
 
-            <form method="POST" action="{{ route('admin.login.submit', app()->getLocale()) }}">
-
+            <form method="POST" action="{{ route('admin.login.submit', ['locale' => app()->getLocale()]) }}">
                 @csrf
                 <h2>Sign in</h2>
 
@@ -57,7 +56,13 @@
                     <i></i>
                 </div>
 
-
+                <!-- Remember Me -->
+                <div class="remember-forgot">
+                    <label for="remember_me" class="inline-flex items-center">
+                        <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
+                        <span class="ml-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+                    </label>
+                </div>
 
                 <input type="submit" id="submit" value="{{ __('Log in') }}">
             </form>

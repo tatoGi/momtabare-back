@@ -7,14 +7,14 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\WebUser;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function __construct()
-        {
-            $this->middleware('auth');
-        }
+    {
+        $this->middleware('auth');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -22,7 +22,7 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-       
+
         $products = Product::count();
         $activeProducts = Product::where('active', 1)->count();
         $inactiveProducts = Product::where('active', 0)->count();

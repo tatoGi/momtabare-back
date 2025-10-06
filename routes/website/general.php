@@ -39,4 +39,3 @@ Route::post('/auth/send-welcome-email', [FrontendController::class, 'sendWelcome
 
 // Sitemap
 Route::get('/sitemap', [SitemapController::class, 'generate']);
-

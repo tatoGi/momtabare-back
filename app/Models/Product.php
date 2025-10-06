@@ -127,7 +127,6 @@ class Product extends Model implements TranslatableContract
         return $this->approvedComments()->count();
     }
 
-
     public function getDynamicSEOData(): SEOData
     {
         $firstImage = $this->images()->first();

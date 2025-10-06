@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
+use App\Models\BogPayment;
+use App\Services\Frontend\BogAuthService;
+use App\Services\Frontend\BogPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Services\Frontend\BogAuthService;
-use App\Services\Frontend\BogPaymentService;
-use App\Models\BogPayment;
 
 class BogPaymentController extends Controller
 {
     protected $bogAuth;
+
     protected $bogPayment;
 
     public function __construct(BogAuthService $bogAuth, BogPaymentService $bogPayment)
@@ -20,6 +21,7 @@ class BogPaymentController extends Controller
         $this->bogAuth = $bogAuth;
         $this->bogPayment = $bogPayment;
     }
+
     /**
      * Test endpoint to verify requests are reaching the controller
      */
@@ -45,7 +47,7 @@ class BogPaymentController extends Controller
     {
         $result = $this->bogAuth->getAccessToken();
 
-        if (!$result || empty($result['access_token'])) {
+        if (! $result || empty($result['access_token'])) {
             return response()->json(['success' => false, 'message' => 'Unable to get token'], 500);
         }
 
@@ -62,17 +64,15 @@ class BogPaymentController extends Controller
     /**
      * Create a new payment order with BOG
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function createOrder(Request $request)
     {
         // Debug: Log when method is called
-      
 
         try {
             // Debug: Log raw request data before validation
-          
+
             $validated = $request->validate([
                 'callback_url' => 'required|url',
                 'purchase_units' => 'required|array',
@@ -99,12 +99,12 @@ class BogPaymentController extends Controller
                     'debug_mode' => true,
                     'validated_data' => $validated,
                     'message' => 'Debug: Check Laravel logs for detailed request info',
-                    'logs_location' => 'storage/logs/laravel.log'
+                    'logs_location' => 'storage/logs/laravel.log',
                 ], 200);
             }
 
             // Custom validation: if save_card is true, user must be authenticated
-            if (($validated['save_card'] ?? false) && !Auth::check()) {
+            if (($validated['save_card'] ?? false) && ! Auth::check()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Authentication required to save card. Please log in first.',
@@ -114,7 +114,7 @@ class BogPaymentController extends Controller
 
             // Get authentication token
             $tokenResult = $this->bogAuth->getAccessToken();
-            if (!$tokenResult || empty($tokenResult['access_token'])) {
+            if (! $tokenResult || empty($tokenResult['access_token'])) {
                 throw new \Exception('Failed to authenticate with BOG');
             }
 
@@ -146,7 +146,7 @@ class BogPaymentController extends Controller
 
             // Add optional fields
             // Add optional fields
-            if (!empty($validated['external_order_id'])) {
+            if (! empty($validated['external_order_id'])) {
                 $payload['external_order_id'] = $validated['external_order_id'];
             }
 
@@ -175,7 +175,7 @@ class BogPaymentController extends Controller
                 $validated['language'] ?? 'en',
             );
 
-            if (!$response) {
+            if (! $response) {
                 throw new \Exception($this->bogPayment->getLastError() ?? 'Failed to create order');
             }
 
@@ -230,12 +230,12 @@ class BogPaymentController extends Controller
     public function orderDetails($orderId)
     {
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(['success' => false, 'message' => 'Unable to authenticate with BOG'], 500);
         }
 
         $details = $this->bogPayment->getOrderDetails($tokenResult['access_token'], $orderId);
-        if (!$details) {
+        if (! $details) {
             return response()->json(['success' => false, 'message' => 'Failed to fetch order details'], 500);
         }
 
@@ -245,7 +245,6 @@ class BogPaymentController extends Controller
     /**
      * Handle BOG payment callback
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function handleCallback(Request $request)
@@ -253,16 +252,18 @@ class BogPaymentController extends Controller
         // Get the order ID from the callback
         $orderId = $request->input('order_id');
 
-        if (!$orderId) {
+        if (! $orderId) {
             Log::error('No order_id in BOG callback', $request->all());
+
             return response()->json(['status' => 'error', 'message' => 'No order_id provided']);
         }
 
         // Find the payment in database
         $payment = \App\Models\BogPayment::where('bog_order_id', $orderId)->first();
 
-        if (!$payment) {
-            Log::error('Payment not found for order_id: ' . $orderId);
+        if (! $payment) {
+            Log::error('Payment not found for order_id: '.$orderId);
+
             return response()->json(['status' => 'error', 'message' => 'Payment not found']);
         }
 
@@ -270,7 +271,7 @@ class BogPaymentController extends Controller
             // Verify payment status with BOG API
             $token = $this->bogAuth->getAccessToken();
 
-            if (!$token || empty($token['access_token'])) {
+            if (! $token || empty($token['access_token'])) {
                 throw new \Exception('Failed to get BOG access token');
             }
 
@@ -347,7 +348,7 @@ class BogPaymentController extends Controller
                     'status' => $orderDetails['status'] ?? 'unknown',
                     'save_card_requested' => $payment->save_card_requested ?? false,
                     'user_id' => $payment->user_id ?? null,
-                    'user_authenticated' => !empty($payment->user_id),
+                    'user_authenticated' => ! empty($payment->user_id),
                 ]);
             }
 
@@ -358,7 +359,7 @@ class BogPaymentController extends Controller
 
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
-            Log::error('Error processing BOG callback: ' . $e->getMessage(), [
+            Log::error('Error processing BOG callback: '.$e->getMessage(), [
                 'order_id' => $orderId,
                 'exception' => $e,
             ]);
@@ -376,8 +377,7 @@ class BogPaymentController extends Controller
     /**
      * Save card for automatic payments (subscriptions)
      *
-     * @param Request $request
-     * @param string $orderId
+     * @param  string  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveCardForAutomaticPayments(Request $request, $orderId)
@@ -387,7 +387,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -409,8 +409,7 @@ class BogPaymentController extends Controller
     /**
      * Reject pre-authorization
      *
-     * @param Request $request
-     * @param string $orderId
+     * @param  string  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function rejectPreAuthorization(Request $request, $orderId)
@@ -421,7 +420,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -443,8 +442,7 @@ class BogPaymentController extends Controller
     /**
      * Confirm pre-authorization
      *
-     * @param Request $request
-     * @param string $orderId
+     * @param  string  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function confirmPreAuthorization(Request $request, $orderId)
@@ -456,7 +454,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -478,8 +476,7 @@ class BogPaymentController extends Controller
     /**
      * Process automatic payment with saved card
      *
-     * @param Request $request
-     * @param string $parentOrderId
+     * @param  string  $parentOrderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function processAutomaticPayment(Request $request, $parentOrderId)
@@ -491,7 +488,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -513,8 +510,7 @@ class BogPaymentController extends Controller
     /**
      * Make payment with saved card
      *
-     * @param Request $request
-     * @param string $parentOrderId
+     * @param  string  $parentOrderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function payWithSavedCard(Request $request, $parentOrderId)
@@ -530,7 +526,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -552,8 +548,7 @@ class BogPaymentController extends Controller
     /**
      * Delete saved card
      *
-     * @param Request $request
-     * @param string $orderId
+     * @param  string  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function deleteSavedCard(Request $request, $orderId)
@@ -563,7 +558,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -581,17 +576,18 @@ class BogPaymentController extends Controller
 
         return response()->json($result, $result['status'] ?? 400);
     }
+
     public function getOrderDetails($orderId)
     {
         try {
             $tokenResult = $this->bogAuth->getAccessToken();
-            if (!$tokenResult || empty($tokenResult['access_token'])) {
+            if (! $tokenResult || empty($tokenResult['access_token'])) {
                 throw new \Exception('Failed to authenticate with BOG');
             }
 
             $details = $this->bogPayment->getOrderDetails($tokenResult['access_token'], $orderId);
 
-            if (!$details) {
+            if (! $details) {
                 throw new \Exception($this->bogPayment->getLastError() ?? 'Failed to get order details');
             }
 
@@ -619,8 +615,7 @@ class BogPaymentController extends Controller
     /**
      * Save card details during payment process
      *
-     * @param Request $request
-     * @param string $orderId
+     * @param  string  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveCard(Request $request, $orderId)
@@ -630,7 +625,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -664,8 +659,7 @@ class BogPaymentController extends Controller
     /**
      * Charge a saved card for payment
      *
-     * @param Request $request
-     * @param string $parentOrderId
+     * @param  string  $parentOrderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function chargeCard(Request $request, $parentOrderId)
@@ -680,7 +674,7 @@ class BogPaymentController extends Controller
         ]);
 
         $tokenResult = $this->bogAuth->getAccessToken();
-        if (!$tokenResult || empty($tokenResult['access_token'])) {
+        if (! $tokenResult || empty($tokenResult['access_token'])) {
             return response()->json(
                 [
                     'success' => false,
@@ -712,6 +706,7 @@ class BogPaymentController extends Controller
             $result['status'] ?? 500,
         );
     }
+
     public function checkOrderStatus($orderId)
     {
         try {
@@ -723,7 +718,7 @@ class BogPaymentController extends Controller
                 'data' => $payment->response_data,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error checking order status: ' . $e->getMessage(), [
+            Log::error('Error checking order status: '.$e->getMessage(), [
                 'order_id' => $orderId,
             ]);
 
@@ -742,17 +737,16 @@ class BogPaymentController extends Controller
      * Test BOG payment callback functionality
      * This method can be used to test if callbacks are being processed correctly
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function testCallback(Request $request)
     {
         // Test with sample data
-        $testOrderId = 'test_' . time();
+        $testOrderId = 'test_'.time();
         $testData = [
             'order_id' => $testOrderId,
             'status' => 'completed',
-            'transaction_id' => 'test_txn_' . time(),
+            'transaction_id' => 'test_txn_'.time(),
             'amount' => 100.0,
             'currency' => 'GEL',
             'test' => true,
@@ -762,7 +756,7 @@ class BogPaymentController extends Controller
             // Create a test payment record
             $payment = BogPayment::create([
                 'bog_order_id' => $testOrderId,
-                'external_order_id' => 'test_external_' . time(),
+                'external_order_id' => 'test_external_'.time(),
                 'amount' => 100.0,
                 'currency' => 'GEL',
                 'status' => 'pending',
@@ -784,7 +778,7 @@ class BogPaymentController extends Controller
             return response()->json(
                 [
                     'success' => false,
-                    'message' => 'Test callback failed: ' . $e->getMessage(),
+                    'message' => 'Test callback failed: '.$e->getMessage(),
                 ],
                 500,
             );

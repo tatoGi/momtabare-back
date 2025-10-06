@@ -13,7 +13,6 @@ class Authenticate extends Middleware
      * Handle an incoming request.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @param  string[]  ...$guards
      * @return mixed
      */
@@ -38,6 +37,6 @@ class Authenticate extends Middleware
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        return redirect()->guest(route('admin.login.dashboard', ['locale' => app()->getLocale()]));
+        return redirect()->guest(route('admin.login', ['locale' => app()->getLocale()]));
     }
 }

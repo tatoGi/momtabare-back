@@ -49,14 +49,14 @@ class ProductTranslation extends Model
         return new SEOData(
             title: $this->title,
             description: $this->description,
-            og_image: $ogImage,
+            image: $ogImage,
         );
     }
 
     public function getOgImage(): ?string
     {
         $product = $this->product;
-        dd($product);
+
         if (! $product) {
             return null;
         }

@@ -15,11 +15,11 @@ class RetailerMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-      
+
         $token = $request->bearerToken();
         $tokenModel = $token ? \Laravel\Sanctum\PersonalAccessToken::findToken(explode('|', $token)[1] ?? '') : null;
         $user = $tokenModel ? $tokenModel->tokenable : null;
-      
+
         if (! $user) {
             // For web requests, redirect to login
             if ($request->expectsJson()) {
@@ -28,10 +28,10 @@ class RetailerMiddleware
                     'message' => 'Authentication required.',
                 ], 401);
             }
-    
+
             return redirect()->route('login', [app()->getLocale()]);
         }
-    
+
         // Check if user is a retailer
         if (! $user->is_retailer) {
             if ($request->expectsJson()) {
@@ -40,11 +40,11 @@ class RetailerMiddleware
                     'message' => 'Access denied. Retailer account required.',
                 ], 403);
             }
-    
+
             return redirect()->route('home', [app()->getLocale()])
                 ->with('error', 'Access denied. Retailer account required.');
         }
-    
+
         return $next($request);
     }
 }

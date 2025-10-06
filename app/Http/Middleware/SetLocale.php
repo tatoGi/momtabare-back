@@ -16,18 +16,19 @@ class SetLocale
 
         // Get the first segment as locale
         $locale = $request->segment(1);
-       
+
         // Get available locales from config
         $availableLocales = config('app.locales', []);
 
         // If no locale is set in the URL, use the default from session or config
-        if (!in_array($locale, $availableLocales)) {
+        if (! in_array($locale, $availableLocales)) {
             $locale = session('locale', config('app.locale'));
             $segments = $request->segments();
-            
+
             // Only prepend locale if it's not already there
-            if (!in_array($locale, $segments)) {
+            if (! in_array($locale, $segments)) {
                 array_unshift($segments, $locale);
+
                 return redirect()->to(implode('/', $segments));
             }
         }
@@ -38,7 +39,7 @@ class SetLocale
 
         // Remove the locale parameter from the route parameters
         $request->route()->forgetParameter('locale');
-        
+
         return $next($request);
     }
 }

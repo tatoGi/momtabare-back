@@ -76,7 +76,7 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],
-    
+
         'webuser' => [
             'driver' => 'eloquent',
             'model' => App\Models\WebUser::class,
@@ -111,7 +111,6 @@ return [
             'throttle' => 60,
         ],
     ],
-    
 
     /*
     |--------------------------------------------------------------------------

@@ -91,7 +91,7 @@ class BogCard extends Model
         $card = static::create($attributes);
 
         // If this is the user's first card, set it as default
-        if ($card->user_id && !$card->is_default) {
+        if ($card->user_id && ! $card->is_default) {
             $existingCardsCount = static::where('user_id', $card->user_id)->count();
             if ($existingCardsCount === 1) {
                 $card->setAsDefault();

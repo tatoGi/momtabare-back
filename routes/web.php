@@ -1,17 +1,18 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
+use App\Http\Controllers\Admin\DashboardController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // Test session route (for debugging)
-Route::get('/test-session', function() {
+Route::get('/test-session', function () {
     return response()->json([
         'session_id' => session()->getId(),
         'session_test' => session('test', 'not_set'),
-        'auth_check' => auth()->check(),
-        'user' => auth()->user(),
-        'session_data' => session()->all()
+        'auth_check' => Auth::check(),
+        'user' => Auth::user(),
+        'session_data' => session()->all(),
     ]);
 })->name('test.session');
 
@@ -19,23 +20,25 @@ Route::get('/test-session', function() {
 Route::middleware(['web'])->group(function () {
     // Admin login routes (only for guests)
     Route::middleware('guest:web')->group(function () {
-        Route::get('admin/login/dashboard', [AdminAuthController::class, 'index'])
-            ->name('admin.login.dashboard');
-            
-        Route::post('admin/login', [AdminAuthController::class, 'store'])
+        // Show login form
+        Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
+            ->name('admin.login');
+
+        // Handle login form submission
+        Route::post('/admin/login', [AdminAuthController::class, 'login'])
             ->name('admin.login.submit');
     });
 });
 
 // Protected admin routes (require authentication)
-Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('/admin')->name('admin.')->group(function () {
     // Admin dashboard
     Route::get('/', [DashboardController::class, 'index'])
-        ->name('admin.dashboard');
-        
+        ->name('dashboard');
+
     // Logout
     Route::post('logout', [AdminAuthController::class, 'destroy'])
-        ->name('admin.logout');
+        ->name('logout');
 
     // Include other admin routes
     require __DIR__ . '/admin/admin.php';

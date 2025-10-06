@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -25,7 +25,7 @@ class RetailerProductController extends Controller
      */
     public function countProducts(Request $request): JsonResponse
     {
-        
+
         $user = $request->user_id;
         $count = Product::where('retailer_id', $user)->count();
 
@@ -40,8 +40,6 @@ class RetailerProductController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-
-
 
         $products = Product::with(['category', 'images'])
             ->where('retailer_id', $request->user_id)
@@ -80,10 +78,10 @@ class RetailerProductController extends Controller
 
         // Format rental period as a string if both dates are provided
         $rentalPeriod = null;
-        if (!empty($validated['rental_period_start']) && !empty($validated['rental_period_end'])) {
+        if (! empty($validated['rental_period_start']) && ! empty($validated['rental_period_end'])) {
             $startDate = date('Y-m-d', strtotime($validated['rental_period_start']));
             $endDate = date('Y-m-d', strtotime($validated['rental_period_end']));
-            $rentalPeriod = $startDate . ' to ' . $endDate;
+            $rentalPeriod = $startDate.' to '.$endDate;
         }
 
         // Generate unique product identifier
@@ -99,8 +97,8 @@ class RetailerProductController extends Controller
             'price' => $validated['price'],
             'currency' => $validated['currency'],
             'rental_period' => $rentalPeriod,
-            'rental_start_date' => !empty($validated['rental_period_start']) ? $validated['rental_period_start'] : null,
-            'rental_end_date' => !empty($validated['rental_period_end']) ? $validated['rental_period_end'] : null,
+            'rental_start_date' => ! empty($validated['rental_period_start']) ? $validated['rental_period_start'] : null,
+            'rental_end_date' => ! empty($validated['rental_period_end']) ? $validated['rental_period_end'] : null,
             'size' => $validated['size'] ?? null,
             'status' => 'pending', // Requires admin approval
             'active' => false, // Will be activated upon approval
@@ -199,10 +197,10 @@ class RetailerProductController extends Controller
 
         // Format rental period as a string if both dates are provided
         $rentalPeriod = null;
-        if (!empty($validated['rental_period_start']) && !empty($validated['rental_period_end'])) {
+        if (! empty($validated['rental_period_start']) && ! empty($validated['rental_period_end'])) {
             $startDate = date('Y-m-d', strtotime($validated['rental_period_start']));
             $endDate = date('Y-m-d', strtotime($validated['rental_period_end']));
-            $rentalPeriod = $startDate . ' to ' . $endDate;
+            $rentalPeriod = $startDate.' to '.$endDate;
         }
 
         // Update product
@@ -213,8 +211,8 @@ class RetailerProductController extends Controller
             'price' => $validated['price'],
             'currency' => $validated['currency'],
             'rental_period' => $rentalPeriod,
-            'rental_start_date' => !empty($validated['rental_period_start']) ? $validated['rental_period_start'] : null,
-            'rental_end_date' => !empty($validated['rental_period_end']) ? $validated['rental_period_end'] : null,
+            'rental_start_date' => ! empty($validated['rental_period_start']) ? $validated['rental_period_start'] : null,
+            'rental_end_date' => ! empty($validated['rental_period_end']) ? $validated['rental_period_end'] : null,
             'size' => $validated['size'] ?? null,
             'status' => 'pending', // Reset to pending after edit
         ]);
@@ -270,27 +268,28 @@ class RetailerProductController extends Controller
     {
         try {
             $product = Product::with('images')->findOrFail($id);
-    
+
             // Delete associated images
             foreach ($product->images as $image) {
-                if (!empty($image->image_path)) {
+                if (! empty($image->image_path)) {
                     Storage::disk('public')->delete($image->image_path);
                 }
                 $image->delete();
             }
-    
+
             $product->delete();
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Product deleted successfully.',
             ]);
-    
+
         } catch (\Exception $e) {
-            Log::error('Error deleting product: ' . $e->getMessage());
+            Log::error('Error deleting product: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete product. ' . $e->getMessage(),
+                'message' => 'Failed to delete product. '.$e->getMessage(),
             ], 500);
         }
     }

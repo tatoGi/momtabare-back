@@ -12,12 +12,15 @@ class ProductFactory extends Factory
     public function definition()
     {
         return [
+            'product_identify_id' => $this->faker->unique()->uuid(),
             'category_id' => function () {
                 return \App\Models\Category::factory()->create()->id;
             },
             'price' => $this->faker->randomFloat(2, 10, 1000),
-            'rating' => $this->faker->numberBetween(1, 5),
-            'active' => $this->faker->boolean(),
+            'currency' => 'GEL',
+            'active' => true,
+            'is_blocked' => false,
+            'is_rented' => false,
         ];
     }
 

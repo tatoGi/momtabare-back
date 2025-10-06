@@ -294,13 +294,13 @@ class AuthController extends Controller
         $token = $request->bearerToken();
         $tokenModel = $token ? \Laravel\Sanctum\PersonalAccessToken::findToken(explode('|', $token)[1] ?? '') : null;
         $user = $tokenModel ? $tokenModel->tokenable : null;
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated.',
             ], 401);
         }
-    
+
         return response()->json([
             'success' => true,
             'data' => [

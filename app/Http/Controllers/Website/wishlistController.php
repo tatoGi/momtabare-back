@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Log;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\WebUser;
@@ -266,7 +265,7 @@ class wishlistController extends Controller
         try {
             $user = Auth::guard('webuser')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not authenticated',
@@ -282,10 +281,10 @@ class wishlistController extends Controller
 
             foreach ($cartItems as $cartItem) {
                 // Skip if product is not found
-                if (!$cartItem->product) {
+                if (! $cartItem->product) {
                     continue;
                 }
-                
+
                 $product = $cartItem->product;
 
                 // Check if product has images before accessing
@@ -321,12 +320,12 @@ class wishlistController extends Controller
                 'subtotal' => $subtotal,
                 'cartCount' => $cartItems->count(),
             ]);
-            
+
         } catch (\Exception $e) {
-            \Log::error('Error in showCart: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Error in showCart: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching cart data',

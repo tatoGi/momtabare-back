@@ -93,13 +93,12 @@ function locales()
 
 }
 // app/Helper/helper.php
-if (!function_exists('ddJson')) {
+if (! function_exists('ddJson')) {
     /**
      * Dump the passed variables and end the script (JSON format).
      *
      * @param  mixed  $data
      * @param  int  $status
-     * @param  array  $headers
      * @return never
      */
     function ddJson($data, $status = 200, array $headers = [])
@@ -114,7 +113,7 @@ if (!function_exists('ddJson')) {
         $headers = array_merge($defaultHeaders, $headers);
 
         // Set headers
-        if (!headers_sent()) {
+        if (! headers_sent()) {
             http_response_code($status);
             foreach ($headers as $key => $value) {
                 header("$key: $value");

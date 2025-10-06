@@ -59,5 +59,6 @@ Route::get('/change-locale/{lang}', function ($lang) {
 
         return redirect($redirect);
     }
+
     return back();
 })->name('change.locale');
