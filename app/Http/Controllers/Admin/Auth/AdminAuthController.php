@@ -37,8 +37,8 @@ class AdminAuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
-            dd($credentials);
-            return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
+
+            return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
 
         Log::warning('Login failed', [
