@@ -35,6 +35,18 @@ class AdminAuthController extends Controller
      */
     public function login(Request $request)
     {
+        // Debug session configuration
+        $sessionConfig = [
+            'driver' => config('session.driver'),
+            'connection' => config('session.connection'),
+            'table' => config('session.table'),
+            'session_id' => Session::getId(),
+            'session_all' => session()->all(),
+            'session_driver' => session()->driver(),
+            'db_connection' => config('database.default'),
+        ];
+        Log::debug('Session Config', $sessionConfig);
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
@@ -45,7 +57,15 @@ class AdminAuthController extends Controller
             ['email' => $credentials['email'], 'password' => $credentials['password']],
             $request->filled('remember')
         )) {
-            dd(Session::getId(), session()->all());
+            // Debug session after authentication
+            $sessionData = [
+                'session_id' => Session::getId(),
+                'session_data' => session()->all(),
+                'user_id' => Auth::id(),
+            ];
+            Log::debug('Session After Auth', $sessionData);
+            
+            $request->session()->regenerate();
 
             $request->session()->regenerate();
             
