@@ -54,13 +54,6 @@ class AdminAuthController extends Controller
             // Regenerate session ID to prevent session fixation
             $request->session()->regenerate();
             
-            // Clean up other sessions for this user
-            DB::table('sessions')
-                ->where('user_id', Auth::id())
-                ->where('id', '!=', $request->session()->getId())
-                ->delete();
-            
-    
 
                 return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
