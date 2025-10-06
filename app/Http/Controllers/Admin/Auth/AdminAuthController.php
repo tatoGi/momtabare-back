@@ -53,7 +53,7 @@ class AdminAuthController extends Controller
             
             // Regenerate session ID to prevent session fixation
             $request->session()->regenerate();
-            dd($request);
+            dd($request->session()->regenerate());
 
                 return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
