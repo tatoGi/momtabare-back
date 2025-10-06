@@ -47,13 +47,7 @@ class AdminAuthController extends Controller
 
                 $request->session()->regenerate();
 
-                // Remove this line after debugging
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Authentication successful',
-                    'user' => $user,
-                    'intended' => route('admin.dashboard', ['locale' => app()->getLocale()])
-                ]);
+                return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
             }
 
             // If we get here, authentication failed
@@ -62,34 +56,18 @@ class AdminAuthController extends Controller
                 'error' => 'Invalid credentials'
             ]);
 
-            // For debugging - return JSON response
-            return response()->json([
-                'success' => false,
-                'message' => 'Authentication failed',
-                'errors' => ['email' => 'Invalid credentials'],
-                'debug' => [
-                    'credentials' => $credentials,
-                    'remember' => $remember,
-                    'auth_check' => Auth::check(),
-                    'session_id' => session()->getId()
-                ]
-            ], 401);
-
-            // This will be used after debugging
-            // return back()->withErrors([
-            //     'email' => __('auth.failed'),
-            // ])->withInput($request->only('email', 'remember'));
+            return back()->withErrors([
+                'email' => __('auth.failed'),
+            ])->withInput($request->only('email', 'remember'));
         } catch (\Exception $e) {
             Log::error('Login error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred during login',
-                'error' => $e->getMessage()
-            ], 500);
+            return back()->withErrors([
+                'email' => 'An error occurred during login. Please try again.',
+            ])->withInput($request->only('email', 'remember'));
         }
     }
 
