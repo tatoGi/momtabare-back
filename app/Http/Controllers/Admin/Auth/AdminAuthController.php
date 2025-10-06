@@ -36,17 +36,7 @@ class AdminAuthController extends Controller
      */
     public function login(Request $request)
     {
-        // Debug session configuration
-        $sessionConfig = [
-            'driver' => config('session.driver'),
-            'connection' => config('session.connection'),
-            'table' => config('session.table'),
-            'session_id' => Session::getId(),
-            'session_all' => session()->all(),
-            'session_driver' => session()->driver(),
-            'db_connection' => config('database.default'),
-        ];
-        Log::debug('Session Config', $sessionConfig);
+
 
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -70,15 +60,9 @@ class AdminAuthController extends Controller
                 ->where('id', '!=', $request->session()->getId())
                 ->delete();
             
-            // Log the successful login
-            Log::info('Admin login successful', [
-                'user_id' => Auth::id(),
-                'email' => $credentials['email'],
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
+    
 
-            return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
+                return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
 
         // Log failed login attempt
