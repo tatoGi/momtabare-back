@@ -18,7 +18,7 @@ class Authenticate extends Middleware
      */
     public function handle($request, Closure $next, ...$guards)
     {
-        dd($request);
+      
         // Skip authentication for login routes
         if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
             return $next($request);
@@ -30,6 +30,7 @@ class Authenticate extends Middleware
         }
     
         foreach ($guards as $guard) {
+            dd($guard);
             if (Auth::guard($guard)->check()) {
                
                 // Additional check for admin routes
