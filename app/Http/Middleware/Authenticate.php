@@ -31,7 +31,7 @@ class Authenticate extends Middleware
         foreach ($guards as $guard) {
            
             if ($guard == 'web') {
-               dd($guard);
+             
                 // Additional check for admin routes
                 if ($request->is('admin/*') && !Auth::user()->is_admin) {
                    
