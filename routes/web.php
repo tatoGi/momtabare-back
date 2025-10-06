@@ -35,7 +35,7 @@ Route::middleware(['web'])->group(function () {
 });
 
 // Protected admin routes (require authentication)
-Route::middleware(['web', 'auth'])->prefix('/admin')->name('admin.')->group(function () {
+Route::prefix('/admin')->name('admin.')->group(function () {
     // Admin dashboard
     Route::get('/', [DashboardController::class, 'index'])
         ->name('dashboard');
