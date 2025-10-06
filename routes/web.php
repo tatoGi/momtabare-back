@@ -20,24 +20,7 @@ Route::get('/test-session', function () {
     ]);
 })->name('test.session');
 
-// Test route to check if routes are working
-Route::get('/admin/test-routes', function () {
-    $routes = collect(Route::getRoutes())->map(function ($route) {
-        return [
-            'uri' => $route->uri(),
-            'name' => $route->getName(),
-            'methods' => $route->methods(),
-        ];
-    });
 
-    return response()->json([
-        'total_routes' => $routes->count(),
-        'admin_routes' => $routes->filter(function ($route) {
-            return str_contains($route['uri'], 'admin') || str_contains($route['name'] ?? '', 'admin');
-        })->values(),
-        'all_routes' => $routes->take(20)->values()
-    ]);
-})->name('test.routes');
 
 // Public routes (no authentication required)
 Route::middleware(['web'])->group(function () {
@@ -54,14 +37,14 @@ Route::middleware(['web'])->group(function () {
 });
 
 // Protected admin routes (require authentication)
-Route::middleware(['web', 'auth'])->prefix('/admin')->name('admin.')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('/admin')->group(function () {
     // Admin dashboard
     Route::get('/', [DashboardController::class, 'index'])
-        ->name('dashboard');
+        ->name('admin.dashboard');
 
     // Logout
     Route::post('logout', [AdminAuthController::class, 'destroy'])
-        ->name('logout');
+        ->name('admin.logout');
 
     // Include other admin routes
     require __DIR__ . '/admin/admin.php';

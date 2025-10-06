@@ -6,14 +6,17 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class AdminAuthController extends Controller
 {
     /**
-     * Show the admin login form.
+     * Where to redirect users after login.
      *
-     * @return \Illuminate\View\View
+     * @var string
      */
+    protected $redirectTo = '/admin/dashboard';
+
     /**
      * Show the admin login form.
      *
@@ -27,6 +30,7 @@ class AdminAuthController extends Controller
     /**
      * Handle an authentication attempt.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function login(Request $request)
@@ -34,16 +38,32 @@ class AdminAuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'remember' => 'boolean',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt(
+            ['email' => $credentials['email'], 'password' => $credentials['password']],
+            $request->filled('remember')
+        )) {
+            $request->session()->regenerate();
+            
+            // Log the successful login
+            Log::info('Admin login successful', [
+                'user_id' => Auth::id(),
+                'email' => $credentials['email'],
+                'session_id' => Session::getId(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
 
-            return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
+            return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
         }
 
-        Log::warning('Login failed', [
+        // Log failed login attempt
+        Log::warning('Admin login failed', [
             'email' => $credentials['email'],
-            'session_id' => session()->getId(),
+            'session_id' => Session::getId(),
+            'ip' => $request->ip(),
         ]);
 
         return back()->withErrors([
