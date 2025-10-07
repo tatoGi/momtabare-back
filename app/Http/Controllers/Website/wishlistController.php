@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class wishlistController extends Controller
 {
@@ -260,10 +261,10 @@ class wishlistController extends Controller
     /**
      * Get cart data for the current authenticated user (for route calls)
      */
-    public function showCart()
+    public function showCart(Request $request)
     {
         try {
-            $user = Auth::guard('webuser')->user();
+            $user = $request->user('sanctum');
 
             if (! $user) {
                 return response()->json([
@@ -322,7 +323,7 @@ class wishlistController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error in showCart: '.$e->getMessage(), [
+            Log::error('Error in showCart: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 

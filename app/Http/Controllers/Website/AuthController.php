@@ -291,16 +291,49 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        $token = $request->bearerToken();
-        $tokenModel = $token ? \Laravel\Sanctum\PersonalAccessToken::findToken(explode('|', $token)[1] ?? '') : null;
-        $user = $tokenModel ? $tokenModel->tokenable : null;
-        if (! $user) {
+        // Try to get the authenticated user
+        $user = $request->user('sanctum');
+        
+        // If no user found with the current guard, try the other guard
+        if (!$user) {
+            $currentGuard = Auth::getDefaultDriver();
+            $otherGuard = $currentGuard === 'web' ? 'sanctum' : 'web';
+            
+            if (Auth::guard($otherGuard)->check()) {
+                $user = Auth::guard($otherGuard)->user();
+                
+                // If we found a user with the other guard, log them in with the current guard
+                if ($user) {
+                    Auth::guard($currentGuard)->login($user);
+                }
+            }
+        }
+        
+        // Log authentication details
+        Log::info('AuthController@me - Auth Details', [
+            'auth_guard' => Auth::getDefaultDriver(),
+            'is_authenticated' => $user ? true : false,
+            'user_id' => $user ? $user->id : null,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'has_bearer_token' => $request->bearerToken() ? true : false,
+        ]);
+        
+        if (!$user) {
+            Log::warning('Unauthenticated access to /me endpoint', [
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'has_bearer_token' => $request->bearerToken() ? true : false,
+                'previous_url' => $request->headers->get('referer'),
+            ]);
+            
             return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
+                'message' => 'Unauthenticated',
+                'auth_check' => false,
+                'user_id' => null,
             ], 401);
         }
-
+    
         return response()->json([
             'success' => true,
             'data' => [

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Retailer routes (require auth and retailer middleware)
-Route::middleware(['auth:sanctum', 'retailer'])->prefix('retailer')->group(function () {
+Route::middleware(['auth:web,sanctum', 'retailer'])->prefix('retailer')->group(function () {
     Route::get('/user/products', [RetailerProductController::class, 'index'])->name('retailer.products.index');
     Route::post('/products', [RetailerProductController::class, 'store'])->name('retailer.products.store');
     Route::get('/products/{id}', [RetailerProductController::class, 'show'])->name('retailer.products.show');

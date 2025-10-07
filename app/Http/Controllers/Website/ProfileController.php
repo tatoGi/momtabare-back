@@ -139,7 +139,7 @@ class ProfileController extends Controller
      */
     public function requestRetailer(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user('sanctum');
         if (! $user instanceof WebUser) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }

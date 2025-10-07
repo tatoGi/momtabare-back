@@ -192,71 +192,51 @@ class FrontendController extends Controller
     public function localeSync(Request $request)
     {
         $supported = array_keys(config('app.locales', [config('app.locale')]));
-        $fallback = config('app.fallback_locale', 'en');
-
+        $fallback = (string) config('app.fallback_locale', 'en');
+    
+        // Ensure fallback is a string
+        $picked = $fallback;
+        $matchedVia = 'default';
+    
+        // Get language from header or request
         $header = $request->header('X-Language') ?: $request->header('Accept-Language');
         $raw = is_string($header) ? trim($header) : '';
-
-        $picked = null;
-        $matchedVia = 'default';
-
+    
         if ($raw !== '') {
-            // Take the first language token from Accept-Language if present
             $first = explode(',', $raw)[0] ?? $raw;
             $first = trim(explode(';', $first)[0] ?? $first);
             $first = str_replace('_', '-', $first);
-
-            // Normalize to lower/upper pattern like en or en-US
             $norm = strtolower($first);
-
-            // Try exact match
+    
+            // Ensure we're working with strings
             if (in_array($norm, $supported, true)) {
-                $picked = $norm;
+                $picked = (string) $norm;
                 $matchedVia = 'exact';
             } else {
-                // Try by primary subtag (e.g., en-US -> en)
                 $primary = substr($norm, 0, 2);
                 if ($primary && in_array($primary, $supported, true)) {
-                    $picked = $primary;
+                    $picked = (string) $primary;
                     $matchedVia = 'primary';
                 }
             }
         }
-
-        if (! $picked) {
-            // Use session if already set and supported
-            $sessionLocale = session('locale');
-            if ($sessionLocale && in_array($sessionLocale, $supported, true)) {
-                $picked = $sessionLocale;
-                $matchedVia = 'session';
-            } else {
-                $picked = in_array($fallback, $supported, true) ? $fallback : ($supported[0] ?? 'en');
-                $matchedVia = 'default';
-            }
-        }
-
-        // Persist selection
-        session(['locale' => $picked]);
+    
+        // Set the application locale
         app()->setLocale($picked);
-
-        // Build supported locales payload with labels if available
-        $localesConfig = config('app.locales', []);
-        $supportedPayload = [];
-        foreach ($supported as $lc) {
-            $supportedPayload[] = [
-                'code' => $lc,
-                'label' => is_array($localesConfig) && array_key_exists($lc, $localesConfig) ? $localesConfig[$lc] : strtoupper($lc),
-            ];
+        
+        // Set Carbon locale (ensure it's a string)
+        \Carbon\Carbon::setLocale((string) $picked);
+        
+        // Store in session if needed
+        if (session()->isStarted()) {
+            session(['locale' => $picked]);
         }
-
+    
         return response()->json([
-            'current_locale' => $picked,
+            'success' => true,
+            'locale' => $picked,
             'matched_via' => $matchedVia,
-            'supported_locales' => $supportedPayload,
-            'received' => [
-                'x_language' => $request->header('X-Language'),
-                'accept_language' => $request->header('Accept-Language'),
-            ],
+            'supported_locales' => $supported
         ]);
     }
 
@@ -475,7 +455,7 @@ class FrontendController extends Controller
 
     public function userProducts(Request $request)
     {
-        $user = WebUser::find($request->user_id);
+        $user = $request->user('sanctum');
         $products = $user->products()
             ->with(['category', 'images'])
             ->notBlocked()
@@ -535,6 +515,7 @@ class FrontendController extends Controller
 
     public function retailerShopCount()
     {
+        
         $retailerShops = RetailerShop::count();
 
         return response()->json($retailerShops);

@@ -14,20 +14,16 @@ use Illuminate\Support\Str;
 
 class RetailerProductController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('retailer');
-    }
-
+ 
     /**
      * Get count of retailer's products
      */
     public function countProducts(Request $request): JsonResponse
     {
 
-        $user = $request->user_id;
-        $count = Product::where('retailer_id', $user)->count();
+        $user = $request->user('sanctum');
+
+        $count = Product::where('retailer_id', $user->id)->count();
 
         return response()->json([
             'success' => true,
@@ -57,7 +53,7 @@ class RetailerProductController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $request->user('sanctum');
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -146,9 +142,9 @@ class RetailerProductController extends Controller
     /**
      * Get specific retailer product
      */
-    public function show($id): JsonResponse
+    public function show(Request $request, $id): JsonResponse
     {
-        $user = Auth::user();
+        $user = $request->user('sanctum');
 
         $product = Product::with(['category', 'images'])
             ->where('retailer_id', $user->id)
@@ -165,7 +161,7 @@ class RetailerProductController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $user = Auth::user();
+        $user = $request->user('sanctum');
 
         $product = Product::where('retailer_id', $user->id)
             ->findOrFail($id);
