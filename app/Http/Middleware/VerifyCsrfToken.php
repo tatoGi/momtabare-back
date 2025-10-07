@@ -12,27 +12,6 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'register',
-        'send-registration-email',
-        'verify-email',
-        'verify-email/*',
-        'resend-verification',
-        'resend-email-verification',
-        'complete-registration',
-        'login',
-        'logout',
-        'api/*',
-        '*/send-registration-email*',
-        '*/verify-email*',
-        '*/resend-verification*',
-        '*/complete-registration*',
-        '*/login*',
-        '*/logout*',
-        '*/register',
-        '*/login',
-        '*/logout',
-        '*/add-to-cart',
-        '*/remove-from-cart',
         '*/add-to-wishlist',
         '*/remove-from-wishlist',
         '*/subscribe',
@@ -57,5 +36,26 @@ class VerifyCsrfToken extends Middleware
         '*/bog/orders',
         '*/bog/token',
         '*/bog/orders/*',
+        
+        // Admin routes
+        '*/admin/*',
+        'admin/*',
+        '*/admin',
+        'admin',
+        
+        // API routes if you have them
+        'api/*',
+        
+        // Webhook endpoints
+        'webhook/*',
+        '*/webhook/*',
+        
+        // File uploads
+        '*/upload',
+        'upload/*',
+        
+        // Media library if you're using it
+        'media/*',
+        '*/media/*',
     ];
 }
