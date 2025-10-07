@@ -26,36 +26,9 @@ class Authenticate extends Middleware
             return $next($request);
         }
     
-        // Default to web guard if none specified
-        if (empty($guards)) {
-            $guards = ['web'];
-        }
-    
         try {
-            // Get the authenticated user first
-            $user = $request->user();
-            
-            // For admin routes, check if user is authenticated and is admin
-            if ($request->is('admin/*')) {
-                if (!$user) {
-                    Auth::guard('web')->logout();
-                    $request->session()->invalidate();
-                    $request->session()->regenerateToken();
-                    return redirect(route('admin.login', ['locale' => app()->getLocale()]));
-                }
-                
-                // Additional admin check if you have is_admin column
-                if (property_exists($user, 'is_admin') && !$user->is_admin) {
-                    Auth::guard('web')->logout();
-                    $request->session()->invalidate();
-                    $request->session()->regenerateToken();
-                    return redirect(route('admin.login', ['locale' => app()->getLocale()]));
-                }
-            }
-    
-            // If we got here, proceed with the request
-            return $next($request);
-    
+            // Call parent's handle method first to handle authentication
+            return parent::handle($request, $next, ...$guards);
         } catch (\Exception $e) {
             Log::error('Authentication Error: ' . $e->getMessage(), [
                 'url' => $request->fullUrl(),
