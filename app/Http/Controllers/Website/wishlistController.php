@@ -65,7 +65,7 @@ class wishlistController extends Controller
     {
         try {
             // Check if user is authenticated using webuser guard
-            $user = $request->user();
+            $user = $request->user('sanctum');
 
             if (! $user) {
                 return response()->json([

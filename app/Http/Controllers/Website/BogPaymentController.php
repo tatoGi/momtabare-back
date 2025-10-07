@@ -93,16 +93,7 @@ class BogPaymentController extends Controller
                 'save_card' => 'sometimes|boolean',
                 'user_id' => 'sometimes|integer|exists:users,id', // Add user_id validation
             ]);
-            // Debug: Show validated data (this will be visible in browser)
-            if (config('app.debug')) {
-                return response()->json([
-                    'debug_mode' => true,
-                    'validated_data' => $validated,
-                    'message' => 'Debug: Check Laravel logs for detailed request info',
-                    'logs_location' => 'storage/logs/laravel.log',
-                ], 200);
-            }
-
+     
             // Custom validation: if save_card is true, user must be authenticated
             if (($validated['save_card'] ?? false) && ! Auth::check()) {
                 return response()->json([
