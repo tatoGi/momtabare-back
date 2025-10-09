@@ -59,7 +59,7 @@ public function login(LoginRequest $request)
         
         
         // Redirect to admin dashboard
-        return redirect()->intended(route('admin.dashboard', app()->getLocale()));
+        return redirect('/' . app()->getLocale() . '/admin/dashboard');
     }
     
     // If authentication fails
