@@ -9,7 +9,7 @@ use App\View\Components\website\layout;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Facades\Session;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        if(request()->isSecure()){
+            config(['session.secure' => true]);
+        }
+        Session::start(); // force session start
         // Register Blade components
         Blade::component('website.layout', layout::class);
         Blade::component('website.header', header::class);
