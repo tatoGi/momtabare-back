@@ -57,7 +57,7 @@ public function login(LoginRequest $request)
         // Manually log the user in
         Auth::login($user, $request->boolean('remember'));
         
-        dd($user);
+       
         // Redirect to admin dashboard
         return redirect('/' . app()->getLocale() . '/admin');
     }
