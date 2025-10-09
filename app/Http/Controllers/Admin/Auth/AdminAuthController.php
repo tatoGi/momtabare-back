@@ -44,34 +44,18 @@ class AdminAuthController extends Controller
  */
 public function login(LoginRequest $request)
 {
-    // The request is already validated by LoginRequest
     $credentials = $request->only('email', 'password');
-    
-    // Find user by email
+
     $user = User::where('email', $credentials['email'])->first();
-    
-    // Check if user exists and password matches
+
     if ($user && Hash::check($credentials['password'], $user->password)) {
-    
-        
-        // Manually log the user in
         Auth::login($user, $request->boolean('remember'));
         
-       
-        // Redirect to admin dashboard
-        return redirect('/' . app()->getLocale() . '/admin');
+        // Redirect correctly
+        return redirect()->intended('/' . app()->getLocale() . '/admin');
     }
-    
-    // If authentication fails
-    Log::warning('Admin login failed', [
-        'email' => $credentials['email'],
-        'session_id' => Session::getId(),
-        'ip' => $request->ip(),
-    ]);
-    
-    return back()->withErrors([
-        'email' => 'The provided credentials do not match our records.',
-    ])->onlyInput('email');
+
+    return back()->withErrors(['email' => 'Invalid credentials']);
 }
     /**
      * Log the user out of the application.
