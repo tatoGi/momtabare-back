@@ -29,18 +29,13 @@ return [
         'profile/*',
         'products',
         'products/*',
-        'admin-login',
-        'api/show-cart'
+        'admin-login'
     ],
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
-        'https://momtabare.com',
-        'https://www.momtabare.com',
-        'https://admin.momtabare.com',
+        'https://momtabare.com', 'https://www.momtabare.com',
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
