@@ -47,10 +47,10 @@ class AdminAuthController extends Controller
             ['email' => $credentials['email'], 'password' => $credentials['password']],
             $request->filled('remember')
         )) {
-            dd($request);
+            
             // Regenerate session ID to prevent session fixation
             $request->session()->regenerate();
-
+            dd($request);
             // Log successful login
             Log::info('Admin logged in', [
                 'id' => Auth::id(),
