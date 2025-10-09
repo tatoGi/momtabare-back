@@ -38,6 +38,6 @@ class Authenticate extends Middleware
         }
 
         // If we get here, the user is not authenticated
-        return redirect(url('/' . app()->getLocale() . '/admin'));
+        return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
     }
 }
