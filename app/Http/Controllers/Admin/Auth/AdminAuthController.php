@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -35,37 +36,43 @@ class AdminAuthController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function login(Request $request)
-    {
-        // ✅ Validate input
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+    /**
+ * Handle an authentication attempt.
+ *
+ * @param  \App\Http\Requests\Auth\LoginRequest  $request
+ * @return \Illuminate\Http\RedirectResponse
+ */
+public function login(LoginRequest $request)
+{
+    // The request is already validated by LoginRequest
+    $credentials = $request->only('email', 'password');
     
-        // ✅ Find user by email
-        $user = User::where('email', $credentials['email'])->first();
+    // Find user by email
+    $user = User::where('email', $credentials['email'])->first();
     
-        // ✅ Check if user exists and password matches
-        if ($user && Hash::check($credentials['password'], $user->password)) {
-            // 👉 Manually log the user in
-            Auth::login($user, $request->filled('remember'));
-           
-            // ✅ Redirect to admin dashboard
-            return redirect(url('/' . app()->getLocale() . '/admin'));
-        }
+    // Check if user exists and password matches
+    if ($user && Hash::check($credentials['password'], $user->password)) {
     
-        // ❌ If authentication fails
-        Log::warning('Admin login failed', [
-            'email' => $credentials['email'],
-            'session_id' => Session::getId(),
-            'ip' => $request->ip(),
-        ]);
-    
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        
+        // Manually log the user in
+        Auth::login($user, $request->boolean('remember'));
+        
+        
+        // Redirect to admin dashboard
+        return redirect()->intended(route('admin.dashboard', app()->getLocale()));
     }
+    
+    // If authentication fails
+    Log::warning('Admin login failed', [
+        'email' => $credentials['email'],
+        'session_id' => Session::getId(),
+        'ip' => $request->ip(),
+    ]);
+    
+    return back()->withErrors([
+        'email' => 'The provided credentials do not match our records.',
+    ])->onlyInput('email');
+}
     /**
      * Log the user out of the application.
      *
