@@ -12,7 +12,7 @@
 
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('css/admin-login.css') }}">
-
+    <script src="{{ asset('js/app.js') }}" defer></script>
     <!-- Scripts -->
 </head>
 
