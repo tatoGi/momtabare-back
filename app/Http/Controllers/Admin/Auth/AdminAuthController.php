@@ -46,6 +46,7 @@ class AdminAuthController extends Controller
         if (Auth::guard('web')->attempt($credentials, $request->filled('remember'))) {
             // Don't regenerate session ID
             // Session stays the same
+            dd($credentials);
             return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
 
