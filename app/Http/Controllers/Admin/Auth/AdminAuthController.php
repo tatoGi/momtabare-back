@@ -50,7 +50,7 @@ public function login(LoginRequest $request)
 
     if ($user && Hash::check($credentials['password'], $user->password)) {
         Auth::login($user, $request->boolean('remember'));
-        dd(app()->getLocale());
+       
         // Redirect correctly
         return redirect()->intended('/' . app()->getLocale() . '/admin');
     }
