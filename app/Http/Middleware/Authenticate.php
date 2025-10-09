@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class Authenticate extends Middleware
 {
@@ -16,31 +15,28 @@ class Authenticate extends Middleware
      * @param  \Closure  $next
      * @param  string[]  ...$guards
      * @return mixed
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
      */
     public function handle($request, Closure $next, ...$guards)
     {
-      
-    
+        $guards = $guards ?: ['web'];
+
+        // Allow access to login routes without redirect loop
         if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
             return $next($request);
         }
-    
-        try {
-            return parent::handle($request, $next, ...$guards);
-        } catch (\Exception $e) {
-          
-            
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                return $next($request); // User is authenticated
             }
-    
-            return redirect(route('admin.login', ['locale' => app()->getLocale()]));
         }
+
+        // If request expects JSON (API)
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Otherwise, redirect to login with locale
+        return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
     }
 }
