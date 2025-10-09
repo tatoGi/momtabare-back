@@ -7,7 +7,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 
-
+Route::get('/debug-session', function() {
+    return [
+        'session_id' => session()->getId(),
+        'cookie' => request()->cookie(config('session.cookie'))
+    ];
+});
 // Public routes (no authentication required)
 Route::middleware(['web'])->group(function () {
     // Admin login routes (only for guests)
