@@ -28,6 +28,7 @@ class Authenticate extends Middleware
         }
     
         try {
+            dd($request, $next, $guards);
             return parent::handle($request, $next, ...$guards);
         } catch (\Exception $e) {
           
