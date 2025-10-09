@@ -28,7 +28,8 @@ return [
         'user/*',
         'profile/*',
         'products',
-        'products/*'
+        'products/*',
+        'admin-login'
     ],
     'allowed_methods' => ['*'],
     'allowed_origins' => [

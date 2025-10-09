@@ -22,7 +22,7 @@ class Authenticate extends Middleware
     protected function redirectTo($request)
     {
         if (! $request->expectsJson()) {
-            return route('admin.login', ['locale' => app()->getLocale()]);
+            return route('admin.login', app()->getLocale());
         }
     }
 }
