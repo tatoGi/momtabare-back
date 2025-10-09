@@ -23,7 +23,7 @@ Route::middleware(['web'])->group(function () {
 });
 
 // Protected admin routes (require authentication)
-
+Route::prefix('/admin')->group(function () {
     // Admin dashboard
     Route::get('/', [DashboardController::class, 'index'])
         ->name('admin.dashboard');
@@ -38,3 +38,4 @@ Route::middleware(['web'])->group(function () {
     require __DIR__ . '/admin/page.php';
     require __DIR__ . '/admin/settings.php';
     require __DIR__ . '/admin/languages.php';
+});
