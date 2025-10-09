@@ -10,85 +10,46 @@ use Illuminate\Support\Facades\Session;
 
 class AdminAuthController extends Controller
 {
-    /**
-     * Where to redirect users after login.
-     *
-     * @var string
-     */
     protected $redirectTo = '/admin/dashboard';
 
-    /**
-     * Show the admin login form.
-     *
-     * @return \Illuminate\View\View
-     */
     public function showLoginForm()
     {
-        return view('auth.login'); // adjust if your view path differs
+        return view('auth.login');
     }
 
-    /**
-     * Handle an authentication attempt.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function login(Request $request)
     {
-        // Validate input
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            'remember' => 'boolean',
         ]);
 
-        // Attempt login
-        if (Auth::guard('web')->attempt(
-            ['email' => $credentials['email'], 'password' => $credentials['password']],
-            $request->filled('remember')
-        )) {
-            // Regenerate session ID to prevent session fixation
+        if (Auth::guard('webuser')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
 
-            // Log successful login
             Log::info('Admin logged in', [
-                'id' => Auth::id(),
-                'email' => Auth::user()->email,
+                'id' => Auth::guard('webuser')->id(),
+                'email' => $credentials['email'],
                 'session_id' => Session::getId(),
                 'ip' => $request->ip(),
             ]);
 
-            // Redirect to dashboard with locale
             return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
-
-        // Log failed login attempt
-        Log::warning('Admin login failed', [
-            'email' => $credentials['email'],
-            'session_id' => Session::getId(),
-            'ip' => $request->ip(),
-        ]);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
     }
 
-    /**
-     * Log the user out of the application.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function destroy(Request $request)
     {
-        Auth::guard('web')->logout();
+        Auth::guard('webuser')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()
-            ->route('admin.login', ['locale' => app()->getLocale()])
+        return redirect()->route('admin.login', ['locale' => app()->getLocale()])
             ->with('status', __('You have been logged out.'));
     }
 }

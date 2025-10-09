@@ -9,13 +9,14 @@ class Authenticate extends Middleware
 {
     public function handle($request, Closure $next, ...$guards)
     {
-        // Skip redirect if the current route is login
+        // Skip login routes
         if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
             return $next($request);
         }
 
         try {
-            return parent::handle($request, $next, ...$guards);
+            // Use the correct guard
+            return parent::handle($request, $next, 'web');
         } catch (\Illuminate\Auth\AuthenticationException $e) {
             return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
         }
