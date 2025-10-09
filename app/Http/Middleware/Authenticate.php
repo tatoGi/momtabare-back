@@ -18,7 +18,7 @@ class Authenticate extends Middleware
 
         // Get current session ID
         $sessionId = Session::getId();
-       
+        dd($sessionId);
         // Check if session exists in the database and is active
         $session = DB::table('sessions')->where('id', $sessionId)->first();
 
@@ -31,7 +31,7 @@ class Authenticate extends Middleware
         if (!$session->user_id) {
             return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
         }
-        dd($session);
+       
         // Session exists → allow request
         return $next($request);
     }
