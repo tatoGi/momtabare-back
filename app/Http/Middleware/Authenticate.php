@@ -11,7 +11,7 @@ class Authenticate extends Middleware
 {
     public function handle($request, Closure $next, ...$guards)
     {
-        dd($request->cookie(config('session.cookie')));
+        // dd($request->cookie(config('session.cookie')));
         
         // Skip login routes
         if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
