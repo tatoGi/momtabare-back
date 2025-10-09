@@ -2,8 +2,6 @@
 
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 
@@ -23,7 +21,7 @@ Route::middleware(['web'])->group(function () {
 });
 
 // Protected admin routes (require authentication)
-Route::middleware(['web', 'admin.auth'])->prefix('/admin')->group(function () {
+Route::middleware(['admin.auth'])->prefix('/admin')->group(function () {
     // Admin dashboard
     Route::get('/', [DashboardController::class, 'index'])
         ->name('admin.dashboard');
