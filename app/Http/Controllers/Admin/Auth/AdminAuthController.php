@@ -50,7 +50,7 @@ class AdminAuthController extends Controller
         if ($user && Hash::check($credentials['password'], $user->password)) {
             // 👉 Manually log the user in
             Auth::login($user, $request->filled('remember'));
-    
+            dd($user);
             // ✅ Redirect to admin dashboard
             return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
