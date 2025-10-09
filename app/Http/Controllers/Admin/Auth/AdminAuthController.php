@@ -50,15 +50,9 @@ class AdminAuthController extends Controller
             
             // Regenerate session ID to prevent session fixation
             $request->session()->regenerate();
-            dd($request);
+            dd(AUth::user());
             // Log successful login
-            Log::info('Admin logged in', [
-                'id' => Auth::id(),
-                'email' => Auth::user()->email,
-                'session_id' => Session::getId(),
-                'ip' => $request->ip(),
-            ]);
-
+        
             // Redirect to dashboard with locale
             return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
