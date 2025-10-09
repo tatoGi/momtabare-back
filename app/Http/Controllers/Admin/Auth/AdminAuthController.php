@@ -59,7 +59,7 @@ public function login(LoginRequest $request)
         
         
         // Redirect to admin dashboard
-        return redirect('/' . app()->getLocale() . '/admin/dashboard');
+        return redirect('/' . app()->getLocale() . '/admin');
     }
     
     // If authentication fails
