@@ -41,7 +41,7 @@ class AdminAuthController extends Controller
             'password' => ['required'],
             'remember' => 'boolean',
         ]);
-
+        dd($credentials);
         // Attempt login
         if (Auth::guard('web')->attempt(
             ['email' => $credentials['email'], 'password' => $credentials['password']],
