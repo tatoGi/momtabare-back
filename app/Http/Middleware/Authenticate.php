@@ -21,19 +21,16 @@ class Authenticate extends Middleware
      */
     public function handle($request, Closure $next, ...$guards)
     {
-        // Skip authentication for login routes
+      
+    
         if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
             return $next($request);
         }
     
         try {
-            // Call parent's handle method first to handle authentication
             return parent::handle($request, $next, ...$guards);
         } catch (\Exception $e) {
-            Log::error('Authentication Error: ' . $e->getMessage(), [
-                'url' => $request->fullUrl(),
-                'ip' => $request->ip()
-            ]);
+          
             
             Auth::guard('web')->logout();
             $request->session()->invalidate();
