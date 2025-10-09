@@ -31,7 +31,7 @@ class Authenticate extends Middleware
         if (!$session->user_id) {
             return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
         }
-
+        dd($session);
         // Session exists → allow request
         return $next($request);
     }
