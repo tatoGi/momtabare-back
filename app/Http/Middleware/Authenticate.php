@@ -35,8 +35,8 @@ class Authenticate extends Middleware
             }
         }
     
-        $locale = app()->getLocale() ?: 'en';
-        return redirect()->route('admin.login', ['locale' => $locale]);
+        return redirect()->route('admin.dashboard', ['locale' => $request->route('locale') ?? app()->getLocale()]);
+
     }
     
 }
