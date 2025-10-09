@@ -50,8 +50,8 @@ class PageTypeService
             return null;
         }
 
-        // Load config file directly from the pagetypes directory
-        $configPath = config_path("pagetypes/{$configFile}.php");
+        // Load config file directly from the pageTypes directory (case-sensitive on Linux)
+        $configPath = config_path("pageTypes/{$configFile}.php");
         if (file_exists($configPath)) {
             return include $configPath;
         }
@@ -150,11 +150,13 @@ class PageTypeService
 
     /**
      * Check if a page type supports posts
+     * 
+     * @param int $typeId The page type ID to check
+     * @return bool
      */
-    public static function supportsPost($typeId)
+    public static function supportsPost($typeId): bool
     {
         $config = self::getPageTypeConfig($typeId);
-
         return $config && ($config['has_posts'] ?? false);
     }
 

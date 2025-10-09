@@ -168,7 +168,6 @@
                   
                     
                     {{-- Posts Section --}}
-                    {{dd($page->supportsPost())}}
                     @if($page->supportsPost())
                     <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
                         <div class="flex justify-between items-center mb-4">
