@@ -4,37 +4,40 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
 
 class Authenticate extends Middleware
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string[]  ...$guards
+     * @return mixed
+     */
     public function handle($request, Closure $next, ...$guards)
     {
-       
-        
-        // Skip login routes
-        if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
+        // Skip authentication for login routes and login submission
+        if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit') || $request->routeIs('admin.logout')) {
             return $next($request);
         }
 
-        // Get current session ID
-        $sessionId = Session::getId();
-      
-        // Check if session exists in the database and is active
-        $session = DB::table('sessions')->where('id', $sessionId)->first();
-       
-        if (!$session) {
-            // No active session found → redirect to login
-            return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
+        // If no specific guard is specified, use the default web guard
+        if (empty($guards)) {
+            $guards = ['web'];
         }
 
-        // Optional: you can check if `user_id` exists
-        if (!$session->user_id) {
-            return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
+        // Check if user is authenticated via any of the specified guards
+        foreach ($guards as $guard) {
+            
+            if (Auth::guard($guard)->check()) {
+                // User is authenticated, continue to the next middleware
+                return $next($request);
+            }
         }
-       
-        // Session exists → allow request
-        return $next($request);
+
+        // If we get here, the user is not authenticated
+        return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
     }
 }
