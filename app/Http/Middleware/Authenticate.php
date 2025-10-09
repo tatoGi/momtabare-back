@@ -11,7 +11,7 @@ class Authenticate extends Middleware
 {
     public function handle($request, Closure $next, ...$guards)
     {
-        dd($request->cookie(config('session.cookie')));
+        
         // Skip login routes
         if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
             return $next($request);
@@ -22,7 +22,7 @@ class Authenticate extends Middleware
       
         // Check if session exists in the database and is active
         $session = DB::table('sessions')->where('id', $sessionId)->first();
-        dd($session);
+       
         if (!$session) {
             // No active session found → redirect to login
             return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
