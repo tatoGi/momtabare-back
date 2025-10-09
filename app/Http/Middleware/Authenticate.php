@@ -32,6 +32,7 @@ class Authenticate extends Middleware
         }
     
         foreach ($guards as $guard) {
+            dd($guard);
             if (Auth::guard($guard)->check()) {
                 return $next($request);
             }
