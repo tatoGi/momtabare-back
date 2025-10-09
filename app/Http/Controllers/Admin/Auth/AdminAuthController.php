@@ -52,7 +52,7 @@ class AdminAuthController extends Controller
             Auth::login($user, $request->filled('remember'));
            
             // ✅ Redirect to admin dashboard
-            return redirect(url('/' . app()->getLocale() . '/admin'));
+            return view('admin.dashboard');
         }
     
         // ❌ If authentication fails
