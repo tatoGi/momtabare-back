@@ -57,7 +57,7 @@
                 <tbody>
 
                     @foreach($categories as $category)
-
+                    {{dd($category)}}
                     <tr class="bg-gray-200 text-gray-800">
 
                         <td class="p-3">
