@@ -18,7 +18,7 @@ class Authenticate extends Middleware
      */
     public function handle($request, Closure $next, ...$guards)
     {
-        // Skip authentication for login routes and logout
+        // Skip authentication for login/logout routes
         if (
             $request->routeIs('admin.login') ||
             $request->routeIs('admin.login.submit') ||
@@ -27,19 +27,16 @@ class Authenticate extends Middleware
             return $next($request);
         }
     
-        if (empty($guards)) {
-            $guards = ['web'];
-        }
+        $guards = empty($guards) ? ['web'] : $guards;
     
         foreach ($guards as $guard) {
-            dd($guard);
             if (Auth::guard($guard)->check()) {
                 return $next($request);
             }
         }
     
-        // 👇 Redirect to the login page (NOT dashboard)
-        return redirect('/' . app()->getLocale() . '/admin/login');
+        $locale = app()->getLocale() ?: 'en';
+        return redirect()->route('admin.login', ['locale' => $locale]);
     }
     
 }
