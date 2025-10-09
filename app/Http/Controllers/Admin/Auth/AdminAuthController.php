@@ -42,14 +42,9 @@ class AdminAuthController extends Controller
             'remember' => 'boolean',
         ]);
         
-        // Attempt login
         if (Auth::guard('web')->attempt($credentials, $request->filled('remember'))) {
-            // Don't regenerate session ID
-            // Session stays the same
-            dd($credentials);
             return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
         }
-
         // Log failed login attempt
         Log::warning('Admin login failed', [
             'email' => $credentials['email'],
