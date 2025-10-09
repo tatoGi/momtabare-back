@@ -50,10 +50,10 @@ class AdminAuthController extends Controller
             
             // Regenerate session ID to prevent session fixation
             $request->session()->regenerate();
-            dd([
-                'cookie' => request()->cookie(config('session.cookie')),
-                'auth_user' => Auth::guard('web')->user()
-            ]);
+            // dd([
+            //     'cookie' => request()->cookie(config('session.cookie')),
+            //     'auth_user' => Auth::guard('web')->user()
+            // ]);
             // Log successful login
         
             // Redirect to dashboard with locale
