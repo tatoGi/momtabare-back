@@ -18,12 +18,12 @@ class RedirectIfAuthenticated
      */
     public function handle(Request $request, Closure $next, ...$guards)
     {
-
+        dd($request);
         $guards = empty($guards) ? [null] : $guards;
       
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                dd(app()->getLocale());
+             
                 // If trying to access admin login while already authenticated, redirect to admin dashboard
                 if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
                     return redirect()->route('admin.dashboard', ['locale' => app()->getLocale()]);
