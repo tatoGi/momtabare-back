@@ -19,10 +19,28 @@ class Authenticate extends Middleware
      *
      * @throws \Illuminate\Auth\AuthenticationException
      */
-    protected function redirectTo($request)
+    public function handle($request, Closure $next, ...$guards)
     {
-        if (! $request->expectsJson()) {
-            return route('admin.login', app()->getLocale());
+      
+    
+        if ($request->routeIs('admin.login') || $request->routeIs('admin.login.submit')) {
+            return $next($request);
+        }
+    
+        try {
+            return parent::handle($request, $next, ...$guards);
+        } catch (\Exception $e) {
+          
+            
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+    
+            return redirect(route('admin.login', ['locale' => app()->getLocale()]));
         }
     }
 }

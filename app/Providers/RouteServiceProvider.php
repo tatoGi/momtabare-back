@@ -17,45 +17,34 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/admin';
-
-    /**
-     * The controller namespace for the application.
-     *
-     * When present, controller route declarations will automatically be prefixed with this namespace.
-     *
-     * @var string|null
-     */
-    // protected $namespace = 'App\\Http\\Controllers';
+    public const HOME = '/admin'; // after login, redirect here
 
     /**
      * Define your route model bindings, pattern filters, etc.
-     *
-     * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         $this->configureRateLimiting();
 
         $this->routes(function () {
+
+            // 🌐 API routes — optional locale header middleware
             Route::prefix('api')
                 ->middleware(['api', 'locale.header'])
-                ->namespace($this->namespace)
                 ->group(base_path('routes/api.php'));
 
+            // 🌍 Web routes with optional {locale} prefix
             Route::prefix('{locale?}')
+                ->where(['locale' => '[a-zA-Z]{2}'])  // e.g. ka, en, ru
                 ->middleware(['web', 'locale'])
-                ->namespace($this->namespace)
                 ->group(base_path('routes/web.php'));
         });
     }
 
     /**
      * Configure the rate limiters for the application.
-     *
-     * @return void
      */
-    protected function configureRateLimiting()
+    protected function configureRateLimiting(): void
     {
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
