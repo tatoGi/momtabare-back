@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 
 class Authenticate extends Middleware
 {
@@ -14,11 +16,23 @@ class Authenticate extends Middleware
             return $next($request);
         }
 
-        try {
-            // Use the correct guard
-            return parent::handle($request, $next, 'web');
-        } catch (\Illuminate\Auth\AuthenticationException $e) {
+        // Get current session ID
+        $sessionId = Session::getId();
+       
+        // Check if session exists in the database and is active
+        $session = DB::table('sessions')->where('id', $sessionId)->first();
+
+        if (!$session) {
+            // No active session found → redirect to login
             return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
         }
+
+        // Optional: you can check if `user_id` exists
+        if (!$session->user_id) {
+            return redirect()->route('admin.login', ['locale' => app()->getLocale()]);
+        }
+
+        // Session exists → allow request
+        return $next($request);
     }
 }
