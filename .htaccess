@@ -1,0 +1,87 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Handle Front Controller
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_php8.c>
+    php_flag session.cookie_secure on
+    php_flag session.cookie_httponly on
+    php_flag session.use_only_cookies on
+    php_value session.cookie_samesite "Lax"
+</IfModule>
+
+# PHP Settings
+<IfModule mod_php8.c>
+    php_value upload_max_filesize 100M
+    php_value post_max_size 100M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "https://momtabare.com"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header set Access-Control-Allow-Credentials "true"
+</IfModule>
+
+# BEGIN cPanel-generated php ini directives, do not edit
+# Manual editing of this file may result in unexpected behavior.
+# To make changes to this file, use the cPanel MultiPHP INI Editor (Home >> Software >> MultiPHP INI Editor)
+# For more information, read our documentation (https://go.cpanel.net/EA4ModifyINI)
+<IfModule php8_module>
+   php_value session.save_handler "files"
+   php_value session.save_path "/home/eabrgazc/tmp"
+   php_flag session.use_cookies On
+   php_flag session.use_only_cookies On
+   php_value session.cookie_lifetime 0
+   php_value session.cookie_path "/             ; Valid for entire domain"
+   php_value session.cookie_domain ".momtabare.com  ; Accessible on all subdomains"
+   php_value session.cookie_secure "1           ; Use 1 if your site is HTTPS"
+   php_value session.cookie_httponly "1         ; Protects cookie from JS access"
+   php_value session.gc_maxlifetime 1440
+   php_value session.gc_probability 1
+   php_value session.gc_divisor 100
+   php_flag display_errors Off
+   php_value memory_limit 256M
+   php_value upload_max_filesize 50M
+   php_value post_max_size 50M
+   php_value max_execution_time 300
+</IfModule>
+<IfModule lsapi_module>
+   php_value session.save_handler "files"
+   php_value session.save_path "/home/eabrgazc/tmp"
+   php_flag session.use_cookies On
+   php_flag session.use_only_cookies On
+   php_value session.cookie_lifetime 0
+   php_value session.cookie_path "/             ; Valid for entire domain"
+   php_value session.cookie_domain ".momtabare.com  ; Accessible on all subdomains"
+   php_value session.cookie_secure "1           ; Use 1 if your site is HTTPS"
+   php_value session.cookie_httponly "1         ; Protects cookie from JS access"
+   php_value session.gc_maxlifetime 1440
+   php_value session.gc_probability 1
+   php_value session.gc_divisor 100
+   php_flag display_errors Off
+   php_value memory_limit 256M
+   php_value upload_max_filesize 50M
+   php_value post_max_size 50M
+   php_value max_execution_time 300
+</IfModule>
+# END cPanel-generated php ini directives, do not edit

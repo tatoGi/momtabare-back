@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://admin.momtabare.com'),
 
     'asset_url' => env('ASSET_URL', null),
 
@@ -80,7 +80,7 @@ return [
     |
     */
 
-    'locale' => 'ka',
+    'locale' => 'en',
     'locales' => ['en', 'ka'],
     /*
     |--------------------------------------------------------------------------

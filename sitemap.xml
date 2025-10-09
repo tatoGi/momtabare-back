@@ -16,17 +16,17 @@
         <priority>0.8</priority>
             </url>
     <url>
+        <loc>https://gametech.ge/checkout.html</loc>
+            <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+            </url>
+    <url>
         <loc>https://gametech.ge/single-product.html</loc>
             <changefreq>daily</changefreq>
         <priority>0.8</priority>
             </url>
     <url>
         <loc>https://gametech.ge/index.html</loc>
-            <changefreq>daily</changefreq>
-        <priority>0.8</priority>
-            </url>
-    <url>
-        <loc>https://gametech.ge/checkout.html</loc>
             <changefreq>daily</changefreq>
         <priority>0.8</priority>
             </url>
@@ -51,12 +51,12 @@
         <priority>0.8</priority>
             </url>
     <url>
-        <loc>https://gametech.ge/ka/Home-page</loc>
+        <loc>https://gametech.ge/ka/%E1%83%9B%E1%83%97%E1%83%90%E1%83%95%E1%83%90%E1%83%A0%E1%83%98</loc>
             <changefreq>daily</changefreq>
         <priority>0.8</priority>
             </url>
     <url>
-        <loc>https://gametech.ge/ka/%E1%83%9B%E1%83%97%E1%83%90%E1%83%95%E1%83%90%E1%83%A0%E1%83%98</loc>
+        <loc>https://gametech.ge/ka/Home-page</loc>
             <changefreq>daily</changefreq>
         <priority>0.8</priority>
             </url>

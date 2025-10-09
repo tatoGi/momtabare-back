@@ -29,3 +29,23 @@
 [04-Oct-2025 12:44:57 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
 [04-Oct-2025 12:44:58 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
 [04-Oct-2025 12:44:58 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Oct-2025 14:37:18 UTC] PHP Warning:  require(/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:18 UTC] PHP Warning:  require(/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:18 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php84/root/usr/share/pear') in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php:34
+Stack trace:
+#0 {main}
+  thrown in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:18 UTC] PHP Warning:  require(/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:18 UTC] PHP Warning:  require(/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:18 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php84/root/usr/share/pear') in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php:34
+Stack trace:
+#0 {main}
+  thrown in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:19 UTC] PHP Warning:  require(/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:19 UTC] PHP Warning:  require(/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:37:19 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php84/root/usr/share/pear') in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php:34
+Stack trace:
+#0 {main}
+  thrown in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/index.php on line 34
+[09-Oct-2025 14:39:49 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[09-Oct-2025 14:39:57 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
