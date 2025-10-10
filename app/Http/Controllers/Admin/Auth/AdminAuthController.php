@@ -52,7 +52,7 @@ public function login(LoginRequest $request)
         Auth::login($user, $request->boolean('remember'));
        
         // Redirect correctly
-        return redirect()->intended('/' . app()->getLocale() . '/admin');
+        return view('admin.analytics.index');
     }
 
     return back()->withErrors(['email' => 'Invalid credentials']);
