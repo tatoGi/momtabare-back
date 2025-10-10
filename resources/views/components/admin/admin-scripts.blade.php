@@ -4,25 +4,4 @@
     crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
-
-<!-- Load the fixed JavaScript file -->
-<script src="{{ asset('js/main-fixed.js') }}"></script>
-
-<!-- Fallback in case the main-fixed.js fails to load -->
-<script>
-    // Safe version of openNav that won't throw errors
-    if (typeof openNav === 'undefined') {
-        window.openNav = function() {
-            console.warn('Navigation function not loaded');
-            return false;
-        };
-    }
-    
-    // Safe version of uploadFile
-    if (typeof uploadFile === 'undefined') {
-        window.uploadFile = function(input) {
-            console.warn('File upload function not loaded');
-            return false;
-        };
-    }
-</script>
+<script src="{{ asset('js/main.js') }}"></script>
