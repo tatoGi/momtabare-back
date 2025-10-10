@@ -50,9 +50,7 @@ public function login(LoginRequest $request)
 
     if ($user && Hash::check($credentials['password'], $user->password)) {
         Auth::login($user, $request->boolean('remember'));
-        dd($user);
-        // Remove the session()->pull() and just use redirect()->intended()
-        // with the default route as fallback
+        
         return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
     }
 
