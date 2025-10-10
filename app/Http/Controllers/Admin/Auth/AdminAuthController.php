@@ -18,7 +18,7 @@ class AdminAuthController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/admin/dashboard';
+    protected $redirectTo = 'admin.dashboard';
 
     /**
      * Show the admin login form.
@@ -50,9 +50,10 @@ public function login(LoginRequest $request)
 
     if ($user && Hash::check($credentials['password'], $user->password)) {
         Auth::login($user, $request->boolean('remember'));
-       
-        // Redirect correctly
-        return redirect()->intended('/' . app()->getLocale() . '/admin');
+        
+        // Remove the session()->pull() and just use redirect()->intended()
+        // with the default route as fallback
+        return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
     }
 
     return back()->withErrors(['email' => 'Invalid credentials']);
