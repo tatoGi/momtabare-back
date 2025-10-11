@@ -247,7 +247,6 @@
                         </div>
 
                                 </div>
-                            @endforeach
 
                         </div>
 
