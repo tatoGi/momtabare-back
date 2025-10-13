@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public retailer routes
-Route::get('/retailers', [FrontendController::class, 'getRetailerOrUser'])->name('retailer.show');
+Route::get('/retailer/{id}', [FrontendController::class, 'getRetailerOrUser'])->name('retailer.show');
 
 // Protected retailer routes (require auth and retailer middleware)
 Route::prefix('retailer')->group(function () {
