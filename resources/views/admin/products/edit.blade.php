@@ -277,11 +277,12 @@
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Current Images</h4>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     @foreach($product->images as $image)
+                                   
                                         <div class="relative group">
                                             <img src="{{ asset('storage/products/' . $image->image_name) }}" 
                                                  alt="Product Image" 
                                                  class="w-full h-32 object-cover rounded-lg border"
-                                                 onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                                                 >
                                             <button type="button"
                                                     data-route="{{ route('products.images.delete', [app()->getlocale(), $image->id]) }}"
                                                     data-id="{{ $image->id }}" 

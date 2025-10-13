@@ -93,9 +93,9 @@ class BogPaymentController extends Controller
                 'save_card' => 'sometimes|boolean',
                 'user_id' => 'sometimes|integer|exists:users,id', // Add user_id validation
             ]);
-     
+             $user = $request->user('sanctum');
             // Custom validation: if save_card is true, user must be authenticated
-            if (($validated['save_card'] ?? false) && ! Auth::check()) {
+            if (($validated['save_card'] ?? false) && ! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Authentication required to save card. Please log in first.',
@@ -250,7 +250,7 @@ class BogPaymentController extends Controller
         }
 
         // Find the payment in database
-        $payment = \App\Models\BogPayment::where('bog_order_id', $orderId)->first();
+        $payment = BogPayment::where('bog_order_id', $orderId)->first();
 
         if (! $payment) {
             Log::error('Payment not found for order_id: '.$orderId);

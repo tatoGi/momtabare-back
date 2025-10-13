@@ -27,11 +27,66 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(): Factory|View
+    public function index(Request $request): Factory|View
     {
-        $products = Product::orderBy('created_at', 'desc')->with('category')->paginate(5);
+        $query = Product::query()->with('category');
 
-        return view('admin.products.index', compact('products'));
+        // Filter by product ID
+        if ($request->has('product_id') && !empty($request->product_id)) {
+            $query->where('product_identify_id', 'like', '%' . $request->product_id . '%');
+        }
+
+        // Filter by title
+        if ($request->has('title') && !empty($request->title)) {
+            $query->whereHas('translations', function($q) use ($request) {
+                $q->where('title', 'like', '%' . $request->title . '%');
+            });
+        }
+
+        // Filter by category
+        if ($request->has('category_id') && !empty($request->category_id)) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Filter by brand
+        if ($request->has('brand') && !empty($request->brand)) {
+            $query->whereHas('translations', function($q) use ($request) {
+                $q->where('brand', $request->brand);
+            });
+        }
+
+        // Filter by color
+        if ($request->has('color') && !empty($request->color)) {
+            $query->where('color', 'like', '%' . $request->color . '%');
+        }
+
+        // Filter by size
+        if ($request->has('size') && !empty($request->size)) {
+            $query->where('size', 'like', '%' . $request->size . '%');
+        }
+
+        // Filter by location
+        if ($request->has('location') && !empty($request->location)) {
+            $query->where('location', 'like', '%' . $request->location . '%');
+        }
+
+        // Filter by status
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('active', $request->status);
+        }
+
+        // Filter by price range
+        if ($request->has('min_price') && !empty($request->min_price)) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->has('max_price') && !empty($request->max_price)) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        $products = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+        $categories = Category::all();
+
+        return view('admin.products.index', compact('products', 'categories'));
     }
 
     /**

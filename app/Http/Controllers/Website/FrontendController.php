@@ -327,7 +327,7 @@ class FrontendController extends Controller
      */
     public function products(Request $request)
     {
-        $query = Product::with(['category', 'images'])
+        $query = Product::with(['category', 'images', 'translations'])
             ->notBlocked()
             ->where('active', 1)
             ->orderBy('sort_order');
