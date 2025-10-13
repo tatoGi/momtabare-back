@@ -7,7 +7,6 @@ use App\Models\Cart;
 use App\Models\Product;
 use App\Models\WebUser;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class wishlistController extends Controller
@@ -141,10 +140,11 @@ class wishlistController extends Controller
 
     public function removeFromCart(Request $request)
     {
-        // Check if user is authenticated
-        if (Auth::guard('webuser')->check()) {
+        //
+         $user = $request->user('sanctum');
+        if ($user) {
             // Get the authenticated user's ID
-            $userId = Auth::guard('webuser')->user()->id;
+            $userId = $user->id;
 
             // Find and delete the cart item for the specified user and product
             Cart::where('user_id', $userId)->where('product_id', $request->productId)->delete();
@@ -175,7 +175,7 @@ class wishlistController extends Controller
             'rental_days' => 'nullable|integer|min:1',
         ]);
 
-        $user = $request->user();
+        $user = $request->user('sanctum');
         if (! $user) {
             return response()->json([
                 'success' => false,
