@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:web,sanctum'])->group(function () {
     Route::get('/show-cart', [wishlistController::class, 'showCart'])->name('fetch-cart');
     Route::post('/add-to-cart', [wishlistController::class, 'addToCart'])->name('add.to.cart');
-    Route::post('/remove-from-cart/{product}', [wishlistController::class, 'removeFromCart'])->name('remove-from-cart');
+    Route::post('/remove-from-cart', [wishlistController::class, 'removeFromCart'])->name('remove-from-cart');
     Route::post('/update-cart-item', [wishlistController::class, 'updateCartItem'])->name('update-cart-item');
 });
 
