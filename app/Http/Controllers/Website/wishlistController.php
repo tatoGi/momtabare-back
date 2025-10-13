@@ -139,7 +139,7 @@ class wishlistController extends Controller
         }
     }
 
-    public function removeFromCart($productId)
+    public function removeFromCart(Request $request)
     {
         // Check if user is authenticated
         if (Auth::guard('webuser')->check()) {
@@ -147,7 +147,7 @@ class wishlistController extends Controller
             $userId = Auth::guard('webuser')->user()->id;
 
             // Find and delete the cart item for the specified user and product
-            Cart::where('user_id', $userId)->where('product_id', $productId)->delete();
+            Cart::where('user_id', $userId)->where('product_id', $request->productId)->delete();
 
             // Update session cart data
             session()->put('cart', $this->fetchCartData($userId)->original);
