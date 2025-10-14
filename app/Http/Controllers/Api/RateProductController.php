@@ -31,4 +31,21 @@ class RateProductController extends Controller
             'message' => 'Rating submitted successfully',
         ]);
     }
+        public function get($product_id): JsonResponse
+    {
+        $ratings = ProductRating::where('product_id', $product_id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Optionally, you can return average rating and count
+        $average = $ratings->avg('rating');
+        $count = $ratings->count();
+
+        return response()->json([
+            'success' => true,
+            'ratings' => $ratings,
+            'average' => $average,
+            'count' => $count,
+        ]);
+    }
 }

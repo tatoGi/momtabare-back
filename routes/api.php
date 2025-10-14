@@ -48,6 +48,8 @@ require __DIR__.'/website/comments.php';
 require __DIR__.'/website/bog.php';
 // Rate product API
 Route::post('/rate-product', [RateProductController::class, 'set']);
+// Get product ratings API
+Route::get('/product-ratings/{product_id}', [RateProductController::class, 'get']);
 
 // Set the locale for the application
 Route::get('/change-locale/{lang}', function ($lang) {
