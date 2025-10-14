@@ -27,8 +27,12 @@ Route::post('/bog/orders/{parentOrderId}/charge', [BogPaymentController::class, 
     ->name('bog.orders.charge-card');
 
 // Card management routes
-Route::prefix('bog/cards')->group(function () {
-    // Save card for future payments
+Route::prefix('bog/cards')->middleware('auth:sanctum')->group(function () {
+    // Add a new card manually (BOG, Mastercard, Visa, etc.)
+    Route::post('/add', [BogCardController::class, 'addCard'])
+        ->name('bog.cards.add');
+
+    // Save card for future payments (from payment flow)
     Route::post('/save', [BogCardController::class, 'saveCard'])
         ->name('bog.cards.save');
 

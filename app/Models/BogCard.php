@@ -38,6 +38,14 @@ class BogCard extends Model
     /**
      * Get the user that owns the card.
      */
+    public function user()
+    {
+        return $this->belongsTo(WebUser::class, 'user_id');
+    }
+
+    /**
+     * Get the payment that owns the card.
+     */
     public function payment()
     {
         return $this->belongsTo(BogPayment::class, 'parent_order_id', 'bog_order_id');
