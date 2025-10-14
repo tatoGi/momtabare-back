@@ -193,21 +193,21 @@ class FrontendController extends Controller
     {
         $supported = array_keys(config('app.locales', [config('app.locale')]));
         $fallback = (string) config('app.fallback_locale', 'en');
-    
+
         // Ensure fallback is a string
         $picked = $fallback;
         $matchedVia = 'default';
-    
+
         // Get language from header or request
         $header = $request->header('X-Language') ?: $request->header('Accept-Language');
         $raw = is_string($header) ? trim($header) : '';
-    
+
         if ($raw !== '') {
             $first = explode(',', $raw)[0] ?? $raw;
             $first = trim(explode(';', $first)[0] ?? $first);
             $first = str_replace('_', '-', $first);
             $norm = strtolower($first);
-    
+
             // Ensure we're working with strings
             if (in_array($norm, $supported, true)) {
                 $picked = (string) $norm;
@@ -220,18 +220,18 @@ class FrontendController extends Controller
                 }
             }
         }
-    
+
         // Set the application locale
         app()->setLocale($picked);
-        
+
         // Set Carbon locale (ensure it's a string)
         \Carbon\Carbon::setLocale((string) $picked);
-        
+
         // Store in session if needed
         if (session()->isStarted()) {
             session(['locale' => $picked]);
         }
-    
+
         return response()->json([
             'success' => true,
             'locale' => $picked,
@@ -328,6 +328,13 @@ class FrontendController extends Controller
     public function products(Request $request)
     {
         $query = Product::with(['category', 'images', 'translations'])
+            ->withCount([
+                'ratings as ratings_count',
+                'comments as comments_count' => function ($commentsQuery) {
+                    $commentsQuery->approved();
+                },
+            ])
+            ->withAvg('ratings', 'rating')
             ->notBlocked()
             ->where('active', 1)
             ->orderBy('sort_order');
@@ -348,6 +355,10 @@ class FrontendController extends Controller
 
         // Transform the data for Vue frontend
         $transformedProducts = $products->getCollection()->map(function ($product) {
+            $averageRating = $product->ratings_avg_rating !== null
+                ? round((float) $product->ratings_avg_rating, 1)
+                : null;
+
             return [
                 'id' => $product->id,
                 'product_identify_id' => $product->product_identify_id,
@@ -361,6 +372,12 @@ class FrontendController extends Controller
                 'price' => $product->price,
                 'is_favorite' => $product->is_favorite,
                 'is_popular' => $product->is_popular,
+                'rating' => $averageRating,
+                'average_rating' => $averageRating,
+                'ratings_count' => (int) ($product->ratings_count ?? 0),
+                'ratings_amount' => (int) ($product->ratings_count ?? 0),
+                'comments_count' => (int) ($product->comments_count ?? 0),
+                'comments_amount' => (int) ($product->comments_count ?? 0),
                 'category' => $product->category ? [
                     'id' => $product->category->id,
                     'title' => $product->category->title,
@@ -398,7 +415,21 @@ class FrontendController extends Controller
      */
     public function productShow($id)
     {
-        $product = Product::with(['category', 'images', 'retailer.products']) // load retailer & their products
+        $product = Product::with([
+            'category',
+            'images',
+            'retailer.products',
+            'comments' => function ($commentsQuery) {
+                $commentsQuery->approved()->latest()->with('user');
+            },
+        ])
+            ->withCount([
+                'ratings as ratings_count',
+                'comments as comments_count' => function ($commentsCountQuery) {
+                    $commentsCountQuery->approved();
+                },
+            ])
+            ->withAvg('ratings', 'rating')
             ->where('active', 1)
             ->find($id);
 
@@ -411,6 +442,10 @@ class FrontendController extends Controller
         $product_owner = $product->retailer;
 
         // Transform the product data
+        $averageRating = $product->ratings_avg_rating !== null
+            ? round((float) $product->ratings_avg_rating, 1)
+            : null;
+
         $transformedProduct = [
             'id' => $product->id,
             'product_identify_id' => $product->product_identify_id,
@@ -423,6 +458,12 @@ class FrontendController extends Controller
             'size' => $product->size,
             'price' => $product->price,
             'sort_order' => $product->sort_order,
+            'rating' => $averageRating,
+            'average_rating' => $averageRating,
+            'ratings_count' => (int) ($product->ratings_count ?? 0),
+            'ratings_amount' => (int) ($product->ratings_count ?? 0),
+            'comments_count' => (int) ($product->comments_count ?? 0),
+            'comments_amount' => (int) ($product->comments_count ?? 0),
             'category' => $product->category ? [
                 'id' => $product->category->id,
                 'title' => $product->category->title,
@@ -446,6 +487,19 @@ class FrontendController extends Controller
                 'email' => $product_owner->email,
                 'products_count' => $product_owner->products->count(),
             ] : null,
+            'comments' => $product->comments->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'comment' => $comment->comment,
+                    'rating' => $comment->rating,
+                    'created_at' => optional($comment->created_at)->toIso8601String(),
+                    'user' => $comment->user ? [
+                        'id' => $comment->user->id,
+                        'name' => $comment->user->full_name,
+                        'avatar' => $comment->user->avatar ? asset('storage/'.$comment->user->avatar) : null,
+                    ] : null,
+                ];
+            }),
         ];
 
         return response()->json([
@@ -515,7 +569,7 @@ class FrontendController extends Controller
 
     public function retailerShopCount()
     {
-        
+
         $retailerShops = RetailerShop::count();
 
         return response()->json($retailerShops);
@@ -523,7 +577,7 @@ class FrontendController extends Controller
 
     public function retailerShopEdit(Request $request)
     {
-         $user = $request->user('sanctum'); 
+         $user = $request->user('sanctum');
         $retailerShop = $user->retailerShop;
         $countProduct = $user->products()->count();
 

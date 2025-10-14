@@ -127,12 +127,22 @@ class Product extends Model implements TranslatableContract
 
     public function getAverageRatingAttribute()
     {
-        return $this->approvedComments()->withRating()->avg('rating');
+        if (array_key_exists('ratings_avg_rating', $this->attributes)) {
+            return $this->attributes['ratings_avg_rating'] !== null
+                ? (float) $this->attributes['ratings_avg_rating']
+                : null;
+        }
+
+        return $this->ratings()->avg('rating');
     }
 
     public function getTotalCommentsAttribute()
     {
-        return $this->approvedComments()->count();
+        if (array_key_exists('comments_count', $this->attributes)) {
+            return (int) $this->attributes['comments_count'];
+        }
+
+        return $this->comments()->approved()->count();
     }
 
     public function getDynamicSEOData(): SEOData
