@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\RateProductController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -46,6 +46,8 @@ require __DIR__.'/website/general.php';
 require __DIR__.'/website/products.php';
 require __DIR__.'/website/comments.php';
 require __DIR__.'/website/bog.php';
+// Rate product API
+Route::post('/rate-product', [RateProductController::class, 'set']);
 
 // Set the locale for the application
 Route::get('/change-locale/{lang}', function ($lang) {
