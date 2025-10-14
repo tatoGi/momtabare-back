@@ -27,12 +27,12 @@ class BogCardController extends Controller
     public function addCard(Request $request)
     {
         $request->validate([
-            'card_number' => 'required|string|min:13|max:19',
-            'card_holder_name' => 'required|string|max:255',
-            'expiry_month' => 'required|string|size:2|regex:/^(0[1-9]|1[0-2])$/',
-            'expiry_year' => 'required|string|size:4|regex:/^20[2-9][0-9]$/',
-            'cvv' => 'required|string|size:3|regex:/^[0-9]{3}$/',
-            'card_type' => 'nullable|string|in:visa,mastercard,amex,bog,other',
+            'card_number' => ['required', 'string', 'min:13', 'max:19'],
+            'card_holder_name' => ['required', 'string', 'max:255'],
+            'expiry_month' => ['required', 'string', 'size:2', 'regex:/^(0[1-9]|1[0-2])$/'],
+            'expiry_year' => ['required', 'string', 'size:4', 'regex:/^20[2-9][0-9]$/'],
+            'cvv' => ['required', 'string', 'size:3', 'regex:/^[0-9]{3}$/'],
+            'card_type' => ['nullable', 'string', 'in:visa,mastercard,amex,bog,other'],
         ]);
 
         try {
