@@ -51,7 +51,7 @@ class RetailerProductController extends Controller
     /**
      * Store a new retailer product
      */
-    public function store(Request $request): JsonResponse
+     public function store(Request $request): JsonResponse
     {
         $user = $request->user('sanctum');
 
@@ -64,8 +64,8 @@ class RetailerProductController extends Controller
             'location' => 'required|string|max:255',
             'contact_person' => 'required|string|max:255',
             'contact_phone' => 'required|string|max:20',
-            'rental_start_date' => 'nullable|date',  // ← Add this
-                'rental_end_date' => 'nullable|date',    // ← Add this
+            'rental_start_date' => 'nullable|date',
+            'rental_end_date' => 'nullable|date|after_or_equal:rental_start_date',
             'color' => 'nullable|string|max:100',
             'size' => 'nullable|string|max:100',
             'brand' => 'nullable|string|max:100',
@@ -73,17 +73,19 @@ class RetailerProductController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
         ]);
 
+        // ✅ FIXED: Use correct field names
         // Format rental period as a string if both dates are provided
         $rentalPeriod = null;
-        if (! empty($validated['rental_period_start']) && ! empty($validated['rental_period_end'])) {
-            $startDate = date('Y-m-d', strtotime($validated['rental_period_start']));
-            $endDate = date('Y-m-d', strtotime($validated['rental_period_end']));
-            $rentalPeriod = $startDate.' to '.$endDate;
+        if (!empty($validated['rental_start_date']) && !empty($validated['rental_end_date'])) {
+            $startDate = date('Y-m-d', strtotime($validated['rental_start_date']));
+            $endDate = date('Y-m-d', strtotime($validated['rental_end_date']));
+            $rentalPeriod = $startDate . ' to ' . $endDate;
         }
 
         // Generate unique product identifier
-        $productIdentifyId = 'RTL-'.strtoupper(Str::random(8));
+        $productIdentifyId = 'RTL-' . strtoupper(Str::random(8));
 
+        // ✅ FIXED: Use correct field names from $validated array
         // Create product
         $product = Product::create([
             'product_identify_id' => $productIdentifyId,
@@ -94,9 +96,11 @@ class RetailerProductController extends Controller
             'price' => $validated['price'],
             'currency' => $validated['currency'],
             'rental_period' => $rentalPeriod,
-            'rental_start_date' => ! empty($validated['rental_period_start']) ? $validated['rental_period_start'] : null,
-            'rental_end_date' => ! empty($validated['rental_period_end']) ? $validated['rental_period_end'] : null,
+            'rental_start_date' => $validated['rental_start_date'] ?? null,  // ✅ FIXED
+            'rental_end_date' => $validated['rental_end_date'] ?? null,      // ✅ FIXED
             'size' => $validated['size'] ?? null,
+            'color' => $validated['color'] ?? null,
+            'brand' => $validated['brand'] ?? null,
             'status' => 'pending', // Requires admin approval
             'active' => false, // Will be activated upon approval
             'sort_order' => 0,
@@ -126,7 +130,7 @@ class RetailerProductController extends Controller
             $isFirstImage = true;
 
             foreach ($images as $image) {
-                $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
+                $imageName = time() . '_' . uniqid() . '_' . $image->getClientOriginalName();
                 $imagePath = $image->storeAs('products', $imageName, 'public');
 
                 $product->images()->create([
