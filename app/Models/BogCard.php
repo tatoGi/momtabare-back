@@ -16,9 +16,12 @@ class BogCard extends Model
         'card_token',
         'card_mask',
         'card_type',
+        'card_holder_name',
+        'card_brand',
         'expiry_month',
         'expiry_year',
         'is_default',
+        'last_used_at',
         'metadata',
         'parent_order_id',
     ];
@@ -33,6 +36,7 @@ class BogCard extends Model
         'metadata' => 'array',
         'expiry_month' => 'string',
         'expiry_year' => 'string',
+        'last_used_at' => 'datetime',
     ];
 
     /**

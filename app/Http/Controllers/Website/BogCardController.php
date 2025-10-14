@@ -41,6 +41,9 @@ class BogCardController extends Controller
             // Detect card type from card number if not provided
             $cardType = $request->card_type ?? $this->detectCardType($request->card_number);
 
+            // Detect card brand (more specific than type)
+            $cardBrand = $this->detectCardBrand($request->card_number);
+
             // Mask the card number (show only last 4 digits)
             $cardMask = $this->maskCardNumber($request->card_number);
 
@@ -75,11 +78,12 @@ class BogCardController extends Controller
                 'card_token' => $cardToken,
                 'card_mask' => $cardMask,
                 'card_type' => $cardType,
+                'card_holder_name' => strtoupper($request->card_holder_name),
+                'card_brand' => $cardBrand,
                 'expiry_month' => $request->expiry_month,
                 'expiry_year' => $request->expiry_year,
                 'is_default' => !BogCard::where('user_id', $user->id)->exists(),
                 'metadata' => [
-                    'card_holder_name' => $request->card_holder_name,
                     'added_manually' => true,
                 ],
             ]);
@@ -91,10 +95,11 @@ class BogCardController extends Controller
                     'id' => $card->id,
                     'card_mask' => $card->card_mask,
                     'card_type' => $card->card_type,
+                    'card_brand' => $card->card_brand,
+                    'card_holder_name' => $card->card_holder_name,
                     'expiry_month' => $card->expiry_month,
                     'expiry_year' => $card->expiry_year,
                     'is_default' => $card->is_default,
-                    'card_holder_name' => $request->card_holder_name,
                 ],
             ], 201);
 
@@ -140,6 +145,65 @@ class BogCardController extends Controller
         }
 
         return 'other';
+    }
+
+    /**
+     * Detect specific card brand from card number (more detailed than type)
+     *
+     * @param  string  $cardNumber
+     * @return string
+     */
+    private function detectCardBrand($cardNumber)
+    {
+        $cardNumber = preg_replace('/\s+/', '', $cardNumber);
+
+        // Visa variations
+        if (preg_match('/^4/', $cardNumber)) {
+            if (preg_match('/^4026|417500|4405|4508|4844|4913|4917/', $cardNumber)) {
+                return 'Visa Electron';
+            }
+            return 'Visa';
+        }
+
+        // Mastercard variations
+        if (preg_match('/^5[1-5]/', $cardNumber) || preg_match('/^2(22[1-9]|2[3-9][0-9]|[3-6][0-9]{2}|7[0-1][0-9]|720)/', $cardNumber)) {
+            if (preg_match('/^5018|5020|5038|5893|6304|6759|6761|6762|6763/', $cardNumber)) {
+                return 'Maestro';
+            }
+            return 'Mastercard';
+        }
+
+        // American Express
+        if (preg_match('/^3[47]/', $cardNumber)) {
+            return 'American Express';
+        }
+
+        // Discover
+        if (preg_match('/^6(?:011|5)/', $cardNumber)) {
+            return 'Discover';
+        }
+
+        // JCB
+        if (preg_match('/^35/', $cardNumber)) {
+            return 'JCB';
+        }
+
+        // Diners Club
+        if (preg_match('/^3(?:0[0-5]|[68])/', $cardNumber)) {
+            return 'Diners Club';
+        }
+
+        // UnionPay
+        if (preg_match('/^62/', $cardNumber)) {
+            return 'UnionPay';
+        }
+
+        // BOG (Bank of Georgia) - customize as needed
+        if (preg_match('/^6/', $cardNumber)) {
+            return 'Bank of Georgia';
+        }
+
+        return 'Unknown';
     }
 
     /**
@@ -246,11 +310,13 @@ class BogCardController extends Controller
                         'id' => $card->id,
                         'card_mask' => $card->card_mask,
                         'card_type' => $card->card_type,
+                        'card_brand' => $card->card_brand,
+                        'card_holder_name' => $card->card_holder_name,
                         'expiry_month' => $card->expiry_month,
                         'expiry_year' => $card->expiry_year,
                         'formatted_expiry' => $card->formatted_expiry,
                         'is_default' => $card->is_default,
-                        'card_holder_name' => $card->metadata['card_holder_name'] ?? null,
+                        'last_used_at' => $card->last_used_at ? $card->last_used_at->toIso8601String() : null,
                         'added_manually' => $card->metadata['added_manually'] ?? false,
                         'created_at' => $card->created_at->toIso8601String(),
                     ];
