@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class RetailerProductController extends Controller
 {
- 
+
     /**
      * Get count of retailer's products
      */
@@ -69,7 +69,8 @@ class RetailerProductController extends Controller
             'color' => 'nullable|string|max:100',
             'size' => 'nullable|string|max:100',
             'brand' => 'nullable|string|max:100',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+            'images' => 'nullable|array|max:10', // Allow up to 10 images
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
         ]);
 
         // Format rental period as a string if both dates are provided
@@ -119,17 +120,23 @@ class RetailerProductController extends Controller
 
         $product->save();
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = time().'_'.$image->getClientOriginalName();
-            $imagePath = $image->storeAs('products', $imageName, 'public');
+        // Handle multiple image uploads
+        if ($request->hasFile('images')) {
+            $images = $request->file('images');
+            $isFirstImage = true;
 
-            $product->images()->create([
-                'image_name' => $imageName,
-                'image_path' => $imagePath,
-                'is_main' => true,
-            ]);
+            foreach ($images as $image) {
+                $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
+                $imagePath = $image->storeAs('products', $imageName, 'public');
+
+                $product->images()->create([
+                    'image_name' => $imageName,
+                    'image_path' => $imagePath,
+                    'is_main' => $isFirstImage, // First image is main
+                ]);
+
+                $isFirstImage = false;
+            }
         }
 
         return response()->json([
@@ -188,7 +195,10 @@ class RetailerProductController extends Controller
             'color' => 'nullable|string|max:100',
             'size' => 'nullable|string|max:100',
             'brand' => 'nullable|string|max:100',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'images' => 'nullable|array|max:10', // Allow up to 10 images
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
+            'remove_image_ids' => 'nullable|array', // IDs of images to remove
+            'remove_image_ids.*' => 'integer|exists:product_images,id',
         ]);
 
         // Format rental period as a string if both dates are provided
@@ -230,24 +240,34 @@ class RetailerProductController extends Controller
 
         $product->save();
 
-        // Handle new image upload
-        if ($request->hasFile('image')) {
-            // Delete old images
-            foreach ($product->images as $oldImage) {
+        // Handle image deletion
+        if ($request->has('remove_image_ids')) {
+            $imagesToRemove = $product->images()->whereIn('id', $validated['remove_image_ids'])->get();
+
+            foreach ($imagesToRemove as $oldImage) {
                 Storage::disk('public')->delete($oldImage->image_path);
                 $oldImage->delete();
             }
+        }
 
-            // Upload new image
-            $image = $request->file('image');
-            $imageName = time().'_'.$image->getClientOriginalName();
-            $imagePath = $image->storeAs('products', $imageName, 'public');
+        // Handle new image uploads
+        if ($request->hasFile('images')) {
+            $images = $request->file('images');
+            $existingImagesCount = $product->images()->count();
+            $isFirstImage = $existingImagesCount === 0; // Set first image as main if no images exist
 
-            $product->images()->create([
-                'image_name' => $imageName,
-                'image_path' => $imagePath,
-                'is_main' => true,
-            ]);
+            foreach ($images as $image) {
+                $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
+                $imagePath = $image->storeAs('products', $imageName, 'public');
+
+                $product->images()->create([
+                    'image_name' => $imageName,
+                    'image_path' => $imagePath,
+                    'is_main' => $isFirstImage,
+                ]);
+
+                $isFirstImage = false;
+            }
         }
 
         return response()->json([
@@ -300,6 +320,98 @@ class RetailerProductController extends Controller
         return response()->json([
             'success' => true,
             'data' => $categories,
+        ]);
+    }
+
+    /**
+     * Add images to existing product
+     */
+    public function addImages(Request $request, $id): JsonResponse
+    {
+        $user = $request->user('sanctum');
+
+        $product = Product::where('retailer_id', $user->id)->findOrFail($id);
+
+        $validated = $request->validate([
+            'images' => 'required|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        $uploadedImages = [];
+        $existingImagesCount = $product->images()->count();
+        $isFirstImage = $existingImagesCount === 0;
+
+        foreach ($request->file('images') as $image) {
+            $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
+            $imagePath = $image->storeAs('products', $imageName, 'public');
+
+            $productImage = $product->images()->create([
+                'image_name' => $imageName,
+                'image_path' => $imagePath,
+                'is_main' => $isFirstImage,
+            ]);
+
+            $uploadedImages[] = $productImage;
+            $isFirstImage = false;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Images uploaded successfully.',
+            'data' => $uploadedImages,
+        ]);
+    }
+
+    /**
+     * Remove image from product
+     */
+    public function removeImage(Request $request, $productId, $imageId): JsonResponse
+    {
+        $user = $request->user('sanctum');
+
+        $product = Product::where('retailer_id', $user->id)->findOrFail($productId);
+        $image = $product->images()->findOrFail($imageId);
+
+        // Delete the file from storage
+        Storage::disk('public')->delete($image->image_path);
+
+        $wasMain = $image->is_main;
+        $image->delete();
+
+        // If deleted image was main, set the first remaining image as main
+        if ($wasMain) {
+            $firstImage = $product->images()->first();
+            if ($firstImage) {
+                $firstImage->update(['is_main' => true]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Set image as main/featured image
+     */
+    public function setMainImage(Request $request, $productId, $imageId): JsonResponse
+    {
+        $user = $request->user('sanctum');
+
+        $product = Product::where('retailer_id', $user->id)->findOrFail($productId);
+
+        // Set all images to not main
+        $product->images()->update(['is_main' => false]);
+
+        // Set the selected image as main
+        $image = $product->images()->findOrFail($imageId);
+        $image->update(['is_main' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Main image updated successfully.',
+            'data' => $image,
         ]);
     }
 }

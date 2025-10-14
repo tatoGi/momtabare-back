@@ -25,6 +25,11 @@ Route::prefix('retailer')->group(function () {
     Route::delete('/products/{id}', [RetailerProductController::class, 'destroy'])->name('retailer.products.destroy');
     Route::get('/users/products/count', [RetailerProductController::class, 'countProducts']);
 
+    // Product image management
+    Route::post('/products/{id}/images', [RetailerProductController::class, 'addImages'])->name('retailer.products.images.add');
+    Route::delete('/products/{productId}/images/{imageId}', [RetailerProductController::class, 'removeImage'])->name('retailer.products.images.remove');
+    Route::put('/products/{productId}/images/{imageId}/set-main', [RetailerProductController::class, 'setMainImage'])->name('retailer.products.images.set-main');
+
     // Retailer shop management
     Route::post('/retailer-shop/store', [FrontendController::class, 'storeRetailerShop'])->name('retailer-shop.store');
     Route::get('/retailer-shop/count', [FrontendController::class, 'retailerShopCount'])->name('retailer-shop.count');

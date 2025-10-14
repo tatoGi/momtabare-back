@@ -57,7 +57,9 @@ class ProductController extends Controller
 
         // Filter by color
         if ($request->has('color') && !empty($request->color)) {
-            $query->where('color', 'like', '%' . $request->color . '%');
+            $query->whereHas('translations', function($q) use ($request) {
+                $q->where('color', 'like', '%' . $request->color . '%');
+            });
         }
 
         // Filter by size
@@ -67,7 +69,9 @@ class ProductController extends Controller
 
         // Filter by location
         if ($request->has('location') && !empty($request->location)) {
-            $query->where('location', 'like', '%' . $request->location . '%');
+            $query->whereHas('translations', function($q) use ($request) {
+                $q->where('location', 'like', '%' . $request->location . '%');
+            });
         }
 
         // Filter by status
