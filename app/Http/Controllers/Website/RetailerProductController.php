@@ -64,8 +64,8 @@ class RetailerProductController extends Controller
             'location' => 'required|string|max:255',
             'contact_person' => 'required|string|max:255',
             'contact_phone' => 'required|string|max:20',
-            'rental_period_start' => 'nullable|date',
-            'rental_period_end' => 'nullable|date|after_or_equal:rental_period_start',
+            'rental_start_date' => 'nullable|date',  // ← Add this
+                'rental_end_date' => 'nullable|date',    // ← Add this
             'color' => 'nullable|string|max:100',
             'size' => 'nullable|string|max:100',
             'brand' => 'nullable|string|max:100',
