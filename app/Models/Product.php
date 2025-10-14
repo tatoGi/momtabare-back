@@ -133,8 +133,8 @@ class Product extends Model implements TranslatableContract
                 : null;
         }
 
-        // Fallback to calculating from comments with ratings
-        return $this->comments()->approved()->whereNotNull('rating')->avg('rating');
+        // Fallback to calculating from product_ratings table
+        return $this->ratings()->avg('rating');
     }
 
     public function getTotalCommentsAttribute()

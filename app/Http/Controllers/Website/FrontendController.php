@@ -329,18 +329,12 @@ class FrontendController extends Controller
     {
         $query = Product::with(['category', 'images', 'translations'])
             ->withCount([
-                'comments as ratings_count' => function ($q) {
-                    $q->approved()->whereNotNull('rating');
-                },
+                'ratings as ratings_count',
                 'comments as comments_count' => function ($commentsQuery) {
                     $commentsQuery->approved();
                 },
             ])
-            ->withAvg([
-                'comments as ratings_avg_rating' => function ($q) {
-                    $q->approved()->whereNotNull('rating');
-                }
-            ], 'rating')
+            ->withAvg('ratings', 'rating')
             ->notBlocked()
             ->where('active', 1)
             ->orderBy('sort_order');
@@ -430,18 +424,12 @@ class FrontendController extends Controller
             },
         ])
             ->withCount([
-                'comments as ratings_count' => function ($q) {
-                    $q->approved()->whereNotNull('rating');
-                },
+                'ratings as ratings_count',
                 'comments as comments_count' => function ($commentsCountQuery) {
                     $commentsCountQuery->approved();
                 },
             ])
-            ->withAvg([
-                'comments as ratings_avg_rating' => function ($q) {
-                    $q->approved()->whereNotNull('rating');
-                }
-            ], 'rating')
+            ->withAvg('ratings', 'rating')
             ->where('active', 1)
             ->find($id);
 
