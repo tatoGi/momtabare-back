@@ -86,8 +86,8 @@ class RetailerProductController extends Controller
         $productIdentifyId = 'RTL-' . strtoupper(Str::random(8));
 
         // ✅ FIXED: Use correct field names from $validated array
-        // Create product (brand, color removed from main table - they're in translations)
-        $product = Product::create([
+        // Create product with translatable fields set directly
+        $product = new Product([
             'product_identify_id' => $productIdentifyId,
             'category_id' => $validated['category_id'],
             'retailer_id' => $user->id,
@@ -96,8 +96,8 @@ class RetailerProductController extends Controller
             'price' => $validated['price'],
             'currency' => $validated['currency'],
             'rental_period' => $rentalPeriod,
-            'rental_start_date' => $validated['rental_start_date'] ?? null,  // ✅ FIXED
-            'rental_end_date' => $validated['rental_end_date'] ?? null,      // ✅ FIXED
+            'rental_start_date' => $validated['rental_start_date'] ?? null,
+            'rental_end_date' => $validated['rental_end_date'] ?? null,
             'size' => $validated['size'] ?? null,
             'color' => $validated['color'] ?? null,
             'location' => $validated['location'],
@@ -106,25 +106,17 @@ class RetailerProductController extends Controller
             'sort_order' => 0,
         ]);
 
-        // Add translatable fields
-        $product->translateOrNew('ka')->title = $validated['name'];
-        $product->translateOrNew('ka')->description = $validated['description'] ?? '';
-        $product->translateOrNew('ka')->location = $validated['location'];
-        $product->translateOrNew('ka')->color = $validated['color'] ?? '';
-        $product->translateOrNew('ka')->brand = $validated['brand'] ?? '';
-        $product->translateOrNew('ka')->slug = Str::slug($validated['name']);
+        // Set translatable fields directly on the model
+        // IMPORTANT: Set ALL required translatable fields together before saving
+        $product->title = $validated['name'];
+        $product->description = $validated['description'] ?? ''; // Description is required in DB
+        $product->brand = $validated['brand'] ?? '';
+        $product->location = $validated['location']; // Location is required
+        $product->color = $validated['color'] ?? '';
+        $product->slug = Str::slug($validated['name']) ?: 'product-' . time();
 
-        // Add English translations (same as Georgian for now)
-        $product->translateOrNew('en')->title = $validated['name'];
-        $product->translateOrNew('en')->description = $validated['description'] ?? '';
-        $product->translateOrNew('en')->location = $validated['location'];
-        $product->translateOrNew('en')->color = $validated['color'] ?? '';
-        $product->translateOrNew('en')->brand = $validated['brand'] ?? '';
-        $product->translateOrNew('en')->slug = Str::slug($validated['name']);
-
-        $product->save();
-
-        // Handle multiple image uploads
+        // Save the product with translations
+        $product->save();        // Handle multiple image uploads
         if ($request->hasFile('images')) {
             $images = $request->file('images');
             $isFirstImage = true;
