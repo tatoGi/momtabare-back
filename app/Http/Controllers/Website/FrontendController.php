@@ -598,6 +598,7 @@ class FrontendController extends Controller
     try {
         $user = $request->user('sanctum');
         $id = $request->input('id');
+        return response()->json(['requested_id' => $id , 'user_id' => $user ? $user->id : null]);
         // First try to find a retailer shop with this ID
         $retailer = RetailerShop::with('user')
             ->where('id', $id)
