@@ -467,6 +467,9 @@ class FrontendController extends Controller
             'ratings_amount' => (int) ($product->ratings_count ?? 0),
             'comments_count' => (int) ($product->comments_count ?? 0),
             'comments_amount' => (int) ($product->comments_count ?? 0),
+             'rental_period' => $product->rental_period,
+                'rental_start_date' => $product->rental_start_date,
+                'rental_end_date' => $product->rental_end_date,
             'category' => $product->category ? [
                 'id' => $product->category->id,
                 'title' => $product->category->title,
