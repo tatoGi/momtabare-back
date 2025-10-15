@@ -53,6 +53,7 @@ class RetailerProductController extends Controller
      */
      public function store(Request $request): JsonResponse
     {
+
         $user = $request->user('sanctum');
 
         $validated = $request->validate([
@@ -72,7 +73,6 @@ class RetailerProductController extends Controller
             'images' => 'nullable|array|max:10', // Allow up to 10 images
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
         ]);
-
         // ✅ FIXED: Use correct field names
         // Format rental period as a string if both dates are provided
         $rentalPeriod = null;
