@@ -198,6 +198,19 @@
                                             <span class="text-red-500 text-sm">{{ $message }}</span>
                                         @enderror
                                     </div>
+
+                                    <div class="flex w-full items-center justify-center flex-col mb-2">
+                                        <label for="style_{{ $locale }}" class="text-sm font-medium">
+                                            Style ({{ __('admin.locale_' . $locale) }})
+                                        </label>
+                                        <input type="text" id="style_{{ $locale }}"
+                                            name="{{ $locale }}[style]" value="{{ old($locale . '.style') }}"
+                                            class="border w-full text-sm rounded-lg block p-2.5 @error($locale . '.style') border-red-500 @enderror"
+                                            placeholder="e.g., Modern, Classic, Vintage">
+                                        @error($locale . '.style')
+                                            <span class="text-red-500 text-sm">{{ $message }}</span>
+                                        @enderror
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -272,6 +285,77 @@
                                     class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 @error('size') border-red-500 @enderror"
                                     value="{{ old('size') }}" placeholder="e.g., S, M, L, XL">
                                 @error('size')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Currency -->
+                        <div class="mb-4">
+                            <label for="currency" class="block font-medium text-gray-700">
+                                <span class="text-red-500">*</span>Currency
+                            </label>
+                            <select name="currency" id="currency"
+                                class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 @error('currency') border-red-500 @enderror">
+                                <option value="">Select Currency</option>
+                                <option value="GEL" {{ old('currency') == 'GEL' ? 'selected' : '' }}>GEL (₾)</option>
+                                <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD ($)</option>
+                                <option value="EUR" {{ old('currency') == 'EUR' ? 'selected' : '' }}>EUR (€)</option>
+                            </select>
+                            @error('currency')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="contact_person" class="block font-medium text-gray-700">
+                                    <span class="text-red-500">*</span>Contact Person
+                                </label>
+                                <input type="text" name="contact_person" id="contact_person"
+                                    class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 @error('contact_person') border-red-500 @enderror"
+                                    value="{{ old('contact_person') }}" placeholder="Full Name">
+                                @error('contact_person')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="contact_phone" class="block font-medium text-gray-700">
+                                    <span class="text-red-500">*</span>Contact Phone
+                                </label>
+                                <input type="text" name="contact_phone" id="contact_phone"
+                                    class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 @error('contact_phone') border-red-500 @enderror"
+                                    value="{{ old('contact_phone') }}" placeholder="+995 XXX XXX XXX">
+                                @error('contact_phone')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Rental Dates -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="rental_start_date" class="block font-medium text-gray-700">
+                                    Rental Start Date
+                                </label>
+                                <input type="date" name="rental_start_date" id="rental_start_date"
+                                    class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 @error('rental_start_date') border-red-500 @enderror"
+                                    value="{{ old('rental_start_date') }}">
+                                @error('rental_start_date')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="rental_end_date" class="block font-medium text-gray-700">
+                                    Rental End Date
+                                </label>
+                                <input type="date" name="rental_end_date" id="rental_end_date"
+                                    class="border-gray-300 py-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border rounded-md shadow-sm p-2 @error('rental_end_date') border-red-500 @enderror"
+                                    value="{{ old('rental_end_date') }}">
+                                @error('rental_end_date')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
                             </div>
