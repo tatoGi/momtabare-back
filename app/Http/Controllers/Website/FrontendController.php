@@ -613,7 +613,8 @@ class FrontendController extends Controller
                 'type' => 'retailer',
                 'data' => [
                     'id' => $retailer->id,
-                    'name' => $retailer->name,
+                    'name' => $retailer->first_name,
+                    'surname' => $retailer->surname,
                     'location' => $retailer->location,
                     'contact_person' => $retailer->contact_person,
                     'contact_phone' => $retailer->contact_phone,
@@ -639,7 +640,8 @@ class FrontendController extends Controller
                 'type' => 'user',
                 'data' => [
                     'id' => $user->id,
-                    'name' => $user->full_name,
+                    'name' => $user->first_name,
+                    'surname' => $user->surname,
                     'email' => $user->email,
                     'phone' => $user->phone,
                     'is_retailer' => (bool)$user->is_retailer,
