@@ -352,7 +352,14 @@ class FrontendController extends Controller
         // Pagination
         $perPage = $request->get('per_page', 12);
         $products = $query->paginate($perPage);
-        dd($products);
+
+        // Debug: Return raw products data
+        return response()->json([
+            'debug' => true,
+            'products' => $products,
+            'products_array' => $products->toArray(),
+        ]);
+
         // Transform the data for Vue frontend
         $transformedProducts = $products->getCollection()->map(function ($product) {
             $averageRating = $product->ratings_avg_rating !== null
