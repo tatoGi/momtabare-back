@@ -158,13 +158,17 @@ class RetailerProductController extends Controller
         } catch (\Exception $e) {
             Log::error('Error creating retailer product: ' . $e->getMessage(), [
                 'user_id' => $user->id ?? null,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create product',
-                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ], 500);
         }
     }
