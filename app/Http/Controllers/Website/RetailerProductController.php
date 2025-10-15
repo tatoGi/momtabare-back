@@ -53,26 +53,26 @@ class RetailerProductController extends Controller
      */
      public function store(Request $request): JsonResponse
     {
+        try {
+            $user = $request->user('sanctum');
 
-        $user = $request->user('sanctum');
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'currency' => 'required|in:GEL,USD',
-            'location' => 'required|string|max:255',
-            'contact_person' => 'required|string|max:255',
-            'contact_phone' => 'required|string|max:20',
-            'rental_start_date' => 'nullable|date',
-            'rental_end_date' => 'nullable|date|after_or_equal:rental_start_date',
-            'color' => 'nullable|string|max:100',
-            'size' => 'nullable|string|max:100',
-            'brand' => 'nullable|string|max:100',
-            'images' => 'nullable|array|max:10', // Allow up to 10 images
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
-        ]);
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'category_id' => ['required', 'exists:categories,id'],
+                'description' => ['nullable', 'string'],
+                'price' => ['required', 'numeric', 'min:0'],
+                'currency' => ['required', 'in:GEL,USD'],
+                'location' => ['required', 'string', 'max:255'],
+                'contact_person' => ['required', 'string', 'max:255'],
+                'contact_phone' => ['required', 'string', 'max:20'],
+                'rental_start_date' => ['nullable', 'date'],
+                'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+                'color' => ['nullable', 'string', 'max:100'],
+                'size' => ['nullable', 'string', 'max:100'],
+                'brand' => ['nullable', 'string', 'max:100'],
+                'images' => ['nullable', 'array', 'max:10'], // Allow up to 10 images
+                'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max per image
+            ]);
         // ✅ FIXED: Use correct field names
         // Format rental period as a string if both dates are provided
         $rentalPeriod = null;
@@ -86,7 +86,7 @@ class RetailerProductController extends Controller
         $productIdentifyId = 'RTL-' . strtoupper(Str::random(8));
 
         // ✅ FIXED: Use correct field names from $validated array
-        // Create product
+        // Create product (brand, color removed from main table - they're in translations)
         $product = Product::create([
             'product_identify_id' => $productIdentifyId,
             'category_id' => $validated['category_id'],
@@ -100,7 +100,7 @@ class RetailerProductController extends Controller
             'rental_end_date' => $validated['rental_end_date'] ?? null,      // ✅ FIXED
             'size' => $validated['size'] ?? null,
             'color' => $validated['color'] ?? null,
-            'brand' => $validated['brand'] ?? null,
+            'location' => $validated['location'],
             'status' => 'pending', // Requires admin approval
             'active' => false, // Will be activated upon approval
             'sort_order' => 0,
@@ -148,6 +148,25 @@ class RetailerProductController extends Controller
             'message' => 'Product submitted successfully. It will be reviewed by admin.',
             'data' => $product->load(['category', 'images']),
         ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error creating retailer product: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create product',
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred',
+            ], 500);
+        }
     }
 
     /**
