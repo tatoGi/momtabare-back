@@ -353,9 +353,20 @@ class FrontendController extends Controller
         $perPage = $request->get('per_page', 12);
         $products = $query->paginate($perPage);
 
-        // Debug: Return raw products data
+        // Debug: Return raw products data with detailed inspection
+        $firstProduct = $products->first();
         return response()->json([
             'debug' => true,
+            'total_count' => $products->count(),
+            'first_product_raw' => $firstProduct,
+            'first_product_attributes' => $firstProduct ? $firstProduct->getAttributes() : null,
+            'first_product_rental_dates' => $firstProduct ? [
+                'rental_period' => $firstProduct->rental_period,
+                'rental_start_date' => $firstProduct->rental_start_date,
+                'rental_end_date' => $firstProduct->rental_end_date,
+                'rental_start_date_raw' => $firstProduct->getAttributes()['rental_start_date'] ?? null,
+                'rental_end_date_raw' => $firstProduct->getAttributes()['rental_end_date'] ?? null,
+            ] : null,
             'products' => $products,
             'products_array' => $products->toArray(),
         ]);
