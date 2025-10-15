@@ -353,24 +353,6 @@ class FrontendController extends Controller
         $perPage = $request->get('per_page', 12);
         $products = $query->paginate($perPage);
 
-        // Debug: Return raw products data with detailed inspection
-        $firstProduct = $products->first();
-        return response()->json([
-            'debug' => true,
-            'total_count' => $products->count(),
-            'first_product_raw' => $firstProduct,
-            'first_product_attributes' => $firstProduct ? $firstProduct->getAttributes() : null,
-            'first_product_rental_dates' => $firstProduct ? [
-                'rental_period' => $firstProduct->rental_period,
-                'rental_start_date' => $firstProduct->rental_start_date,
-                'rental_end_date' => $firstProduct->rental_end_date,
-                'rental_start_date_raw' => $firstProduct->getAttributes()['rental_start_date'] ?? null,
-                'rental_end_date_raw' => $firstProduct->getAttributes()['rental_end_date'] ?? null,
-            ] : null,
-            'products' => $products,
-            'products_array' => $products->toArray(),
-        ]);
-
         // Transform the data for Vue frontend
         $transformedProducts = $products->getCollection()->map(function ($product) {
             $averageRating = $product->ratings_avg_rating !== null
@@ -388,17 +370,18 @@ class FrontendController extends Controller
                 'color' => $product->color,
                 'size' => $product->size,
                 'price' => $product->price,
+                'currency' => $product->currency,
                 'is_favorite' => $product->is_favorite,
                 'is_popular' => $product->is_popular,
+                'rental_period' => $product->rental_period,
+                'rental_start_date' => $product->rental_start_date ? $product->rental_start_date->format('Y-m-d H:i:s') : null,
+                'rental_end_date' => $product->rental_end_date ? $product->rental_end_date->format('Y-m-d H:i:s') : null,
                 'rating' => $averageRating,
                 'average_rating' => $averageRating,
                 'ratings_count' => (int) ($product->ratings_count ?? 0),
                 'ratings_amount' => (int) ($product->ratings_count ?? 0),
                 'comments_count' => (int) ($product->comments_count ?? 0),
                 'comments_amount' => (int) ($product->comments_count ?? 0),
-                'rental_period' => $product->rental_period,
-                'rental_start_date' => $product->rental_start_date ? $product->rental_start_date->format('Y-m-d H:i:s') : null,
-                'rental_end_date' => $product->rental_end_date ? $product->rental_end_date->format('Y-m-d H:i:s') : null,
                 'category' => $product->category ? [
                     'id' => $product->category->id,
                     'title' => $product->category->title,
