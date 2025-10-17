@@ -174,6 +174,43 @@ class BogPaymentController extends Controller
             $orderId = $response['id'] ?? null;
             $redirectUrl = $response['_links']['redirect']['href'] ?? null;
 
+            // Create payment record in bog_payments table
+            try {
+                $payment = \App\Models\BogPayment::create([
+                    'bog_order_id' => $orderId,
+                    'external_order_id' => $validated['external_order_id'] ?? null,
+                    'user_id' => null, // FK constraint issue: points to users table, not web_users
+                    'amount' => $validated['purchase_units']['total_amount'],
+                    'currency' => $validated['purchase_units']['currency'] ?? 'GEL',
+                    'status' => $response['status'] ?? 'created',
+                    'request_payload' => [
+                        'basket' => $validated['purchase_units']['basket'],
+                        'callback_url' => $validated['callback_url'],
+                        'redirect_urls' => $validated['redirect_urls'],
+                        'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Store web_user_id from frontend
+                        'save_card' => $validated['save_card'] ?? false,
+                        'language' => $validated['language'] ?? 'en',
+                    ],
+                    'response_data' => $response,
+                    'save_card_requested' => $validated['save_card'] ?? false,
+                ]);
+
+                Log::info('BOG Payment record created for new order', [
+                    'payment_id' => $payment->id,
+                    'bog_order_id' => $orderId,
+                    'web_user_id' => $validated['user_id'] ?? $user->id ?? null,
+                    'amount' => $validated['purchase_units']['total_amount'],
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to create BOG payment record for new order', [
+                    'error' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                    'bog_order_id' => $orderId,
+                    'web_user_id' => $validated['user_id'] ?? $user->id ?? null,
+                ]);
+                // Don't fail the order creation if payment record fails
+            }
+
             return response()->json([
                 'success' => true,
                 'order_id' => $orderId,
