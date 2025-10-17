@@ -390,6 +390,7 @@ class FrontendController extends Controller
                 'currency' => $product->currency,
                 'is_favorite' => $product->is_favorite,
                 'is_popular' => $product->is_popular,
+                'views' => (int) ($product->views ?? 0),
                 'rental_period' => $product->rental_period,
                 'rental_start_date' => $product->rental_start_date ? $product->rental_start_date->format('Y-m-d H:i:s') : null,
                 'rental_end_date' => $product->rental_end_date ? $product->rental_end_date->format('Y-m-d H:i:s') : null,
@@ -460,6 +461,9 @@ class FrontendController extends Controller
             ], 404);
         }
 
+        // Increment view count
+        $product->increment('views');
+
         $product_owner = $product->retailer;
 
         // Transform the product data
@@ -478,7 +482,9 @@ class FrontendController extends Controller
             'color' => $product->color,
             'size' => $product->size,
             'price' => $product->price,
+            'currency' => $product->currency,
             'sort_order' => $product->sort_order,
+            'views' => (int) $product->views,
             'rating' => $averageRating,
             'average_rating' => $averageRating,
             'ratings_count' => (int) ($product->ratings_count ?? 0),

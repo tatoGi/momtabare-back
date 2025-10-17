@@ -41,6 +41,7 @@ class Product extends Model implements TranslatableContract
         'is_rented',
         'rented_at',
         'rented_by',
+        'views',
     ];
 
     /**
