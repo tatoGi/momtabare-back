@@ -7,21 +7,21 @@
             'url' => 'admin/categories',
         ],
         [
-            'icon' => 'fa-file-alt', 
-            'title' => __('admin.Pages'), 
-           
+            'icon' => 'fa-file-alt',
+            'title' => __('admin.Pages'),
+
                 'url' => 'admin/pages',
-               
-            
+
+
         ],
         ['icon' => 'fa-file-alt', 'title' => __('admin.Products'), 'url' => 'admin/products'],
         // ['icon' => 'fa-briefcase', 'title' => __('admin.Companies'), 'url' => '#'],
         ['icon' => 'fa-id-card-alt', 'title' => __('admin.Users'), 'url' => 'admin/webusers'],
-        // ['icon' => 'fa-donate', 'title' => __('admin.Payments'), 'url' => '#'],
+        ['icon' => 'fa-credit-card', 'title' => __('admin.Payments'), 'url' => 'admin/payments'],
         ['icon' => 'fa-comments', 'title' => __('admin.Subscribers'), 'url' => 'admin/subscribers'],
         ['icon' => 'fa-book', 'title' => __('admin.Languages'), 'url' => 'admin/languages'],
         ['icon' => 'fa-life-ring', 'title' => __('admin.Help'), 'url' => '#'],
-      
+
         ['icon' => 'fa-address-book', 'title' => __('admin.Contacts'), 'url' => 'admin/contact'],
         // ['icon' => 'fa-envelope', 'title' => __('admin.Mail'), 'url' => '#'],
         // ['icon' => 'fa-rocket', 'title' => __('admin.SEO'), 'url' => '#'],
@@ -99,7 +99,7 @@
                     </a>
                     <!-- Dropdown menu -->
                     <div class="absolute mt-8 ml-6 w-[200px] bg-[#1E293B] rounded-lg shadow-lg z-10 hidden
-                                {{ $index !== 0 ? 'top-0' : '' }}  
+                                {{ $index !== 0 ? 'top-0' : '' }}
                                 {{ $index !== 0 ? 'mt-12' : '' }}">
                         <div class="py-1">
                             @foreach ($link['submenu'] as $submenu)
@@ -121,7 +121,7 @@
             @endif
         @endforeach
     </div>
-    
+
     <!-- MINI SIDEBAR-->
     <div class= "mini mt-20 flex flex-col space-y-2 w-full h-[calc(100vh)]">
         <div

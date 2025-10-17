@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\WebUserController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,11 @@ Route::get('/webusers/{id}', [WebUserController::class, 'show'])->name('admin.we
 Route::post('/webusers/{id}/approve-retailer', [WebUserController::class, 'approveRetailer'])->name('admin.webusers.approve-retailer');
 Route::post('/webusers/{id}/reject-retailer', [WebUserController::class, 'rejectRetailer'])->name('admin.webusers.reject-retailer');
 Route::post('/webusers/{id}/toggle-status', [WebUserController::class, 'toggleStatus'])->name('admin.webusers.toggle-status');
+
+// Payment management routes
+Route::get('/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
+Route::get('/payments/export/csv', [PaymentController::class, 'export'])->name('admin.payments.export');
+Route::get('/payments/{id}', [PaymentController::class, 'show'])->name('admin.payments.show')->where('id', '[0-9]+');
 
 // Comment management routes
 Route::get('/comments', [WebUserController::class, 'comments'])->name('admin.comments.index');

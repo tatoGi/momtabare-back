@@ -175,46 +175,37 @@ class BogPaymentController extends Controller
             $redirectUrl = $response['_links']['redirect']['href'] ?? null;
 
             // Create payment record in bog_payments table
-            try {
-                $payment = \App\Models\BogPayment::create([
-                    'bog_order_id' => $orderId,
-                    'external_order_id' => $validated['external_order_id'] ?? null,
-                    'user_id' => null, // FK constraint issue: points to users table, not web_users
-                    'amount' => $validated['purchase_units']['total_amount'],
-                    'currency' => $validated['purchase_units']['currency'] ?? 'GEL',
-                    'status' => $response['status'] ?? 'created',
-                    'request_payload' => [
-                        'basket' => $validated['purchase_units']['basket'],
-                        'callback_url' => $validated['callback_url'],
-                        'redirect_urls' => $validated['redirect_urls'],
-                        'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Store web_user_id from frontend
-                        'save_card' => $validated['save_card'] ?? false,
-                        'language' => $validated['language'] ?? 'en',
-                    ],
-                    'response_data' => $response,
-                    'save_card_requested' => $validated['save_card'] ?? false,
-                ]);
+            $payment = \App\Models\BogPayment::create([
+                'bog_order_id' => $orderId,
+                'external_order_id' => $validated['external_order_id'] ?? null,
+                'user_id' => null, // FK constraint issue: points to users table, not web_users
+                'amount' => $validated['purchase_units']['total_amount'],
+                'currency' => $validated['purchase_units']['currency'] ?? 'GEL',
+                'status' => $response['status'] ?? 'created',
+                'request_payload' => [
+                    'basket' => $validated['purchase_units']['basket'],
+                    'callback_url' => $validated['callback_url'],
+                    'redirect_urls' => $validated['redirect_urls'],
+                    'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Store web_user_id from frontend
+                    'save_card' => $validated['save_card'] ?? false,
+                    'language' => $validated['language'] ?? 'en',
+                ],
+                'response_data' => $response,
+                'save_card_requested' => $validated['save_card'] ?? false,
+            ]);
 
-                Log::info('BOG Payment record created for new order', [
-                    'payment_id' => $payment->id,
-                    'bog_order_id' => $orderId,
-                    'web_user_id' => $validated['user_id'] ?? $user->id ?? null,
-                    'amount' => $validated['purchase_units']['total_amount'],
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to create BOG payment record for new order', [
-                    'error' => $e->getMessage(),
-                    'line' => $e->getLine(),
-                    'bog_order_id' => $orderId,
-                    'web_user_id' => $validated['user_id'] ?? $user->id ?? null,
-                ]);
-                // Don't fail the order creation if payment record fails
-            }
+            Log::info('BOG Payment record created for new order', [
+                'payment_id' => $payment->id,
+                'bog_order_id' => $orderId,
+                'web_user_id' => $validated['user_id'] ?? $user->id ?? null,
+                'amount' => $validated['purchase_units']['total_amount'],
+            ]);
 
             return response()->json([
                 'success' => true,
                 'order_id' => $orderId,
                 'redirect_url' => $redirectUrl,
+                'payment_id' => $payment->id,
                 'data' => $response,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1022,19 +1013,45 @@ class BogPaymentController extends Controller
             // Attach products to payment with pivot data
             $payment->products()->attach($pivotData);
 
-            // Update all products in the order
-            $updatedCount = \App\Models\Product::whereIn('id', $productIds)
-                ->update([
-                    'is_ordered' => true,
-                    'ordered_at' => now(),
-                    'ordered_by' => $webUserId,
-                ]);
+            // Update each product individually with rental dates
+            foreach ($basket as $item) {
+                if (isset($item['product_id'])) {
+                    $productId = $item['product_id'];
+                    $product = \App\Models\Product::find($productId);
+
+                    if ($product) {
+                        $updateData = [
+                            'is_ordered' => true,
+                            'ordered_at' => now(),
+                            'ordered_by' => $webUserId,
+                        ];
+
+                        // Check if this is a rental (has rental dates in basket)
+                        if (isset($item['rental_start_date']) && isset($item['rental_end_date'])) {
+                            $updateData['is_rented'] = true;
+                            $updateData['rental_start_date'] = $item['rental_start_date'];
+                            $updateData['rental_end_date'] = $item['rental_end_date'];
+
+                            Log::info('Product rental dates updated', [
+                                'product_id' => $productId,
+                                'rental_start' => $item['rental_start_date'],
+                                'rental_end' => $item['rental_end_date'],
+                            ]);
+                        } else {
+                            // This is a purchase, not a rental
+                            $updateData['is_rented'] = false;
+                        }
+
+                        $product->update($updateData);
+                    }
+                }
+            }
 
             Log::info('Products marked as ordered and linked to payment', [
                 'payment_id' => $payment->id,
                 'bog_order_id' => $payment->bog_order_id,
                 'product_ids' => $productIds,
-                'updated_count' => $updatedCount,
+                'updated_count' => count($productIds),
                 'ordered_by' => $webUserId,
                 'pivot_entries' => count($pivotData),
             ]);
