@@ -857,6 +857,10 @@ class BogPaymentController extends Controller
             // Get payments - since user_id has FK to users table but we use web_users,
             // we need to search in request_payload JSON
             $payments = BogPayment::query()
+                ->with(['products' => function($query) {
+                    $query->select('products.id', 'products.name_ka', 'products.name_en', 'products.name_ru',
+                                   'products.slug', 'products.price', 'products.images');
+                }])
                 ->where(function($query) use ($user) {
                     // Try to match by user_id (if it was set)
                     $query->where('user_id', $user->id)
@@ -868,6 +872,22 @@ class BogPaymentController extends Controller
 
             // Transform payments for frontend
             $transformedPayments = $payments->getCollection()->map(function ($payment) {
+                // Transform products with pivot data
+                $products = $payment->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name_ka' => $product->name_ka,
+                        'name_en' => $product->name_en,
+                        'name_ru' => $product->name_ru,
+                        'slug' => $product->slug,
+                        'price' => (float) $product->price,
+                        'images' => $product->images,
+                        'quantity' => $product->pivot->quantity,
+                        'unit_price' => (float) $product->pivot->unit_price,
+                        'total_price' => (float) $product->pivot->total_price,
+                    ];
+                });
+
                 return [
                     'id' => $payment->id,
                     'bog_order_id' => $payment->bog_order_id,
@@ -876,7 +896,8 @@ class BogPaymentController extends Controller
                     'currency' => $payment->currency,
                     'status' => $payment->status,
                     'payment_method' => $payment->save_card_requested ? 'new_card' : 'saved_card',
-                    'basket' => $payment->request_payload['basket'] ?? [],
+                    'products' => $products,
+                    'basket' => $payment->request_payload['basket'] ?? [], // Keep for backward compatibility
                     'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
                     'verified_at' => $payment->verified_at ? $payment->verified_at->format('Y-m-d H:i:s') : null,
                 ];
@@ -934,9 +955,22 @@ class BogPaymentController extends Controller
             $webUserId = $payment->request_payload['web_user_id'] ?? null;
 
             $productIds = [];
+            $pivotData = [];
+
+            // Prepare data for pivot table
             foreach ($basket as $item) {
                 if (isset($item['product_id'])) {
-                    $productIds[] = $item['product_id'];
+                    $productId = $item['product_id'];
+                    $quantity = $item['quantity'] ?? 1;
+                    $unitPrice = $item['unit_price'] ?? 0;
+                    $totalPrice = $quantity * $unitPrice;
+
+                    $productIds[] = $productId;
+                    $pivotData[$productId] = [
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'total_price' => $totalPrice,
+                    ];
                 }
             }
 
@@ -948,6 +982,9 @@ class BogPaymentController extends Controller
                 return;
             }
 
+            // Attach products to payment with pivot data
+            $payment->products()->attach($pivotData);
+
             // Update all products in the order
             $updatedCount = \App\Models\Product::whereIn('id', $productIds)
                 ->update([
@@ -956,12 +993,13 @@ class BogPaymentController extends Controller
                     'ordered_by' => $webUserId,
                 ]);
 
-            Log::info('Products marked as ordered', [
+            Log::info('Products marked as ordered and linked to payment', [
                 'payment_id' => $payment->id,
                 'bog_order_id' => $payment->bog_order_id,
                 'product_ids' => $productIds,
                 'updated_count' => $updatedCount,
                 'ordered_by' => $webUserId,
+                'pivot_entries' => count($pivotData),
             ]);
 
         } catch (\Exception $e) {

@@ -95,7 +95,12 @@ class Product extends Model implements TranslatableContract
         return $this->belongsTo(WebUser::class, 'ordered_by');
     }
 
-
+    public function bogPayments()
+    {
+        return $this->belongsToMany(BogPayment::class, 'bog_payment_product')
+            ->withPivot('quantity', 'unit_price', 'total_price')
+            ->withTimestamps();
+    }
 
     // Scopes
     public function scopeAvailable($query)

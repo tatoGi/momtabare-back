@@ -43,4 +43,11 @@ class BogPayment extends Model
     {
         return $this->belongsTo(WebUser::class, 'user_id');
     }
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'bog_payment_product')
+            ->withPivot('quantity', 'unit_price', 'total_price')
+            ->withTimestamps();
+    }
 }
