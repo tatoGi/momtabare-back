@@ -13,51 +13,212 @@ class wishlistController extends Controller
 {
     public function addToWishlist(Request $request)
     {
-        $productId = $request->input('product_id');
+        try {
+            // Validate the request
+            $request->validate([
+                'product_id' => 'required|integer|exists:products,id',
+            ]);
 
-        $wishlist = $request->session()->get('wishlist', []);
+            $productId = $request->input('product_id');
 
-        // Check if the product already exists in the wishlist
-        if (in_array($productId, $wishlist)) {
-            // Return JSON response indicating that the product is already in the wishlist
-            return response()->json(['exists' => true]);
+            // Check if user is authenticated
+            $user = $request->user('sanctum');
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to add items to wishlist',
+                    'requires_auth' => true,
+                ], 401);
+            }
+
+            // Check if product exists and is active
+            $product = Product::where('id', $productId)
+                ->where('active', 1)
+                ->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found or inactive',
+                ], 404);
+            }
+
+            // Toggle is_favorite for this product
+            $product->is_favorite = 1;
+            $product->save();
+
+            // Get wishlist count (all favorite products for this user)
+            $wishlistCount = Product::where('is_favorite', 1)
+                ->where('active', 1)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product added to wishlist',
+                'exists' => false,
+                'wishlistCount' => $wishlistCount,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Add to wishlist error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server Error',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
-
-        // Add the product ID to the wishlist array
-        $wishlist[] = $productId;
-        $request->session()->put('wishlist', $wishlist);
-
-        // Update product is_favorite to 1
-        Product::where('id', $productId)->update(['is_favorite' => 1]);
-
-        // Return JSON response with updated wishlist count
-        return response()->json(['exists' => false, 'wishlistCount' => count($wishlist)]);
     }
 
     public function wishlist(Request $request)
     {
-        // Retrieve products where is_favorite = 1
-        $products = Product::where('is_favorite', 1)->where('active', 1)->with('translations')->with('images')->get();
+        try {
+            // Check if user is authenticated
+            $user = $request->user('sanctum');
 
-        return response()->json(['products' => $products]);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to view wishlist',
+                    'requires_auth' => true,
+                    'products' => [],
+                ], 401);
+            }
+
+            // Retrieve products where is_favorite = 1 with full details
+            $products = Product::where('is_favorite', 1)
+                ->where('active', 1)
+                ->with(['translations', 'images', 'category'])
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'product_identify_id' => $product->product_identify_id,
+                        'title' => $product->title,
+                        'slug' => $product->slug,
+                        'description' => $product->description,
+                        'brand' => $product->brand,
+                        'location' => $product->location,
+                        'color' => $product->color,
+                        'size' => $product->size,
+                        'price' => $product->price,
+                        'currency' => $product->currency,
+                        'is_favorite' => true,
+                        'rental_period' => $product->rental_period,
+                        'rental_start_date' => $product->rental_start_date ? $product->rental_start_date->format('Y-m-d H:i:s') : null,
+                        'rental_end_date' => $product->rental_end_date ? $product->rental_end_date->format('Y-m-d H:i:s') : null,
+                        'category' => $product->category ? [
+                            'id' => $product->category->id,
+                            'title' => $product->category->title,
+                            'slug' => $product->category->slug,
+                        ] : null,
+                        'images' => $product->images->map(function ($image) {
+                            return [
+                                'id' => $image->id,
+                                'url' => asset('storage/products/' . $image->image_name),
+                                'alt' => $image->alt_text ?? '',
+                            ];
+                        }),
+                        'featured_image' => $product->images->first() ? asset('storage/products/' . $product->images->first()->image_name) : null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'products' => $products,
+                'count' => $products->count(),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Wishlist error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server Error',
+                'products' => [],
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
     public function removeFromWishlist(Request $request)
     {
-        $productId = $request->input('productId');
+        try {
+            // Validate the request
+            $request->validate([
+                'productId' => 'required|integer|exists:products,id',
+            ]);
 
-        $wishlist = $request->session()->get('wishlist', []);
+            $productId = $request->input('productId');
 
-        // Remove the product ID from the wishlist array
-        $wishlist = array_diff($wishlist, [$productId]);
+            // Check if user is authenticated
+            $user = $request->user('sanctum');
 
-        $request->session()->put('wishlist', $wishlist);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to remove items from wishlist',
+                    'requires_auth' => true,
+                ], 401);
+            }
 
-        // Update product is_favorite to 0
-        Product::where('id', $productId)->update(['is_favorite' => 0]);
+            // Find the product
+            $product = Product::find($productId);
 
-        // Return JSON response indicating success
-        return response()->json(['success' => true]);
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found',
+                ], 404);
+            }
+
+            // Update product is_favorite to 0
+            $product->is_favorite = 0;
+            $product->save();
+
+            // Get remaining wishlist count
+            $wishlistCount = Product::where('is_favorite', 1)
+                ->where('active', 1)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product removed from wishlist',
+                'wishlistCount' => $wishlistCount,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Remove from wishlist error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server Error',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
     public function addToCart(Request $request)

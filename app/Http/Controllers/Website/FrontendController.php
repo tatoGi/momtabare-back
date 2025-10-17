@@ -88,9 +88,26 @@ class FrontendController extends Controller
             $retailerShop->save();
 
             // Update user's retailer status
-            $user->retailer_status = 'pending';
-            $user->retailer_requested_at = now();
-            $user->save();
+            // Ensure we have an Eloquent user model instance before modifying/saving
+            $userModel = WebUser::find($user->id);
+            if (! $userModel) {
+                // Rollback uploaded files if the user record cannot be found
+                if (isset($avatarPath) && Storage::disk('public')->exists($avatarPath)) {
+                    Storage::disk('public')->delete($avatarPath);
+                }
+                if (isset($coverPath) && Storage::disk('public')->exists($coverPath)) {
+                    Storage::disk('public')->delete($coverPath);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authenticated user record not found.',
+                ], 500);
+            }
+
+            $userModel->retailer_status = 'pending';
+            $userModel->retailer_requested_at = now();
+            $userModel->save();
 
             return response()->json([
                 'success' => true,
