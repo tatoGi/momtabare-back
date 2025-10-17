@@ -174,31 +174,51 @@ class BogPaymentController extends Controller
             $orderId = $response['id'] ?? null;
             $redirectUrl = $response['_links']['redirect']['href'] ?? null;
 
-            // Create payment record in bog_payments table
-            $payment = \App\Models\BogPayment::create([
-                'bog_order_id' => $orderId,
-                'external_order_id' => $validated['external_order_id'] ?? null,
-                'user_id' => null, // FK constraint issue: points to users table, not web_users
-                'amount' => $validated['purchase_units']['total_amount'],
-                'currency' => $validated['purchase_units']['currency'] ?? 'GEL',
-                'status' => $response['status'] ?? 'created',
-                'request_payload' => [
-                    'basket' => $validated['purchase_units']['basket'],
-                    'callback_url' => $validated['callback_url'],
-                    'redirect_urls' => $validated['redirect_urls'],
-                    'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Store web_user_id from frontend
-                    'save_card' => $validated['save_card'] ?? false,
-                    'language' => $validated['language'] ?? 'en',
+            // Create or update payment record in bog_payments table
+            // Use updateOrCreate to handle duplicate order_id (e.g., when user clicks multiple times)
+            $payment = \App\Models\BogPayment::updateOrCreate(
+                [
+                    'bog_order_id' => $orderId, // Find by bog_order_id
                 ],
-                'response_data' => $response,
-                'save_card_requested' => $validated['save_card'] ?? false,
-            ]);
+                [
+                    'external_order_id' => $validated['external_order_id'] ?? null,
+                    'user_id' => null, // FK constraint issue: points to users table, not web_users
+                    'amount' => $validated['purchase_units']['total_amount'],
+                    'currency' => $validated['purchase_units']['currency'] ?? 'GEL',
+                    'status' => $response['status'] ?? 'created',
+                    'request_payload' => [
+                        'basket' => $validated['purchase_units']['basket'],
+                        'callback_url' => $validated['callback_url'],
+                        'redirect_urls' => $validated['redirect_urls'],
+                        'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Store web_user_id from frontend
+                        'save_card' => $validated['save_card'] ?? false,
+                        'language' => $validated['language'] ?? 'en',
+                    ],
+                    'response_data' => $response,
+                    'save_card_requested' => $validated['save_card'] ?? false,
+                ]
+            );
 
-            Log::info('BOG Payment record created for new order', [
+            // Attach products to payment via pivot table
+            // First, detach any existing products (in case of update)
+            $payment->products()->detach();
+
+            // Then attach the new products
+            foreach ($validated['purchase_units']['basket'] as $basketItem) {
+                $payment->products()->attach($basketItem['product_id'], [
+                    'quantity' => $basketItem['quantity'],
+                    'unit_price' => $basketItem['unit_price'],
+                    'total_price' => $basketItem['quantity'] * $basketItem['unit_price'],
+                ]);
+            }
+
+            Log::info('BOG Payment record created/updated for order', [
                 'payment_id' => $payment->id,
                 'bog_order_id' => $orderId,
                 'web_user_id' => $validated['user_id'] ?? $user->id ?? null,
                 'amount' => $validated['purchase_units']['total_amount'],
+                'was_existing' => $payment->wasRecentlyCreated ? 'no' : 'yes',
+                'products_count' => count($validated['purchase_units']['basket']),
             ]);
 
             return response()->json([
