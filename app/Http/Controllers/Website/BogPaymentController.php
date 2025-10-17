@@ -348,6 +348,11 @@ class BogPaymentController extends Controller
                 'status' => $orderDetails['status'] ?? 'unknown',
             ]);
 
+            // Mark products as ordered if payment is successful
+            if (isset($orderDetails['status']) && in_array(strtolower($orderDetails['status']), ['completed', 'approved', 'succeeded'])) {
+                $this->markProductsAsOrdered($payment);
+            }
+
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
             Log::error('Error processing BOG callback: '.$e->getMessage(), [
@@ -837,7 +842,7 @@ class BogPaymentController extends Controller
         try {
             // Get authenticated user
             $user = $request->user('sanctum');
-            
+
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -902,6 +907,70 @@ class BogPaymentController extends Controller
                 'message' => 'Failed to retrieve payments',
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
+        }
+    }
+
+    /**
+     * Mark products as ordered after successful payment
+     *
+     * @param BogPayment $payment
+     * @return void
+     */
+    protected function markProductsAsOrdered(BogPayment $payment)
+    {
+        try {
+            // Get product IDs from the basket in request_payload
+            $basket = $payment->request_payload['basket'] ?? [];
+
+            if (empty($basket)) {
+                Log::warning('No basket items found in payment', [
+                    'payment_id' => $payment->id,
+                    'bog_order_id' => $payment->bog_order_id,
+                ]);
+                return;
+            }
+
+            // Get web_user_id from request_payload
+            $webUserId = $payment->request_payload['web_user_id'] ?? null;
+
+            $productIds = [];
+            foreach ($basket as $item) {
+                if (isset($item['product_id'])) {
+                    $productIds[] = $item['product_id'];
+                }
+            }
+
+            if (empty($productIds)) {
+                Log::warning('No product IDs found in basket', [
+                    'payment_id' => $payment->id,
+                    'basket' => $basket,
+                ]);
+                return;
+            }
+
+            // Update all products in the order
+            $updatedCount = \App\Models\Product::whereIn('id', $productIds)
+                ->update([
+                    'is_ordered' => true,
+                    'ordered_at' => now(),
+                    'ordered_by' => $webUserId,
+                ]);
+
+            Log::info('Products marked as ordered', [
+                'payment_id' => $payment->id,
+                'bog_order_id' => $payment->bog_order_id,
+                'product_ids' => $productIds,
+                'updated_count' => $updatedCount,
+                'ordered_by' => $webUserId,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to mark products as ordered', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
         }
     }
 }

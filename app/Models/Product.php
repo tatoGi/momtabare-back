@@ -41,6 +41,9 @@ class Product extends Model implements TranslatableContract
         'is_rented',
         'rented_at',
         'rented_by',
+        'is_ordered',
+        'ordered_at',
+        'ordered_by',
         'views',
     ];
 
@@ -59,6 +62,7 @@ class Product extends Model implements TranslatableContract
         'rental_end_date' => 'datetime',
         'rented_at' => 'datetime',
         'approved_at' => 'datetime',
+        'ordered_at' => 'datetime',
     ];
 
     public $translatedAttributes = ['title', 'slug', 'description', 'brand', 'location', 'color'];
@@ -84,6 +88,11 @@ class Product extends Model implements TranslatableContract
     public function renter()
     {
         return $this->belongsTo(User::class, 'rented_by');
+    }
+
+    public function orderedBy()
+    {
+        return $this->belongsTo(WebUser::class, 'ordered_by');
     }
 
 
