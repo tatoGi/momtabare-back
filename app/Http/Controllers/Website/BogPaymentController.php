@@ -638,7 +638,24 @@ class BogPaymentController extends Controller
                     'web_user_id' => $user->id,
                     'parent_order_id' => $parentOrderId,
                     'products_count' => count($validated['basket']),
+                    'status' => $payment->status,
                 ]);
+
+                // If payment is already completed, mark products as ordered immediately
+                // (Saved card payments often complete instantly without callback)
+                if (in_array(strtolower($payment->status), ['completed', 'approved', 'succeeded'])) {
+                    Log::info('Payment completed immediately, marking products as ordered', [
+                        'payment_id' => $payment->id,
+                        'status' => $payment->status,
+                    ]);
+
+                    $this->markProductsAsOrdered($payment);
+                } else {
+                    Log::info('Payment not completed yet, products will be marked when callback received', [
+                        'payment_id' => $payment->id,
+                        'status' => $payment->status,
+                    ]);
+                }
 
                 $result['payment_id'] = $payment->id;
             } catch (\Exception $e) {
@@ -1057,8 +1074,9 @@ class BogPaymentController extends Controller
                 return;
             }
 
-            // Attach products to payment with pivot data
-            $payment->products()->attach($pivotData);
+            // Sync products to payment with pivot data (won't duplicate if already attached)
+            // Use syncWithoutDetaching to avoid removing products attached during createOrder/payWithSavedCard
+            $payment->products()->syncWithoutDetaching($pivotData);
 
             // Update each product individually with rental dates
             foreach ($basket as $item) {
@@ -1076,6 +1094,10 @@ class BogPaymentController extends Controller
                         // Check if this is a rental (has rental dates in basket)
                         if (isset($item['rental_start_date']) && isset($item['rental_end_date'])) {
                             $updateData['is_rented'] = true;
+                            // Note: rented_by has FK to users table, but we use web_users
+                            // So we set it to null and track the user in ordered_by instead
+                            $updateData['rented_by'] = null;
+                            $updateData['rented_at'] = now(); // Save when it was rented
                             $updateData['rental_start_date'] = $item['rental_start_date'];
                             $updateData['rental_end_date'] = $item['rental_end_date'];
 
@@ -1083,6 +1105,7 @@ class BogPaymentController extends Controller
                                 'product_id' => $productId,
                                 'rental_start' => $item['rental_start_date'],
                                 'rental_end' => $item['rental_end_date'],
+                                'rented_by_web_user' => $webUserId,
                             ]);
                         } else {
                             // This is a purchase, not a rental
