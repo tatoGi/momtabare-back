@@ -38,4 +38,9 @@ class BogPayment extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function webUser()
+    {
+        return $this->belongsTo(WebUser::class, 'user_id');
+    }
 }

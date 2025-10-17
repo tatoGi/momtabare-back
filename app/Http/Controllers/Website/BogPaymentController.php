@@ -509,10 +509,12 @@ class BogPaymentController extends Controller
         $validated = $request->validate([
             'callback_url' => 'required|url',
             'amount' => 'required|numeric|min:0.01',
+            'currency' => 'sometimes|string|in:GEL,USD,EUR',
             'basket' => 'required|array|min:1',
             'basket.*.quantity' => 'required|integer|min:1',
             'basket.*.unit_price' => 'required|numeric|min:0.01',
             'basket.*.product_id' => 'required|string',
+            'external_order_id' => 'sometimes|string',
             'language' => 'sometimes|string|in:ka,en,ru',
         ]);
 
@@ -527,9 +529,58 @@ class BogPaymentController extends Controller
             );
         }
 
+        // Get authenticated user
+        $user = $request->user('sanctum');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        // Call BOG API to process payment with saved card
         $result = $this->bogPayment->payWithSavedCard($tokenResult['access_token'], $parentOrderId, $validated);
 
         if ($result['success']) {
+            // Create payment record in bog_payments table
+            try {
+                // Note: user_id FK points to users table, but we're using web_users
+                // Store user_id anyway for tracking purposes
+                $payment = \App\Models\BogPayment::create([
+                    'bog_order_id' => $result['data']['order_id'] ?? $parentOrderId, // Use parent order ID if not returned
+                    'external_order_id' => $validated['external_order_id'] ?? ('order_' . time()),
+                    'user_id' => null, // FK constraint issue: points to users, not web_users
+                    'amount' => $validated['amount'],
+                    'currency' => $validated['currency'] ?? 'GEL',
+                    'status' => $result['data']['status'] ?? 'created',
+                    'request_payload' => [
+                        'parent_order_id' => $parentOrderId,
+                        'basket' => $validated['basket'],
+                        'callback_url' => $validated['callback_url'],
+                        'web_user_id' => $user->id, // Store web_user_id in payload
+                    ],
+                    'response_data' => $result['data'] ?? null,
+                    'save_card_requested' => false, // Using existing saved card
+                ]);
+
+                Log::info('BOG Payment record created for saved card payment', [
+                    'payment_id' => $payment->id,
+                    'bog_order_id' => $payment->bog_order_id,
+                    'web_user_id' => $user->id,
+                    'parent_order_id' => $parentOrderId,
+                ]);
+
+                $result['payment_id'] = $payment->id;
+            } catch (\Exception $e) {
+                Log::error('Failed to create BOG payment record', [
+                    'error' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                    'web_user_id' => $user->id,
+                    'parent_order_id' => $parentOrderId,
+                ]);
+            }
+
             return response()->json($result);
         }
 

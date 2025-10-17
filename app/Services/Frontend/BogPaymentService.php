@@ -85,7 +85,7 @@ class BogPaymentService
         try {
             $http = Http::withToken($accessToken)
                 ->withHeaders($headers)
-                ->withOptions(['debug' => config('app.debug')])
+                ->withOptions(options: ['debug' => config('app.debug')])
                 ->acceptJson();
 
             $response = $http->$method($url, $data);
