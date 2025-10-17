@@ -49,6 +49,13 @@ Route::prefix('bog/cards')->middleware('auth:sanctum')->group(function () {
         ->name('bog.cards.set-default');
 });
 
+// Payment history and management
+Route::prefix('bog/payments')->middleware('auth:sanctum')->group(function () {
+    // Get user's payment history
+    Route::get('/', [BogPaymentController::class, 'getUserPayments'])
+        ->name('bog.payments.list');
+});
+
 // Pay with saved card
 Route::post('/bog/ecommerce/orders/{parentOrderId}/pay', [BogPaymentController::class, 'payWithSavedCard'])
     ->name('bog.ecommerce.orders.pay');

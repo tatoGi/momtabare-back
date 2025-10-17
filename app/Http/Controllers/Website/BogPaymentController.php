@@ -826,4 +826,82 @@ class BogPaymentController extends Controller
             );
         }
     }
+
+    /**
+     * Get all payments for authenticated user
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserPayments(Request $request)
+    {
+        try {
+            // Get authenticated user
+            $user = $request->user('sanctum');
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            // Get pagination parameters
+            $perPage = $request->get('per_page', 15);
+            $page = $request->get('page', 1);
+
+            // Get payments - since user_id has FK to users table but we use web_users,
+            // we need to search in request_payload JSON
+            $payments = BogPayment::query()
+                ->where(function($query) use ($user) {
+                    // Try to match by user_id (if it was set)
+                    $query->where('user_id', $user->id)
+                        // Or by web_user_id stored in request_payload
+                        ->orWhereRaw("JSON_EXTRACT(request_payload, '$.web_user_id') = ?", [$user->id]);
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            // Transform payments for frontend
+            $transformedPayments = $payments->getCollection()->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'bog_order_id' => $payment->bog_order_id,
+                    'external_order_id' => $payment->external_order_id,
+                    'amount' => (float) $payment->amount,
+                    'currency' => $payment->currency,
+                    'status' => $payment->status,
+                    'payment_method' => $payment->save_card_requested ? 'new_card' : 'saved_card',
+                    'basket' => $payment->request_payload['basket'] ?? [],
+                    'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
+                    'verified_at' => $payment->verified_at ? $payment->verified_at->format('Y-m-d H:i:s') : null,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedPayments,
+                'pagination' => [
+                    'current_page' => $payments->currentPage(),
+                    'last_page' => $payments->lastPage(),
+                    'per_page' => $payments->perPage(),
+                    'total' => $payments->total(),
+                    'from' => $payments->firstItem(),
+                    'to' => $payments->lastItem(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get user payments error', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve payments',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
 }
