@@ -594,6 +594,13 @@ class BogPaymentController extends Controller
         // Call BOG API to process payment with saved card
         $result = $this->bogPayment->payWithSavedCard($tokenResult['access_token'], $parentOrderId, $validated);
 
+        Log::info('BOG payWithSavedCard API response', [
+            'success' => $result['success'] ?? false,
+            'parent_order_id' => $parentOrderId,
+            'result_data' => $result['data'] ?? null,
+            'web_user_id' => $user->id,
+        ]);
+
         if ($result['success']) {
             // Create payment record in bog_payments table
             try {
@@ -680,6 +687,13 @@ class BogPaymentController extends Controller
 
             return response()->json($result);
         }
+
+        // BOG API failed - log the error
+        Log::error('BOG payWithSavedCard API failed', [
+            'parent_order_id' => $parentOrderId,
+            'web_user_id' => $user->id,
+            'result' => $result,
+        ]);
 
         return response()->json($result, $result['status'] ?? 400);
     }
@@ -942,6 +956,11 @@ class BogPaymentController extends Controller
                 ], 401);
             }
 
+            Log::info('getUserPayments called', [
+                'user_id' => $user->id,
+                'user_type' => get_class($user),
+            ]);
+
             // Get pagination parameters
             $perPage = $request->get('per_page', 15);
             $page = $request->get('page', 1);
@@ -961,6 +980,11 @@ class BogPaymentController extends Controller
                 })
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
+
+            Log::info('getUserPayments query executed', [
+                'total_payments' => $payments->total(),
+                'current_page' => $payments->currentPage(),
+            ]);
 
             // Transform payments for frontend
             $transformedPayments = $payments->getCollection()->map(function ($payment) {
