@@ -577,10 +577,17 @@ class BogPaymentController extends Controller
         if ($result['success']) {
             // Create payment record in bog_payments table
             try {
-                // Note: user_id FK points to users table, but we're using web_users
-                // Store user_id anyway for tracking purposes
+                // CRITICAL: Generate unique bog_order_id or extract from BOG response
+                // Using parentOrderId directly would violate unique constraint
+                $bogOrderId = $result['data']['order_id'] ?? null;
+
+                if (!$bogOrderId) {
+                    // If BOG doesn't return an order_id, generate a unique one
+                    $bogOrderId = 'saved_card_' . uniqid() . '_' . time();
+                }
+
                 $payment = \App\Models\BogPayment::create([
-                    'bog_order_id' => $result['data']['order_id'] ?? $parentOrderId, // Use parent order ID if not returned
+                    'bog_order_id' => $bogOrderId,
                     'external_order_id' => $validated['external_order_id'] ?? ('order_' . time()),
                     'user_id' => null, // FK constraint issue: points to users, not web_users
                     'amount' => $validated['amount'],
@@ -596,22 +603,42 @@ class BogPaymentController extends Controller
                     'save_card_requested' => false, // Using existing saved card
                 ]);
 
+                // Attach products to payment via pivot table
+                foreach ($validated['basket'] as $basketItem) {
+                    $payment->products()->attach($basketItem['product_id'], [
+                        'quantity' => $basketItem['quantity'],
+                        'unit_price' => $basketItem['unit_price'],
+                        'total_price' => $basketItem['quantity'] * $basketItem['unit_price'],
+                    ]);
+                }
+
                 Log::info('BOG Payment record created for saved card payment', [
                     'payment_id' => $payment->id,
                     'bog_order_id' => $payment->bog_order_id,
                     'web_user_id' => $user->id,
                     'parent_order_id' => $parentOrderId,
+                    'products_count' => count($validated['basket']),
                 ]);
 
                 $result['payment_id'] = $payment->id;
             } catch (\Exception $e) {
-                Log::error('Failed to create BOG payment record', [
+                Log::error('Failed to create BOG payment record for saved card', [
                     'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                     'line' => $e->getLine(),
                     'file' => $e->getFile(),
                     'web_user_id' => $user->id,
                     'parent_order_id' => $parentOrderId,
+                    'bog_response' => $result['data'] ?? null,
                 ]);
+
+                // IMPORTANT: Return error response if payment record creation fails
+                // This is a critical operation - user needs to know if it failed
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment processed but failed to save payment record. Please contact support.',
+                    'error' => 'database_error',
+                ], 500);
             }
 
             return response()->json($result);
