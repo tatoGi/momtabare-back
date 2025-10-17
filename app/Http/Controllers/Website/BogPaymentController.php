@@ -91,7 +91,7 @@ class BogPaymentController extends Controller
                 'external_order_id' => 'nullable|string|max:100',
                 'language' => 'sometimes|string|in:en,ka,ru',
                 'save_card' => 'sometimes|boolean',
-                'user_id' => 'sometimes|integer|exists:users,id', // Add user_id validation
+                'user_id' => 'sometimes|integer|exists:web_users,id', // Validate against web_users table
             ]);
              $user = $request->user('sanctum');
             // Custom validation: if save_card is true, user must be authenticated
