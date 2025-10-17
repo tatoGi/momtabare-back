@@ -149,7 +149,7 @@
                                     <div class="text-xs text-gray-500">{{ $payment->created_at->format('H:i') }}</div>
                                 </td>
                                 <td class="px-4 py-3 border">
-                                    <a href="/{{ app()->getlocale() }}/admin/payments/{{ $payment->id }}"
+                                    <a href="{{ route('admin.payments.show', ['id' => $payment->id]) }}"
                                        class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
                                         <i class="fas fa-eye mr-1"></i>View
                                     </a>

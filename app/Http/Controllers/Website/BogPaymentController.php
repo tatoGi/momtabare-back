@@ -900,7 +900,7 @@ class BogPaymentController extends Controller
 
             // Transform payments for frontend
             $transformedPayments = $payments->getCollection()->map(function ($payment) {
-                // Transform products with pivot data
+                // Transform products with pivot data (if available)
                 $products = $payment->products->map(function ($product) {
                     return [
                         'id' => $product->id,
@@ -910,9 +910,9 @@ class BogPaymentController extends Controller
                         'slug' => $product->slug,
                         'price' => (float) $product->price,
                         'images' => $product->images,
-                        'quantity' => $product->pivot->quantity,
-                        'unit_price' => (float) $product->pivot->unit_price,
-                        'total_price' => (float) $product->pivot->total_price,
+                        'quantity' => $product->pivot->quantity ?? 1,
+                        'unit_price' => (float) ($product->pivot->unit_price ?? $product->price),
+                        'total_price' => (float) ($product->pivot->total_price ?? $product->price),
                     ];
                 });
 
