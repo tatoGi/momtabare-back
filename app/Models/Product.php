@@ -12,8 +12,6 @@ use RalphJSmit\Laravel\SEO\Support\SEOData;
 class Product extends Model implements TranslatableContract
 {
     use HasFactory,HasSEO,Translatable;
-
-
     use HasFactory,HasSEO,Translatable;
 
     protected $fillable = [
@@ -71,10 +69,12 @@ class Product extends Model implements TranslatableContract
     {
         return $this->belongsTo(Category::class);
     }
-  public function ratings()
+
+    public function ratings()
     {
         return $this->hasMany(ProductRating::class);
     }
+
     public function images()
     {
         return $this->hasMany(ProductImage::class);

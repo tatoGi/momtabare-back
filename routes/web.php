@@ -4,8 +4,6 @@ use App\Http\Controllers\Admin\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Support\Facades\Route;
 
-
-
 // Public routes (no authentication required)
 Route::middleware(['web'])->group(function () {
     // Admin login routes (only for guests)
@@ -31,9 +29,9 @@ Route::middleware(['admin.auth'])->prefix('/admin')->group(function () {
         ->name('admin.logout');
 
     // Include other admin routes
-    require __DIR__ . '/admin/admin.php';
-    require __DIR__ . '/admin/products.php';
-    require __DIR__ . '/admin/page.php';
-    require __DIR__ . '/admin/settings.php';
-    require __DIR__ . '/admin/languages.php';
+    require __DIR__.'/admin/admin.php';
+    require __DIR__.'/admin/products.php';
+    require __DIR__.'/admin/page.php';
+    require __DIR__.'/admin/settings.php';
+    require __DIR__.'/admin/languages.php';
 });

@@ -8,8 +8,8 @@ use App\View\Components\website\header;
 use App\View\Components\website\layout;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if(request()->isSecure()){
+        if (request()->isSecure()) {
             config(['session.secure' => true]);
         }
         Session::start(); // force session start

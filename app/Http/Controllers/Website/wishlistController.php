@@ -24,7 +24,7 @@ class wishlistController extends Controller
             // Check if user is authenticated
             $user = $request->user('sanctum');
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please log in to add items to wishlist',
@@ -37,7 +37,7 @@ class wishlistController extends Controller
                 ->where('active', 1)
                 ->first();
 
-            if (!$product) {
+            if (! $product) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Product not found or inactive',
@@ -67,7 +67,7 @@ class wishlistController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Add to wishlist error: ' . $e->getMessage(), [
+            Log::error('Add to wishlist error: '.$e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
@@ -87,7 +87,7 @@ class wishlistController extends Controller
             // Check if user is authenticated
             $user = $request->user('sanctum');
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please log in to view wishlist',
@@ -126,11 +126,11 @@ class wishlistController extends Controller
                         'images' => $product->images->map(function ($image) {
                             return [
                                 'id' => $image->id,
-                                'url' => asset('storage/products/' . $image->image_name),
+                                'url' => asset('storage/products/'.$image->image_name),
                                 'alt' => $image->alt_text ?? '',
                             ];
                         }),
-                        'featured_image' => $product->images->first() ? asset('storage/products/' . $product->images->first()->image_name) : null,
+                        'featured_image' => $product->images->first() ? asset('storage/products/'.$product->images->first()->image_name) : null,
                     ];
                 });
 
@@ -141,7 +141,7 @@ class wishlistController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Wishlist error: ' . $e->getMessage(), [
+            Log::error('Wishlist error: '.$e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
@@ -168,7 +168,7 @@ class wishlistController extends Controller
             // Check if user is authenticated
             $user = $request->user('sanctum');
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please log in to remove items from wishlist',
@@ -179,7 +179,7 @@ class wishlistController extends Controller
             // Find the product
             $product = Product::find($productId);
 
-            if (!$product) {
+            if (! $product) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Product not found',
@@ -208,7 +208,7 @@ class wishlistController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Remove from wishlist error: ' . $e->getMessage(), [
+            Log::error('Remove from wishlist error: '.$e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
@@ -302,7 +302,7 @@ class wishlistController extends Controller
     public function removeFromCart(Request $request)
     {
         //
-         $user = $request->user('sanctum');
+        $user = $request->user('sanctum');
         if ($user) {
             // Get the authenticated user's ID
             $userId = $user->id;
@@ -386,7 +386,9 @@ class wishlistController extends Controller
     public function fetchCartData($userId)
     {
         $user = WebUser::find($userId);
-        $cartItems = Cart::where('user_id', $userId)->with('product')->get();
+        $cartItems = Cart::where('user_id', $userId)
+            ->with(['product.images', 'product.category']) // Eager load relationships
+            ->get();
 
         // Prepare array to store formatted product data
         $products = [];
@@ -394,21 +396,77 @@ class wishlistController extends Controller
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->product;
 
-            // Construct image URL using asset() function
-            $imageUrl = asset('storage/products/'.$product->images->first()->image_name);
+            if (! $product) {
+                continue; // Skip if product not found
+            }
 
-            // Customize product data as needed for frontend
+            // Get product title for current locale using app()->getLocale()
+            // Note: Product model uses 'title' not 'name'
+            $currentLocale = app()->getLocale();
+            $title = '';
+            $description = '';
+            $slug = '';
+
+            try {
+                // Astrotomic Translatable provides translate() method
+                $translation = $product->translate($currentLocale);
+                $title = $translation->title ?? '';
+                $description = $translation->description ?? '';
+                $slug = $translation->slug ?? '';
+            } catch (\Exception $e) {
+                // Fallback: use default translation
+                $title = $product->title ?? '';
+                $description = $product->description ?? '';
+                $slug = $product->slug ?? '';
+            }
+
+            // Get all product images
+            $images = [];
+            if ($product->images) {
+                foreach ($product->images as $image) {
+                    $images[] = [
+                        'id' => $image->id,
+                        'product_id' => $image->product_id,
+                        'image_name' => $image->image_name,
+                        'url' => asset('storage/'.$image->image_name),
+                        'created_at' => $image->created_at?->format('Y-m-d H:i:s'),
+                        'updated_at' => $image->updated_at?->format('Y-m-d H:i:s'),
+                    ];
+                }
+            }
+
+            // Customize product data with all columns for frontend
             $products[] = [
                 'id' => $product->id,
-                'name' => $product->title,
-                'price' => $product->price,
-                'image' => $imageUrl, // Pass the constructed image URL
+                'title' => $title, // Current locale title
+                'slug' => $slug,
+                'description' => $description,
+                'price' => (float) ($product->price ?? 0),
+                'currency' => $product->currency ?? 'GEL',
+                'category_id' => $product->category_id,
+                'category' => $product->category ? [
+                    'id' => $product->category->id,
+                    'name' => $product->category->name ?? '',
+                ] : null,
+                'size' => $product->size ?? '',
+                'color' => $product->color ?? '',
+                'location' => $product->location ?? '',
+                'rental_period' => $product->rental_period ?? '',
+                'rental_start_date' => $product->rental_start_date?->format('Y-m-d H:i:s'),
+                'rental_end_date' => $product->rental_end_date?->format('Y-m-d H:i:s'),
+                'is_rented' => (bool) $product->is_rented,
+                'is_ordered' => (bool) $product->is_ordered,
+                'active' => (bool) $product->active,
+                'status' => $product->status ?? '',
+                'images' => $images,
+                'quantity' => $cartItem->quantity,
+                'cart_item_id' => $cartItem->id,
             ];
         }
 
         // Calculate subtotal and format cart data
         $subtotal = $cartItems->sum(function ($item) {
-            return $item->product->price * $item->quantity;
+            return $item->product ? ($item->product->price * $item->quantity) : 0;
         });
 
         return response()->json([
@@ -436,7 +494,9 @@ class wishlistController extends Controller
             }
 
             // Get cart items directly instead of calling fetchCartData
-            $cartItems = Cart::where('user_id', $user->id)->with('product')->get();
+            $cartItems = Cart::where('user_id', $user->id)
+                ->with(['product.images', 'product.category']) // Eager load relationships
+                ->get();
 
             // Prepare array to store formatted product data
             $products = [];
@@ -449,19 +509,67 @@ class wishlistController extends Controller
 
                 $product = $cartItem->product;
 
-                // Check if product has images before accessing
-                $imageUrl = null;
-                if ($product->images && $product->images->first()) {
-                    $imageUrl = asset('storage/products/'.$product->images->first()->image_name);
+                // Get product title for current locale using app()->getLocale()
+                // Note: Product model uses 'title' not 'name'
+                $currentLocale = app()->getLocale();
+                $title = '';
+                $description = '';
+                $slug = '';
+
+                try {
+                    // Astrotomic Translatable provides translate() method
+                    $translation = $product->translate($currentLocale);
+                    $title = $translation->title ?? '';
+                    $description = $translation->description ?? '';
+                    $slug = $translation->slug ?? '';
+                } catch (\Exception $e) {
+                    // Fallback: use default translation
+                    $title = $product->title ?? '';
+                    $description = $product->description ?? '';
+                    $slug = $product->slug ?? '';
                 }
 
-                // Customize product data as needed for frontend
+                // Get all product images
+                $images = [];
+                if ($product->images) {
+                    foreach ($product->images as $image) {
+                        $images[] = [
+                            'id' => $image->id,
+                            'product_id' => $image->product_id,
+                            'image_name' => $image->image_name,
+                            'url' => asset('storage/'.$image->image_name),
+                            'created_at' => $image->created_at?->format('Y-m-d H:i:s'),
+                            'updated_at' => $image->updated_at?->format('Y-m-d H:i:s'),
+                        ];
+                    }
+                }
+
+                // Customize product data with all columns for frontend
                 $products[] = [
                     'id' => $product->id,
-                    'name' => $product->title,
-                    'price' => $product->price,
+                    'title' => $title, // Current locale title
+                    'slug' => $slug,
+                    'description' => $description,
+                    'price' => (float) ($product->price ?? 0),
+                    'currency' => $product->currency ?? 'GEL',
+                    'category_id' => $product->category_id,
+                    'category' => $product->category ? [
+                        'id' => $product->category->id,
+                        'name' => $product->category->name ?? '',
+                    ] : null,
+                    'size' => $product->size ?? '',
+                    'color' => $product->color ?? '',
+                    'location' => $product->location ?? '',
+                    'rental_period' => $product->rental_period ?? '',
+                    'rental_start_date' => $product->rental_start_date?->format('Y-m-d H:i:s'),
+                    'rental_end_date' => $product->rental_end_date?->format('Y-m-d H:i:s'),
+                    'is_rented' => (bool) $product->is_rented,
+                    'is_ordered' => (bool) $product->is_ordered,
+                    'active' => (bool) $product->active,
+                    'status' => $product->status ?? '',
+                    'images' => $images,
                     'quantity' => $cartItem->quantity,
-                    'image' => $imageUrl,
+                    'cart_item_id' => $cartItem->id,
                 ];
             }
 

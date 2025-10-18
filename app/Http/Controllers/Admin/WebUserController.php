@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class WebUserController extends Controller
 {
@@ -111,6 +112,41 @@ class WebUserController extends Controller
             'success' => true,
             'message' => 'Product rejected.',
         ]);
+    }
+
+    /**
+     * Delete retailer product
+     */
+    public function deleteProduct(Request $request, $id): JsonResponse
+    {
+        try {
+            $product = Product::findOrFail($id);
+
+            // Delete associated images from storage
+            if ($product->images) {
+                foreach ($product->images as $image) {
+                    // Delete the image file from storage
+                    if (Storage::disk('public')->exists($image->image_path)) {
+                        Storage::disk('public')->delete($image->image_path);
+                    }
+                    // Delete the image record from database
+                    $image->delete();
+                }
+            }
+
+            // Delete the product
+            $product->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete product: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

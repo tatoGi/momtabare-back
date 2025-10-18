@@ -20,7 +20,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer()
             ->runInBackground();
-            
+
         // Check BOG payments status every 5 minutes
         $schedule->command('bog:check-payments')
             ->everyFiveMinutes()

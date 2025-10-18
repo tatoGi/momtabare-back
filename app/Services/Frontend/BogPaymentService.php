@@ -83,12 +83,18 @@ class BogPaymentService
         $this->lastError = null;
 
         try {
+            // Get BOG API base URL from config
+            $baseUrl = config('services.bog.api_base_url', 'https://api.bog.ge/payments');
+
+            // Build full URL (handle both absolute and relative URLs)
+            $fullUrl = str_starts_with($url, 'http') ? $url : $baseUrl.$url;
+
             $http = Http::withToken($accessToken)
                 ->withHeaders($headers)
                 ->withOptions(options: ['debug' => config('app.debug')])
                 ->acceptJson();
 
-            $response = $http->$method($url, $data);
+            $response = $http->$method($fullUrl, $data);
             $this->lastHttpStatus = $response->status();
 
             if ($response->successful()) {
@@ -98,7 +104,7 @@ class BogPaymentService
             $this->lastError = $response->body();
             Log::error('BOG API Error', [
                 'status' => $response->status(),
-                'url' => $url,
+                'url' => $fullUrl,
                 'response' => $response->body(),
                 'request_data' => $data,
                 'headers' => $headers,
@@ -107,10 +113,15 @@ class BogPaymentService
             return null;
         } catch (\Exception $e) {
             $this->lastError = $e->getMessage();
+
+            // Build full URL for error logging
+            $baseUrl = config('services.bog.api_base_url', 'https://api.bog.ge/payments');
+            $fullUrl = str_starts_with($url, 'http') ? $url : $baseUrl.$url;
+
             Log::error('BOG API Exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'url' => $url,
+                'url' => $fullUrl,
                 'data' => $data,
             ]);
 

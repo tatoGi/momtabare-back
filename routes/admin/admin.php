@@ -39,6 +39,8 @@ Route::delete('/comments/{id}/reject', [WebUserController::class, 'rejectComment
 // Retailer product management routes
 Route::get('/retailer-products', [WebUserController::class, 'retailerProducts'])->name('admin.retailer-products.index');
 Route::post('/retailer-products/{id}/approve', [WebUserController::class, 'approveProduct'])->name('admin.retailer-products.approve');
+Route::post('/retailer-products/{id}/reject', [WebUserController::class, 'rejectProduct'])->name('admin.retailer-products.reject');
+Route::delete('/retailer-products/{id}/delete', [WebUserController::class, 'deleteProduct'])->name('admin.retailer-products.delete');
 
 // Retailer shops management
 Route::resource('retailer-shops', 'App\Http\Controllers\Admin\RetailerShopController')->names([
@@ -50,7 +52,6 @@ Route::resource('retailer-shops', 'App\Http\Controllers\Admin\RetailerShopContro
     'update' => 'admin.retailer-shops.update',
     'destroy' => 'admin.retailer-shops.destroy',
 ]);
-Route::post('/retailer-products/{id}/reject', [WebUserController::class, 'rejectProduct'])->name('admin.retailer-products.reject');
 Route::delete('/banners/delete/image/{image_id}', [BannerController::class, 'deleteImage'])->name('banners.images.delete');
 
 // Image upload route for TinyMCE editor

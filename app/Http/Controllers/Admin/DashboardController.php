@@ -38,7 +38,7 @@ class DashboardController extends Controller
             'activeCategories' => $activeCategories,
             'inactiveCategories' => $inactiveCategories,
             'webusers' => $webusers,
-            'locale' => app()->getLocale()
+            'locale' => app()->getLocale(),
         ]);
     }
 }

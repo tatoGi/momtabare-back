@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use App\Services\PageTypeService;
-use Illuminate\Support\Facades\Log;
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+
 class Page extends Model
 {
     use HasFactory, Translatable;
@@ -134,11 +135,11 @@ class Page extends Model
     public function supportsPost()
     {
         $pageType = $this->getPageTypeConfig();
-        
+
         // Debug output
-        Log::debug('Page Type ID: ' . $this->type_id);
+        Log::debug('Page Type ID: '.$this->type_id);
         Log::debug('Page Type Config: ', $pageType ?: ['config' => 'not found']);
-        Log::debug('Has Posts: ' . ($pageType['has_posts'] ?? 'not set'));
+        Log::debug('Has Posts: '.($pageType['has_posts'] ?? 'not set'));
 
         return $pageType && ($pageType['has_posts'] ?? false);
     }

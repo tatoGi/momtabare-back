@@ -36,6 +36,8 @@ class WebUser extends Authenticatable implements MustVerifyEmail
         'is_retailer',
         'retailer_status',
         'retailer_requested_at',
+        // User status
+        'is_active',
         'verification_code',
         'verification_expires_at',
     ];

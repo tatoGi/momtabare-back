@@ -21,24 +21,24 @@ Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail']);
 Route::middleware(['auth:web,sanctum'])->group(function () {
     // Get current user
     Route::get('/me', [AuthController::class, 'me'])->name('profile.me');
-    
+
     // Profile routes
     Route::post('/profile/retailer-request', [ProfileController::class, 'requestRetailer'])
         ->name('profile.retailer.request');
-        
+
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])
         ->name('profile.avatar');
-        
+
     Route::post('/logout', [AuthController::class, 'logout']);
-    
+
     // Web-only routes (require session)
     Route::middleware(['web'])->group(function () {
         Route::get('/user_profile', [ProfileController::class, 'edit'])
             ->name('profile.edit');
-            
+
         Route::match(['post', 'put'], '/profile', [ProfileController::class, 'update'])
             ->name('profile.update');
-            
+
         // Chat routes
         Route::get('/chat/{user}', function (WebUser $user) {
             return view('chat', ['user' => $user]);
@@ -46,10 +46,9 @@ Route::middleware(['auth:web,sanctum'])->group(function () {
 
         Route::resource(
             'messages/{user}',
-            ChatController::class, 
+            ChatController::class,
             ['only' => ['index', 'store']]
         )->middleware(['verified']);
     });
 
-   
 });

@@ -293,22 +293,22 @@ class AuthController extends Controller
     {
         // Try to get the authenticated user
         $user = $request->user('sanctum');
-        
+
         // If no user found with the current guard, try the other guard
-        if (!$user) {
+        if (! $user) {
             $currentGuard = Auth::getDefaultDriver();
             $otherGuard = $currentGuard === 'web' ? 'sanctum' : 'web';
-            
+
             if (Auth::guard($otherGuard)->check()) {
                 $user = Auth::guard($otherGuard)->user();
-                
+
                 // If we found a user with the other guard, log them in with the current guard
                 if ($user) {
                     Auth::guard($currentGuard)->login($user);
                 }
             }
         }
-        
+
         // Log authentication details
         Log::info('AuthController@me - Auth Details', [
             'auth_guard' => Auth::getDefaultDriver(),
@@ -318,22 +318,22 @@ class AuthController extends Controller
             'user_agent' => $request->userAgent(),
             'has_bearer_token' => $request->bearerToken() ? true : false,
         ]);
-        
-        if (!$user) {
+
+        if (! $user) {
             Log::warning('Unauthenticated access to /me endpoint', [
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'has_bearer_token' => $request->bearerToken() ? true : false,
                 'previous_url' => $request->headers->get('referer'),
             ]);
-            
+
             return response()->json([
                 'message' => 'Unauthenticated',
                 'auth_check' => false,
                 'user_id' => null,
             ], 401);
         }
-    
+
         return response()->json([
             'success' => true,
             'data' => [

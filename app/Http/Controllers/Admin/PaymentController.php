@@ -32,10 +32,10 @@ class PaymentController extends Controller
         // Search by order ID or user
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('bog_order_id', 'like', "%{$search}%")
-                  ->orWhere('external_order_id', 'like', "%{$search}%")
-                  ->orWhereRaw("JSON_EXTRACT(request_payload, '$.web_user_id') = ?", [$search]);
+                    ->orWhere('external_order_id', 'like', "%{$search}%")
+                    ->orWhereRaw("JSON_EXTRACT(request_payload, '$.web_user_id') = ?", [$search]);
             });
         }
 
@@ -59,7 +59,7 @@ class PaymentController extends Controller
     public function show($id)
     {
         // Validate that ID is numeric
-        if (!is_numeric($id)) {
+        if (! is_numeric($id)) {
             abort(404, 'Invalid payment ID');
         }
 
@@ -74,7 +74,7 @@ class PaymentController extends Controller
         }
 
         // Extract rental information from products
-        $productsWithRental = $payment->products->map(function($product) {
+        $productsWithRental = $payment->products->map(function ($product) {
             $rentalInfo = null;
 
             if ($product->rental_start_date && $product->rental_end_date) {
@@ -86,7 +86,7 @@ class PaymentController extends Controller
                     'start_date' => $start->format('Y-m-d H:i'),
                     'end_date' => $end->format('Y-m-d H:i'),
                     'duration_days' => $days,
-                    'duration_text' => $days . ' ' . ($days == 1 ? 'day' : 'days'),
+                    'duration_text' => $days.' '.($days == 1 ? 'day' : 'days'),
                 ];
             }
 
@@ -129,14 +129,14 @@ class PaymentController extends Controller
 
         $payments = $query->orderBy('created_at', 'desc')->get();
 
-        $filename = 'payments_' . date('Y-m-d_His') . '.csv';
+        $filename = 'payments_'.date('Y-m-d_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($payments) {
+        $callback = function () use ($payments) {
             $file = fopen('php://output', 'w');
 
             // CSV Headers

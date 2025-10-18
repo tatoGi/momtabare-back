@@ -11,15 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bog_cards', function (Blueprint $table) {
-            // Drop the existing foreign key constraint
+        Schema::table('bog_payments', function (Blueprint $table) {
+            // Drop the existing foreign key constraint to users table
             $table->dropForeign(['user_id']);
 
-            // Add the new foreign key constraint to web_users table
+            // Add new foreign key constraint to web_users table
             $table->foreign('user_id')
                 ->references('id')
                 ->on('web_users')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('restrict');
         });
     }
 
@@ -28,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bog_cards', function (Blueprint $table) {
+        Schema::table('bog_payments', function (Blueprint $table) {
             // Drop the web_users foreign key
             $table->dropForeign(['user_id']);
 
@@ -36,7 +37,8 @@ return new class extends Migration
             $table->foreign('user_id')
                 ->references('id')
                 ->on('users')
-                ->onDelete('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('restrict');
         });
     }
 };

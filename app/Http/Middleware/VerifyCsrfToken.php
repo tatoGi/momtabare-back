@@ -36,24 +36,24 @@ class VerifyCsrfToken extends Middleware
         '*/bog/orders',
         '*/bog/token',
         '*/bog/orders/*',
-        
+
         // Admin routes
         '*/admin/*',
         'admin/*',
         '*/admin',
         'admin',
-        
+
         // API routes if you have them
         'api/*',
-        
+
         // Webhook endpoints
         'webhook/*',
         '*/webhook/*',
-        
+
         // File uploads
         '*/upload',
         'upload/*',
-        
+
         // Media library if you're using it
         'media/*',
         '*/media/*',

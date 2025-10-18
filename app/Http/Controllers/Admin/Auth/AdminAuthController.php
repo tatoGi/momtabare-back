@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class AdminAuthController extends Controller
 {
@@ -37,29 +36,28 @@ class AdminAuthController extends Controller
      * @return \Illuminate\Http\RedirectResponse
      */
     /**
- * Handle an authentication attempt.
- *
- * @param  \App\Http\Requests\Auth\LoginRequest  $request
- * @return \Illuminate\Http\RedirectResponse
- */
-public function login(LoginRequest $request)
-{
-    $credentials = $request->only('email', 'password');
+     * Handle an authentication attempt.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function login(LoginRequest $request)
+    {
+        $credentials = $request->only('email', 'password');
 
-    $user = User::where('email', $credentials['email'])->first();
+        $user = User::where('email', $credentials['email'])->first();
 
-    if ($user && Hash::check($credentials['password'], $user->password)) {
-        Auth::login($user, $request->boolean('remember'));
-        
-        return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            Auth::login($user, $request->boolean('remember'));
+
+            return redirect()->intended(route('admin.dashboard', ['locale' => app()->getLocale()]));
+        }
+
+        return back()->withErrors(['email' => 'Invalid credentials']);
     }
 
-    return back()->withErrors(['email' => 'Invalid credentials']);
-}
     /**
      * Log the user out of the application.
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Request $request)

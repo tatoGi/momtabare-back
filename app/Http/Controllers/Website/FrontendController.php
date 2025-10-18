@@ -253,7 +253,7 @@ class FrontendController extends Controller
             'success' => true,
             'locale' => $picked,
             'matched_via' => $matchedVia,
-            'supported_locales' => $supported
+            'supported_locales' => $supported,
         ]);
     }
 
@@ -614,7 +614,7 @@ class FrontendController extends Controller
 
     public function retailerShopEdit(Request $request)
     {
-         $user = $request->user('sanctum');
+        $user = $request->user('sanctum');
         $retailerShop = $user->retailerShop;
         $countProduct = $user->products()->count();
 
@@ -623,74 +623,75 @@ class FrontendController extends Controller
             'countProduct' => $countProduct,
         ]);
     }
+
     public function getRetailerOrUser(Request $request)
-{
-    try {
-        $user = $request->user('sanctum');
-        $id = $user->id;
+    {
+        try {
+            $user = $request->user('sanctum');
+            $id = $user->id;
 
-        // First try to find a retailer shop with this ID
-        $retailer = RetailerShop::with('user')
-            ->where('id', $id)
-            ->whereHas('user', function($query) {
-                $query->where('is_retailer', true);
-            })
-            ->first();
+            // First try to find a retailer shop with this ID
+            $retailer = RetailerShop::with('user')
+                ->where('id', $id)
+                ->whereHas('user', function ($query) {
+                    $query->where('is_retailer', true);
+                })
+                ->first();
 
-        if ($retailer) {
+            if ($retailer) {
+                return response()->json([
+                    'success' => true,
+                    'type' => 'retailer',
+                    'data' => [
+                        'id' => $retailer->id,
+                        'name' => $retailer->first_name,
+                        'surname' => $retailer->surname,
+                        'location' => $retailer->location,
+                        'contact_person' => $retailer->contact_person,
+                        'contact_phone' => $retailer->contact_phone,
+                        'avatar' => $retailer->avatar ? asset('storage/'.$retailer->avatar) : null,
+                        'cover_image' => $retailer->cover_image ? asset('storage/'.$retailer->cover_image) : null,
+                        'user' => [
+                            'id' => $retailer->user->id,
+                            'name' => $retailer->user->full_name,
+                            'email' => $retailer->user->email,
+                            'phone' => $retailer->user->phone,
+                            'is_retailer' => true,
+                        ],
+                    ],
+                ]);
+            }
+
+            // If not a retailer, try to find a regular user
+            $user = WebUser::find($id);
+
+            if ($user) {
+                return response()->json([
+                    'success' => true,
+                    'type' => 'user',
+                    'data' => [
+                        'id' => $user->id,
+                        'name' => $user->first_name,
+                        'surname' => $user->surname,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'is_retailer' => (bool) $user->is_retailer,
+                        'avatar' => $user->avatar ? asset('storage/'.$user->avatar) : null,
+                    ],
+                ]);
+            }
+
             return response()->json([
-                'success' => true,
-                'type' => 'retailer',
-                'data' => [
-                    'id' => $retailer->id,
-                    'name' => $retailer->first_name,
-                    'surname' => $retailer->surname,
-                    'location' => $retailer->location,
-                    'contact_person' => $retailer->contact_person,
-                    'contact_phone' => $retailer->contact_phone,
-                    'avatar' => $retailer->avatar ? asset('storage/' . $retailer->avatar) : null,
-                    'cover_image' => $retailer->cover_image ? asset('storage/' . $retailer->cover_image) : null,
-                    'user' => [
-                        'id' => $retailer->user->id,
-                        'name' => $retailer->user->full_name,
-                        'email' => $retailer->user->email,
-                        'phone' => $retailer->user->phone,
-                        'is_retailer' => true
-                    ]
-                ]
-            ]);
-        }
+                'success' => false,
+                'message' => 'User or retailer not found',
+            ], 404);
 
-        // If not a retailer, try to find a regular user
-        $user = WebUser::find($id);
-
-        if ($user) {
+        } catch (\Exception $e) {
             return response()->json([
-                'success' => true,
-                'type' => 'user',
-                'data' => [
-                    'id' => $user->id,
-                    'name' => $user->first_name,
-                    'surname' => $user->surname,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'is_retailer' => (bool)$user->is_retailer,
-                    'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
-                ]
-            ]);
+                'success' => false,
+                'message' => 'Failed to fetch user/retailer information',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'User or retailer not found'
-        ], 404);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch user/retailer information',
-            'error' => config('app.debug') ? $e->getMessage() : null
-        ], 500);
     }
-}
 }

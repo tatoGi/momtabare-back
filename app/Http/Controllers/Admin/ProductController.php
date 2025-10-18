@@ -29,61 +29,61 @@ class ProductController extends Controller
      */
     public function index(Request $request): Factory|View
     {
-        $query = Product::query()->with('category');
+        $query = Product::query()->with(['category', 'translations']);
 
         // Filter by product ID
-        if ($request->has('product_id') && !empty($request->product_id)) {
-            $query->where('product_identify_id', 'like', '%' . $request->product_id . '%');
+        if ($request->filled('product_id')) {
+            $query->where('product_identify_id', 'like', '%'.$request->product_id.'%');
         }
 
         // Filter by title
-        if ($request->has('title') && !empty($request->title)) {
-            $query->whereHas('translations', function($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->title . '%');
+        if ($request->filled('title')) {
+            $query->whereHas('translations', function ($q) use ($request) {
+                $q->where('title', 'like', '%'.$request->title.'%');
             });
         }
 
         // Filter by category
-        if ($request->has('category_id') && !empty($request->category_id)) {
+        if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
         // Filter by brand
-        if ($request->has('brand') && !empty($request->brand)) {
-            $query->whereHas('translations', function($q) use ($request) {
+        if ($request->filled('brand')) {
+            $query->whereHas('translations', function ($q) use ($request) {
                 $q->where('brand', $request->brand);
             });
         }
 
         // Filter by color
-        if ($request->has('color') && !empty($request->color)) {
-            $query->whereHas('translations', function($q) use ($request) {
-                $q->where('color', 'like', '%' . $request->color . '%');
+        if ($request->filled('color')) {
+            $query->whereHas('translations', function ($q) use ($request) {
+                $q->where('color', 'like', '%'.$request->color.'%');
             });
         }
 
         // Filter by size
-        if ($request->has('size') && !empty($request->size)) {
-            $query->where('size', 'like', '%' . $request->size . '%');
+        if ($request->filled('size')) {
+            $query->where('size', 'like', '%'.$request->size.'%');
         }
 
         // Filter by location
-        if ($request->has('location') && !empty($request->location)) {
-            $query->whereHas('translations', function($q) use ($request) {
-                $q->where('location', 'like', '%' . $request->location . '%');
+        if ($request->filled('location')) {
+            $query->whereHas('translations', function ($q) use ($request) {
+                $q->where('location', 'like', '%'.$request->location.'%');
             });
         }
 
         // Filter by status
-        if ($request->has('status') && $request->status !== '') {
+        if ($request->filled('status') && $request->status !== '') {
             $query->where('active', $request->status);
         }
 
         // Filter by price range
-        if ($request->has('min_price') && !empty($request->min_price)) {
+        if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
-        if ($request->has('max_price') && !empty($request->max_price)) {
+        if ($request->filled('max_price')) {
             $query->where('price', '<=', $request->max_price);
         }
 

@@ -7,14 +7,12 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class RetailerProductController extends Controller
 {
-
     /**
      * Get count of retailer's products
      */
@@ -51,7 +49,7 @@ class RetailerProductController extends Controller
     /**
      * Store a new retailer product
      */
-     public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
             $user = $request->user('sanctum');
@@ -73,73 +71,73 @@ class RetailerProductController extends Controller
                 'images' => ['nullable', 'array', 'max:10'], // Allow up to 10 images
                 'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max per image
             ]);
-        // ✅ FIXED: Use correct field names
-        // Format rental period as a string if both dates are provided
-        $rentalPeriod = null;
-        if (!empty($validated['rental_start_date']) && !empty($validated['rental_end_date'])) {
-            $startDate = date('Y-m-d', strtotime($validated['rental_start_date']));
-            $endDate = date('Y-m-d', strtotime($validated['rental_end_date']));
-            $rentalPeriod = $startDate . ' to ' . $endDate;
-        }
-
-        // Generate unique product identifier
-        $productIdentifyId = 'RTL-' . strtoupper(Str::random(8));
-
-        // ✅ FIXED: Use correct field names from $validated array
-        // Create product with translatable fields set directly
-        $product = new Product([
-            'product_identify_id' => $productIdentifyId,
-            'category_id' => $validated['category_id'],
-            'retailer_id' => $user->id,
-            'contact_person' => $validated['contact_person'],
-            'contact_phone' => $validated['contact_phone'],
-            'price' => $validated['price'],
-            'currency' => $validated['currency'],
-            'rental_period' => $rentalPeriod,
-            'rental_start_date' => $validated['rental_start_date'] ?? null,
-            'rental_end_date' => $validated['rental_end_date'] ?? null,
-            'size' => $validated['size'] ?? null,
-            'color' => $validated['color'] ?? null,
-            'location' => $validated['location'],
-            'status' => 'pending', // Requires admin approval
-            'active' => false, // Will be activated upon approval
-            'sort_order' => 0,
-        ]);
-
-        // Set translatable fields directly on the model
-        // IMPORTANT: Set ALL required translatable fields together before saving
-        $product->title = $validated['name'];
-        $product->description = $validated['description'] ?? ''; // Description is required in DB
-        $product->brand = $validated['brand'] ?? '';
-        $product->location = $validated['location']; // Location is required
-        $product->color = $validated['color'] ?? '';
-        $product->slug = Str::slug($validated['name']) ?: 'product-' . time();
-
-        // Save the product with translations
-        $product->save();        // Handle multiple image uploads
-        if ($request->hasFile('images')) {
-            $images = $request->file('images');
-            $isFirstImage = true;
-
-            foreach ($images as $image) {
-                $imageName = time() . '_' . uniqid() . '_' . $image->getClientOriginalName();
-                $imagePath = $image->storeAs('products', $imageName, 'public');
-
-                $product->images()->create([
-                    'image_name' => $imageName,
-                    'image_path' => $imagePath,
-                    'is_main' => $isFirstImage, // First image is main
-                ]);
-
-                $isFirstImage = false;
+            // ✅ FIXED: Use correct field names
+            // Format rental period as a string if both dates are provided
+            $rentalPeriod = null;
+            if (! empty($validated['rental_start_date']) && ! empty($validated['rental_end_date'])) {
+                $startDate = date('Y-m-d', strtotime($validated['rental_start_date']));
+                $endDate = date('Y-m-d', strtotime($validated['rental_end_date']));
+                $rentalPeriod = $startDate.' to '.$endDate;
             }
-        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product submitted successfully. It will be reviewed by admin.',
-            'data' => $product->load(['category', 'images']),
-        ], 201);
+            // Generate unique product identifier
+            $productIdentifyId = 'RTL-'.strtoupper(Str::random(8));
+
+            // ✅ FIXED: Use correct field names from $validated array
+            // Create product with translatable fields set directly
+            $product = new Product([
+                'product_identify_id' => $productIdentifyId,
+                'category_id' => $validated['category_id'],
+                'retailer_id' => $user->id,
+                'contact_person' => $validated['contact_person'],
+                'contact_phone' => $validated['contact_phone'],
+                'price' => $validated['price'],
+                'currency' => $validated['currency'],
+                'rental_period' => $rentalPeriod,
+                'rental_start_date' => $validated['rental_start_date'] ?? null,
+                'rental_end_date' => $validated['rental_end_date'] ?? null,
+                'size' => $validated['size'] ?? null,
+                'color' => $validated['color'] ?? null,
+                'location' => $validated['location'],
+                'status' => 'pending', // Requires admin approval
+                'active' => false, // Will be activated upon approval
+                'sort_order' => 0,
+            ]);
+
+            // Set translatable fields directly on the model
+            // IMPORTANT: Set ALL required translatable fields together before saving
+            $product->title = $validated['name'];
+            $product->description = $validated['description'] ?? ''; // Description is required in DB
+            $product->brand = $validated['brand'] ?? '';
+            $product->location = $validated['location']; // Location is required
+            $product->color = $validated['color'] ?? '';
+            $product->slug = Str::slug($validated['name']) ?: 'product-'.time();
+
+            // Save the product with translations
+            $product->save();        // Handle multiple image uploads
+            if ($request->hasFile('images')) {
+                $images = $request->file('images');
+                $isFirstImage = true;
+
+                foreach ($images as $image) {
+                    $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
+                    $imagePath = $image->storeAs('products', $imageName, 'public');
+
+                    $product->images()->create([
+                        'image_name' => $imageName,
+                        'image_path' => $imagePath,
+                        'is_main' => $isFirstImage, // First image is main
+                    ]);
+
+                    $isFirstImage = false;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product submitted successfully. It will be reviewed by admin.',
+                'data' => $product->load(['category', 'images']),
+            ], 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -148,11 +146,11 @@ class RetailerProductController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating retailer product: ' . $e->getMessage(), [
+            Log::error('Error creating retailer product: '.$e->getMessage(), [
                 'user_id' => $user->id ?? null,
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

@@ -19,9 +19,18 @@ class CategoryController extends Controller
      */
     public function index(): Factory|View
     {
-        $categories = Category::orderBy('created_at', 'desc')->paginate(5);
+        $categories = Category::withCount(['products', 'children'])
+            ->with(['parent', 'translations'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
 
-        return view('admin.categories.index', compact('categories'));
+        // Calculate stats
+        $totalCategories = Category::count();
+        $activeCategories = Category::where('active', true)->count();
+        $parentCategories = Category::whereNull('parent_id')->count();
+        $totalProducts = \App\Models\Product::count();
+
+        return view('admin.categories.index', compact('categories', 'totalCategories', 'activeCategories', 'parentCategories', 'totalProducts'));
     }
 
     /**

@@ -9,7 +9,6 @@ use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 
 class BannerController extends Controller
 {
@@ -30,7 +29,7 @@ class BannerController extends Controller
      */
     public function create($page_id = null)
     {
-       
+
         $banners = Banner::all();
         $bannerTypes = $this->bannerTypes();
 
@@ -47,7 +46,7 @@ class BannerController extends Controller
 
         // Create the banner
         $banner = Banner::create($data);
-        
+
         // Handle multiple images upload
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {

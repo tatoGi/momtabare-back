@@ -82,7 +82,7 @@ class BogCardController extends Controller
                 'card_brand' => $cardBrand,
                 'expiry_month' => $request->expiry_month,
                 'expiry_year' => $request->expiry_year,
-                'is_default' => !BogCard::where('user_id', $user->id)->exists(),
+                'is_default' => ! BogCard::where('user_id', $user->id)->exists(),
                 'metadata' => [
                     'added_manually' => true,
                 ],
@@ -162,6 +162,7 @@ class BogCardController extends Controller
             if (preg_match('/^4026|417500|4405|4508|4844|4913|4917/', $cardNumber)) {
                 return 'Visa Electron';
             }
+
             return 'Visa';
         }
 
@@ -170,6 +171,7 @@ class BogCardController extends Controller
             if (preg_match('/^5018|5020|5038|5893|6304|6759|6761|6762|6763/', $cardNumber)) {
                 return 'Maestro';
             }
+
             return 'Mastercard';
         }
 
@@ -217,7 +219,7 @@ class BogCardController extends Controller
         $cardNumber = preg_replace('/\s+/', '', $cardNumber);
         $last4 = substr($cardNumber, -4);
 
-        return '****' . $last4;
+        return '****'.$last4;
     }
 
     /**
@@ -231,7 +233,7 @@ class BogCardController extends Controller
     private function generateCardToken($cardNumber, $userId)
     {
         // DO NOT use this in production - use proper payment gateway tokenization
-        return 'card_' . hash('sha256', $cardNumber . $userId . time() . config('app.key'));
+        return 'card_'.hash('sha256', $cardNumber.$userId.time().config('app.key'));
     }
 
     /**

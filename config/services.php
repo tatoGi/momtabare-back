@@ -31,6 +31,7 @@ return [
     ],
 
     'bog' => [
+        'api_base_url' => env('BOG_API_BASE_URL', 'https://api.bog.ge/payments'),
         'auth_url' => env('BOG_AUTH_URL'),
         'orders_url' => env('BOG_ORDERS_URL', 'https://api.bog.ge/payments/v1/ecommerce/orders'),
         'receipt_url' => env('BOG_RECEIPT_URL', 'https://api.bog.ge/payments/v1/receipt'),

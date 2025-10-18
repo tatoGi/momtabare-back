@@ -150,13 +150,13 @@ class PageTypeService
 
     /**
      * Check if a page type supports posts
-     * 
-     * @param int $typeId The page type ID to check
-     * @return bool
+     *
+     * @param  int  $typeId  The page type ID to check
      */
     public static function supportsPost($typeId): bool
     {
         $config = self::getPageTypeConfig($typeId);
+
         return $config && ($config['has_posts'] ?? false);
     }
 

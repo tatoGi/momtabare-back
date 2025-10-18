@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use App\Models\ProductRating;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
 class RateProductController extends Controller
 {
     public function set(Request $request): JsonResponse
@@ -16,7 +17,7 @@ class RateProductController extends Controller
             'rating' => 'required|integer|min:1|max:5',
         ]);
 
-          $user = $request->user('sanctum');
+        $user = $request->user('sanctum');
         // Save rating to database
         ProductRating::create([
             'product_id' => $validated['product_id'],
@@ -31,7 +32,8 @@ class RateProductController extends Controller
             'message' => 'Rating submitted successfully',
         ]);
     }
-        public function get($product_id): JsonResponse
+
+    public function get($product_id): JsonResponse
     {
         $ratings = ProductRating::where('product_id', $product_id)
             ->orderByDesc('created_at')

@@ -34,11 +34,20 @@ class BogPayment extends Model
         return $this->hasMany(BogCard::class, 'parent_order_id', 'bog_order_id');
     }
 
+    /**
+     * Get the web user (customer) who made this payment
+     * Note: user_id now references web_users table (FK updated in migration)
+     */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(WebUser::class, 'user_id');
     }
 
+    /**
+     * Alias for user() relationship for clarity
+     *
+     * @deprecated Use user() instead - kept for backward compatibility
+     */
     public function webUser()
     {
         return $this->belongsTo(WebUser::class, 'user_id');

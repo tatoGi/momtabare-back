@@ -30,7 +30,7 @@ return [
         'products',
         'products/*',
         'admin-login',
-        'api/show-cart'
+        'api/show-cart',
     ],
     'allowed_methods' => ['*'],
     'allowed_origins' => [

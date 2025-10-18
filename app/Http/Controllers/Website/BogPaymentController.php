@@ -93,7 +93,7 @@ class BogPaymentController extends Controller
                 'save_card' => 'sometimes|boolean',
                 'user_id' => 'sometimes|integer|exists:web_users,id', // Validate against web_users table
             ]);
-             $user = $request->user('sanctum');
+            $user = $request->user('sanctum');
             // Custom validation: if save_card is true, user must be authenticated
             if (($validated['save_card'] ?? false) && ! $user) {
                 return response()->json([
@@ -182,7 +182,7 @@ class BogPaymentController extends Controller
                 ],
                 [
                     'external_order_id' => $validated['external_order_id'] ?? null,
-                    'user_id' => null, // FK constraint issue: points to users table, not web_users
+                    'user_id' => $validated['user_id'] ?? $user->id ?? null, // Now points to web_users table (FK updated)
                     'amount' => $validated['purchase_units']['total_amount'],
                     'currency' => $validated['purchase_units']['currency'] ?? 'GEL',
                     'status' => $response['status'] ?? 'created',
@@ -190,7 +190,7 @@ class BogPaymentController extends Controller
                         'basket' => $validated['purchase_units']['basket'],
                         'callback_url' => $validated['callback_url'],
                         'redirect_urls' => $validated['redirect_urls'],
-                        'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Store web_user_id from frontend
+                        'web_user_id' => $validated['user_id'] ?? $user->id ?? null, // Also keep in payload for backward compatibility
                         'save_card' => $validated['save_card'] ?? false,
                         'language' => $validated['language'] ?? 'en',
                     ],
@@ -584,7 +584,7 @@ class BogPaymentController extends Controller
 
         // Get authenticated user
         $user = $request->user('sanctum');
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not authenticated',
@@ -608,15 +608,15 @@ class BogPaymentController extends Controller
                 // Using parentOrderId directly would violate unique constraint
                 $bogOrderId = $result['data']['order_id'] ?? null;
 
-                if (!$bogOrderId) {
+                if (! $bogOrderId) {
                     // If BOG doesn't return an order_id, generate a unique one
-                    $bogOrderId = 'saved_card_' . uniqid() . '_' . time();
+                    $bogOrderId = 'saved_card_'.uniqid().'_'.time();
                 }
 
                 $payment = \App\Models\BogPayment::create([
                     'bog_order_id' => $bogOrderId,
-                    'external_order_id' => $validated['external_order_id'] ?? ('order_' . time()),
-                    'user_id' => null, // FK constraint issue: points to users, not web_users
+                    'external_order_id' => $validated['external_order_id'] ?? ('order_'.time()),
+                    'user_id' => $user->id, // Now correctly points to web_users table (FK updated)
                     'amount' => $validated['amount'],
                     'currency' => $validated['currency'] ?? 'GEL',
                     'status' => $result['data']['status'] ?? 'created',
@@ -624,7 +624,7 @@ class BogPaymentController extends Controller
                         'parent_order_id' => $parentOrderId,
                         'basket' => $validated['basket'],
                         'callback_url' => $validated['callback_url'],
-                        'web_user_id' => $user->id, // Store web_user_id in payload
+                        'web_user_id' => $user->id, // Also keep in payload for backward compatibility
                     ],
                     'response_data' => $result['data'] ?? null,
                     'save_card_requested' => false, // Using existing saved card
@@ -949,18 +949,12 @@ class BogPaymentController extends Controller
             // Get authenticated user
             $user = $request->user('sanctum');
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not authenticated',
                 ], 401);
             }
-
-            Log::info('getUserPayments called', [
-                'user_id' => $user->id,
-                'user_type' => get_class($user),
-            ]);
-
             // Get pagination parameters
             $perPage = $request->get('per_page', 15);
             $page = $request->get('page', 1);
@@ -968,11 +962,8 @@ class BogPaymentController extends Controller
             // Get payments - since user_id has FK to users table but we use web_users,
             // we need to search in request_payload JSON
             $payments = BogPayment::query()
-                ->with(['products' => function($query) {
-                    $query->select('products.id', 'products.name_ka', 'products.name_en', 'products.name_ru',
-                                   'products.slug', 'products.price', 'products.images');
-                }])
-                ->where(function($query) use ($user) {
+                ->with(['products']) // Load all product columns, let the model handle translations
+                ->where(function ($query) use ($user) {
                     // Try to match by user_id (if it was set)
                     $query->where('user_id', $user->id)
                         // Or by web_user_id stored in request_payload
@@ -989,20 +980,47 @@ class BogPaymentController extends Controller
             // Transform payments for frontend
             $transformedPayments = $payments->getCollection()->map(function ($payment) {
                 // Transform products with pivot data (if available)
-                $products = $payment->products->map(function ($product) {
-                    return [
-                        'id' => $product->id,
-                        'name_ka' => $product->name_ka,
-                        'name_en' => $product->name_en,
-                        'name_ru' => $product->name_ru,
-                        'slug' => $product->slug,
-                        'price' => (float) $product->price,
-                        'images' => $product->images,
-                        'quantity' => $product->pivot->quantity ?? 1,
-                        'unit_price' => (float) ($product->pivot->unit_price ?? $product->price),
-                        'total_price' => (float) ($product->pivot->total_price ?? $product->price),
-                    ];
-                });
+                // Handle case where products relationship might not be loaded or is empty
+                $products = collect();
+
+                try {
+                    if ($payment->relationLoaded('products') && $payment->products) {
+                        $products = $payment->products->map(function ($product) {
+                            // Get product title for current locale using app()->getLocale()
+                            // Note: Product model uses 'title' not 'name'
+                            $currentLocale = app()->getLocale();
+                            $name = '';
+                            $slug = '';
+
+                            try {
+                                // Astrotomic Translatable provides translate() method
+                                $translation = $product->translate($currentLocale);
+                                $name = $translation->title ?? '';
+                                $slug = $translation->slug ?? '';
+                            } catch (\Exception $e) {
+                                // Fallback: use default translation
+                                $name = $product->title ?? '';
+                                $slug = $product->slug ?? '';
+                            }
+
+                            return [
+                                'id' => $product->id,
+                                'name' => $name, // Current locale name
+                                'slug' => $slug,
+                                'price' => (float) ($product->price ?? 0),
+                                'images' => $product->images ?? [],
+                                'quantity' => $product->pivot->quantity ?? 1,
+                                'unit_price' => (float) ($product->pivot->unit_price ?? $product->price ?? 0),
+                                'total_price' => (float) ($product->pivot->total_price ?? ($product->price ?? 0)),
+                            ];
+                        });
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Error loading products for payment', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 
                 return [
                     'id' => $payment->id,
@@ -1050,7 +1068,6 @@ class BogPaymentController extends Controller
     /**
      * Mark products as ordered after successful payment
      *
-     * @param BogPayment $payment
      * @return void
      */
     protected function markProductsAsOrdered(BogPayment $payment)
@@ -1064,6 +1081,7 @@ class BogPaymentController extends Controller
                     'payment_id' => $payment->id,
                     'bog_order_id' => $payment->bog_order_id,
                 ]);
+
                 return;
             }
 
@@ -1095,6 +1113,7 @@ class BogPaymentController extends Controller
                     'payment_id' => $payment->id,
                     'basket' => $basket,
                 ]);
+
                 return;
             }
 
@@ -1157,6 +1176,125 @@ class BogPaymentController extends Controller
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
             ]);
+        }
+    }
+
+    /**
+     * Bulk update product rental status
+     * This endpoint is called by the frontend after payment to update product rental status
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkUpdateRentalStatus(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'products' => 'required|array|min:1',
+                'products.*.product_id' => 'required|integer|exists:products,id',
+                'products.*.rental_start_date' => 'nullable|date',
+                'products.*.rental_end_date' => 'nullable|date|after_or_equal:products.*.rental_start_date',
+                'products.*.quantity' => 'nullable|integer|min:1',
+                'payment_id' => 'nullable|integer|exists:bog_payments,id',
+            ]);
+
+            // Get authenticated user
+            $user = $request->user('sanctum');
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            $updatedProducts = [];
+            $errors = [];
+
+            foreach ($validated['products'] as $productData) {
+                try {
+                    $product = \App\Models\Product::find($productData['product_id']);
+
+                    if (! $product) {
+                        $errors[] = "Product {$productData['product_id']} not found";
+
+                        continue;
+                    }
+
+                    $updateData = [
+                        'is_ordered' => true,
+                        'ordered_at' => now(),
+                        'ordered_by' => $user->id,
+                    ];
+
+                    // If rental dates are provided, mark as rented
+                    if (! empty($productData['rental_start_date']) && ! empty($productData['rental_end_date'])) {
+                        $updateData['is_rented'] = true;
+                        $updateData['rented_at'] = now();
+                        $updateData['rental_start_date'] = $productData['rental_start_date'];
+                        $updateData['rental_end_date'] = $productData['rental_end_date'];
+                        // Note: rented_by has FK to users table, not web_users, so set to null
+                        $updateData['rented_by'] = null;
+                    }
+
+                    $product->update($updateData);
+                    $updatedProducts[] = [
+                        'product_id' => $product->id,
+                        'status' => 'updated',
+                        'is_rented' => $product->is_rented,
+                        'rental_start_date' => $product->rental_start_date,
+                        'rental_end_date' => $product->rental_end_date,
+                    ];
+
+                    Log::info('Product rental status updated via bulk endpoint', [
+                        'product_id' => $product->id,
+                        'user_id' => $user->id,
+                        'is_rented' => $product->is_rented,
+                        'rental_dates' => [
+                            'start' => $product->rental_start_date,
+                            'end' => $product->rental_end_date,
+                        ],
+                    ]);
+
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to update product {$productData['product_id']}: {$e->getMessage()}";
+                    Log::error('Failed to update product rental status', [
+                        'product_id' => $productData['product_id'],
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => count($updatedProducts) > 0,
+                'message' => count($updatedProducts) > 0
+                    ? 'Product rental status updated successfully'
+                    : 'No products were updated',
+                'updated_products' => $updatedProducts,
+                'errors' => $errors,
+                'summary' => [
+                    'total_requested' => count($validated['products']),
+                    'successfully_updated' => count($updatedProducts),
+                    'failed' => count($errors),
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Bulk rental status update failed', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update product rental status',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

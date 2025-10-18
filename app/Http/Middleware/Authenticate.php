@@ -12,7 +12,6 @@ class Authenticate extends Middleware
      * Handle an incoming request.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @param  string[]  ...$guards
      * @return mixed
      */
@@ -26,20 +25,19 @@ class Authenticate extends Middleware
         ) {
             return $next($request);
         }
-    
+
         if (empty($guards)) {
             $guards = ['web'];
         }
-    
+
         foreach ($guards as $guard) {
-            
+
             if (Auth::guard($guard)->check()) {
                 return $next($request);
             }
         }
-    
+
         // 👇 Redirect to the login page (NOT dashboard)
-        return redirect('/' . app()->getLocale() . '/admin/login');
+        return redirect('/'.app()->getLocale().'/admin/login');
     }
-    
 }
