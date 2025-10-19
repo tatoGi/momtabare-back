@@ -101,8 +101,8 @@ return [
     */
 
     'from' => [
-        'address' => 'admin@gametech.ge',
-        'name' => 'admin',
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@momtabare.com'),
+        'name' => env('MAIL_FROM_NAME', 'Momtabare'),
     ],
 
     /*
