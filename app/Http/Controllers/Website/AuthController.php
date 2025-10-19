@@ -309,16 +309,6 @@ class AuthController extends Controller
             }
         }
 
-        // Log authentication details
-        Log::info('AuthController@me - Auth Details', [
-            'auth_guard' => Auth::getDefaultDriver(),
-            'is_authenticated' => $user ? true : false,
-            'user_id' => $user ? $user->id : null,
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'has_bearer_token' => $request->bearerToken() ? true : false,
-        ]);
-
         if (! $user) {
             Log::warning('Unauthenticated access to /me endpoint', [
                 'ip' => $request->ip(),
@@ -347,6 +337,7 @@ class AuthController extends Controller
                 'birth_date' => $user->birth_date?->toDateString(),
                 'gender' => $user->gender,
                 'is_retailer' => $user->is_retailer,
+                'is_active' => $user->is_active,
                 'retailer_status' => $user->retailer_status,
                 'retailer_requested_at' => $user->retailer_requested_at?->toISOString(),
                 'avatar' => $user->avatar,

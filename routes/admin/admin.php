@@ -25,6 +25,7 @@ Route::get('/webusers/{id}', [WebUserController::class, 'show'])->name('admin.we
 Route::post('/webusers/{id}/approve-retailer', [WebUserController::class, 'approveRetailer'])->name('admin.webusers.approve-retailer');
 Route::post('/webusers/{id}/reject-retailer', [WebUserController::class, 'rejectRetailer'])->name('admin.webusers.reject-retailer');
 Route::post('/webusers/{id}/toggle-status', [WebUserController::class, 'toggleStatus'])->name('admin.webusers.toggle-status');
+Route::delete('/webusers/{id}', [WebUserController::class, 'destroy'])->name('admin.webusers.destroy');
 
 // Payment management routes
 Route::get('/payments', [PaymentController::class, 'index'])->name('admin.payments.index');

@@ -392,6 +392,14 @@
                                                 Activate
                                             @endif
                                         </button>
+
+                                        <button onclick="deleteUser({{ $webUser->id }})"
+                                                class="inline-flex items-center justify-center px-4 py-2 text-xs font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 transition-colors">
+                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Delete User
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -471,6 +479,31 @@
                 .catch(error => {
                     console.error('Error:', error);
                     alert('An error occurred while toggling user status.');
+                });
+            }
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user? This action cannot be undone.\n\nNote: Users with products or comments cannot be deleted.')) {
+                fetch(`/{{ app()->getLocale() }}/admin/webusers/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the user.');
                 });
             }
         }
