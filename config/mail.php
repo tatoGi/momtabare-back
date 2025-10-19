@@ -36,20 +36,27 @@ return [
     'mailers' => [
         'smtp' => [
             'transport' => 'smtp',
-            'host' => env('MAIL_HOST', 'smtp.sendgrid.net'),
+            'host' => env('MAIL_HOST', 'localhost'),
             'port' => env('MAIL_PORT', 587),
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'auth_mode' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', 'momtabare.com'),
             'stream' => [
                 'ssl' => [
                     'allow_self_signed' => true,
                     'verify_peer' => false,
                     'verify_peer_name' => false,
+                    'peer_name' => env('MAIL_HOST', 'localhost'),
                 ],
             ],
+        ],
+
+        'sendmail' => [
+            'transport' => 'sendmail',
+            'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs'),
         ],
 
         'ses' => [
@@ -62,11 +69,6 @@ return [
 
         'postmark' => [
             'transport' => 'postmark',
-        ],
-
-        'sendmail' => [
-            'transport' => 'sendmail',
-            'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -t -i'),
         ],
 
         'log' => [
