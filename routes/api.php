@@ -46,6 +46,7 @@ require __DIR__.'/website/retailer.php';
 require __DIR__.'/website/general.php';
 require __DIR__.'/website/products.php';
 require __DIR__.'/website/comments.php';
+require __DIR__.'/website/addresses.php';
 require __DIR__.'/website/bog.php';
 // Rate product API
 Route::post('/rate-product', [RateProductController::class, 'set']);

@@ -17,10 +17,13 @@ class ProductTranslation extends Model
         'title',
         'slug',
         'description',
-        'brand',
         'location',
-        'color',
+        'local_additional',
         'warranty_period',
+    ];
+
+    protected $casts = [
+        'local_additional' => 'array',
     ];
 
     // Disable timestamps

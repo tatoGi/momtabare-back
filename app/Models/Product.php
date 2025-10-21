@@ -21,8 +21,6 @@ class Product extends Model implements TranslatableContract
         'retailer_shop_id',
         'contact_person',
         'contact_phone',
-        'size',
-        'color',
         'location',
         'price',
         'currency',
@@ -63,7 +61,7 @@ class Product extends Model implements TranslatableContract
         'ordered_at' => 'datetime',
     ];
 
-    public $translatedAttributes = ['title', 'slug', 'description', 'brand', 'location', 'color'];
+    public $translatedAttributes = ['title', 'slug', 'description', 'location', 'local_additional'];
 
     public function category()
     {

@@ -48,23 +48,25 @@ class ProductController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        // Filter by brand
+        // Filter by brand (now in JSON local_additional column)
         if ($request->filled('brand')) {
             $query->whereHas('translations', function ($q) use ($request) {
-                $q->where('brand', $request->brand);
+                $q->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ბრენდი")) = ?', [$request->brand]);
             });
         }
 
-        // Filter by color
+        // Filter by color (now in JSON local_additional column)
         if ($request->filled('color')) {
             $query->whereHas('translations', function ($q) use ($request) {
-                $q->where('color', 'like', '%'.$request->color.'%');
+                $q->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ფერი")) LIKE ?', ['%'.$request->color.'%']);
             });
         }
 
-        // Filter by size
+        // Filter by size (now in JSON local_additional column)
         if ($request->filled('size')) {
-            $query->where('size', 'like', '%'.$request->size.'%');
+            $query->whereHas('translations', function ($q) use ($request) {
+                $q->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ზომა")) LIKE ?', ['%'.$request->size.'%']);
+            });
         }
 
         // Filter by location
@@ -220,13 +222,12 @@ class ProductController extends Controller
             }
         }
 
-        // Update the base product attributes
+        // Update the base product attributes (removed 'size' as it's now in JSON)
         $product->update([
             'category_id' => $data['category_id'] ?? null,
             'price' => $data['price'],
             'active' => $data['active'],
             'product_identify_id' => $data['product_identify_id'] ?? null,
-            'size' => $data['size'] ?? null,
             'sort_order' => $data['sort_order'] ?? null,
             'is_favorite' => $data['is_favorite'] ?? 0,
             'is_popular' => $data['is_popular'] ?? 0,
@@ -242,7 +243,20 @@ class ProductController extends Controller
                 $translation->slug = $data[$locale]['slug'] ?? '';
                 $translation->description = $data[$locale]['description'] ?? '';
                 $translation->location = $data[$locale]['location'] ?? null;
-                $translation->color = $data[$locale]['color'] ?? null;
+
+                // Build local_additional JSON object from individual fields
+                $localAdditional = [];
+                if (!empty($data[$locale]['brand'])) {
+                    $localAdditional['ბრენდი'] = $data[$locale]['brand'];
+                }
+                if (!empty($data[$locale]['color'])) {
+                    $localAdditional['ფერი'] = $data[$locale]['color'];
+                }
+                if (!empty($data['size'])) {
+                    $localAdditional['ზომა'] = $data['size'];
+                }
+
+                $translation->local_additional = $localAdditional;
                 $translation->save();
             }
         }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Website\AuthController;
 use App\Http\Controllers\Website\ChatController;
 use App\Http\Controllers\Website\ProfileController;
@@ -13,6 +14,10 @@ Route::post('/verify-email', [AuthController::class, 'verifyEmailFromForm'])->na
 Route::post('/verify-email-code', [AuthController::class, 'verifyEmailCode']);
 Route::post('/resend-email-verification', [AuthController::class, 'resendVerification'])->name('verification.resend');
 Route::post('/complete-registration', [AuthController::class, 'completeRegistration']);
+
+// Social authentication routes
+Route::get('/auth/facebook', [SocialAuthController::class, 'redirectToFacebook']);
+Route::get('/auth/facebook/callback', [SocialAuthController::class, 'handleFacebookCallback']);
 
 // Email verification route
 Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail']);

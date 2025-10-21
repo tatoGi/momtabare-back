@@ -25,6 +25,7 @@ class WebUser extends Authenticatable implements MustVerifyEmail
         'password',
         'phone',
         'avatar',
+        'facebook_id',
         'email_verification_token',
         'retailer_requested_at',
         'email_verified_at',
@@ -145,5 +146,13 @@ class WebUser extends Authenticatable implements MustVerifyEmail
     public function comments()
     {
         return $this->hasMany(ProductComment::class, 'user_id');
+    }
+
+    /**
+     * Get all addresses for this user
+     */
+    public function addresses()
+    {
+        return $this->hasMany(WebUserAddress::class, 'web_user_id');
     }
 }

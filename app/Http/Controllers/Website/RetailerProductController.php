@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\TranslationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -54,6 +55,13 @@ class RetailerProductController extends Controller
         try {
             $user = $request->user('sanctum');
 
+            // Decode local_additional if it's a JSON string
+            if ($request->has('local_additional') && is_string($request->local_additional)) {
+                $request->merge([
+                    'local_additional' => json_decode($request->local_additional, true)
+                ]);
+            }
+
             $validated = $request->validate([
                 'name' => ['required', 'string', 'max:255'],
                 'category_id' => ['required', 'exists:categories,id'],
@@ -65,11 +73,13 @@ class RetailerProductController extends Controller
                 'contact_phone' => ['required', 'string', 'max:20'],
                 'rental_start_date' => ['nullable', 'date'],
                 'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
-                'color' => ['nullable', 'string', 'max:100'],
-                'size' => ['nullable', 'string', 'max:100'],
-                'brand' => ['nullable', 'string', 'max:100'],
+                'local_additional' => ['nullable', 'array'], // JSON object for additional fields
+                'local_additional.*.key' => ['nullable', 'string', 'max:100'],
+                'local_additional.*.value' => ['nullable', 'string', 'max:255'],
+                'local_additional.*.type' => ['nullable', 'string', 'in:text,color,brand,size,style'],
                 'images' => ['nullable', 'array', 'max:10'], // Allow up to 10 images
                 'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max per image
+                'language' => ['nullable', 'in:ka,en'], // Language the user is filling in
             ]);
             // ✅ FIXED: Use correct field names
             // Format rental period as a string if both dates are provided
@@ -96,22 +106,50 @@ class RetailerProductController extends Controller
                 'rental_period' => $rentalPeriod,
                 'rental_start_date' => $validated['rental_start_date'] ?? null,
                 'rental_end_date' => $validated['rental_end_date'] ?? null,
-                'size' => $validated['size'] ?? null,
-                'color' => $validated['color'] ?? null,
                 'location' => $validated['location'],
                 'status' => 'pending', // Requires admin approval
                 'active' => false, // Will be activated upon approval
                 'sort_order' => 0,
             ]);
 
-            // Set translatable fields directly on the model
-            // IMPORTANT: Set ALL required translatable fields together before saving
-            $product->title = $validated['name'];
-            $product->description = $validated['description'] ?? ''; // Description is required in DB
-            $product->brand = $validated['brand'] ?? '';
-            $product->location = $validated['location']; // Location is required
-            $product->color = $validated['color'] ?? '';
-            $product->slug = Str::slug($validated['name']) ?: 'product-'.time();
+            // Determine the source language (default to Georgian if not specified)
+            $sourceLang = $validated['language'] ?? 'ka';
+            $targetLang = $sourceLang === 'ka' ? 'en' : 'ka';
+
+            // Initialize translation service
+            $translationService = new TranslationService();
+
+            // Convert local_additional from [{key, value, type}] to {key: value} format for storage and translation
+            $localAdditional = [];
+            if (!empty($validated['local_additional']) && is_array($validated['local_additional'])) {
+                foreach ($validated['local_additional'] as $item) {
+                    if (isset($item['key']) && isset($item['value'])) {
+                        $localAdditional[$item['key']] = $item['value'];
+                    }
+                }
+            }
+
+            // Auto-translate to the other language
+            $translatedData = $translationService->translateProductFields([
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? '',
+                'location' => $validated['location'],
+                'local_additional' => $localAdditional,
+            ], $sourceLang, $targetLang);
+
+            // Set translatable fields for source language
+            $product->translateOrNew($sourceLang)->title = $validated['name'];
+            $product->translateOrNew($sourceLang)->description = $validated['description'] ?? '';
+            $product->translateOrNew($sourceLang)->location = $validated['location'];
+            $product->translateOrNew($sourceLang)->local_additional = $localAdditional;
+            $product->translateOrNew($sourceLang)->slug = Str::slug($validated['name']) ?: 'product-'.time();
+
+            // Set auto-translated fields for target language
+            $product->translateOrNew($targetLang)->title = $translatedData['name'] ?? $validated['name'];
+            $product->translateOrNew($targetLang)->description = $translatedData['description'] ?? '';
+            $product->translateOrNew($targetLang)->location = $translatedData['location'] ?? $validated['location'];
+            $product->translateOrNew($targetLang)->local_additional = $translatedData['local_additional'] ?? [];
+            $product->translateOrNew($targetLang)->slug = Str::slug($translatedData['name'] ?? $validated['name']) ?: 'product-'.time();
 
             // Save the product with translations
             $product->save();        // Handle multiple image uploads
@@ -198,6 +236,13 @@ class RetailerProductController extends Controller
             ], 403);
         }
 
+        // Decode local_additional if it's a JSON string
+        if ($request->has('local_additional') && is_string($request->local_additional)) {
+            $request->merge([
+                'local_additional' => json_decode($request->local_additional, true)
+            ]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -209,13 +254,16 @@ class RetailerProductController extends Controller
             'contact_phone' => 'required|string|max:20',
             'rental_period_start' => 'nullable|date',
             'rental_period_end' => 'nullable|date|after_or_equal:rental_period_start',
-            'color' => 'nullable|string|max:100',
-            'size' => 'nullable|string|max:100',
-            'brand' => 'nullable|string|max:100',
+            'local_additional' => 'nullable|array', // JSON object for additional fields
+            'local_additional.*.key' => 'nullable|string|max:100',
+            'local_additional.*.value' => 'nullable|string|max:255',
+            'local_additional.*.type' => 'nullable|string|in:text,color,brand,size,style',
             'images' => 'nullable|array|max:10', // Allow up to 10 images
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
             'remove_image_ids' => 'nullable|array', // IDs of images to remove
             'remove_image_ids.*' => 'integer|exists:product_images,id',
+            'language' => 'nullable|in:ka,en', // Language the user is filling in
+            'force_translate' => 'nullable|boolean', // If true, overwrite target translations
         ]);
 
         // Format rental period as a string if both dates are provided
@@ -236,24 +284,56 @@ class RetailerProductController extends Controller
             'rental_period' => $rentalPeriod,
             'rental_start_date' => ! empty($validated['rental_period_start']) ? $validated['rental_period_start'] : null,
             'rental_end_date' => ! empty($validated['rental_period_end']) ? $validated['rental_period_end'] : null,
-            'size' => $validated['size'] ?? null,
             'status' => 'pending', // Reset to pending after edit
         ]);
 
-        // Update translations
-        $product->translateOrNew('ka')->title = $validated['name'];
-        $product->translateOrNew('ka')->description = $validated['description'] ?? '';
-        $product->translateOrNew('ka')->location = $validated['location'];
-        $product->translateOrNew('ka')->color = $validated['color'] ?? '';
-        $product->translateOrNew('ka')->brand = $validated['brand'] ?? '';
-        $product->translateOrNew('ka')->slug = Str::slug($validated['name']);
+        // Determine the source language (default to Georgian if not specified)
+        $sourceLang = $validated['language'] ?? 'ka';
+        $targetLang = $sourceLang === 'ka' ? 'en' : 'ka';
 
-        $product->translateOrNew('en')->title = $validated['name'];
-        $product->translateOrNew('en')->description = $validated['description'] ?? '';
-        $product->translateOrNew('en')->location = $validated['location'];
-        $product->translateOrNew('en')->color = $validated['color'] ?? '';
-        $product->translateOrNew('en')->brand = $validated['brand'] ?? '';
-        $product->translateOrNew('en')->slug = Str::slug($validated['name']);
+        // Initialize translation service
+        $translationService = new TranslationService();
+
+        // Convert local_additional from [{key, value, type}] to {key: value} format for storage and translation
+        $localAdditional = [];
+        if (!empty($validated['local_additional']) && is_array($validated['local_additional'])) {
+            foreach ($validated['local_additional'] as $item) {
+                if (isset($item['key']) && isset($item['value'])) {
+                    $localAdditional[$item['key']] = $item['value'];
+                }
+            }
+        }
+
+        // Prepare fields to translate
+        $incoming = [
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? '',
+            'location' => $validated['location'],
+            'local_additional' => $localAdditional,
+        ];
+
+        // Auto-translate to the other language
+        $translatedData = $translationService->translateProductFields($incoming, $sourceLang, $targetLang);
+
+        // Update translations for source language (always overwrite with incoming)
+        $product->translateOrNew($sourceLang)->title = $incoming['name'];
+        $product->translateOrNew($sourceLang)->description = $incoming['description'];
+        $product->translateOrNew($sourceLang)->location = $incoming['location'];
+        $product->translateOrNew($sourceLang)->local_additional = $localAdditional;
+        $product->translateOrNew($sourceLang)->slug = Str::slug($incoming['name']);
+
+        // Determine whether to overwrite target translations
+        $force = isset($validated['force_translate']) ? (bool) $validated['force_translate'] : false;
+        $existingTarget = $product->translate($targetLang);
+
+        // Only set translated values if target translation is missing or force=true
+        if ($force || empty($existingTarget) || empty($existingTarget->title)) {
+            $product->translateOrNew($targetLang)->title = $translatedData['name'] ?? $incoming['name'];
+            $product->translateOrNew($targetLang)->description = $translatedData['description'] ?? $incoming['description'];
+            $product->translateOrNew($targetLang)->location = $translatedData['location'] ?? $incoming['location'];
+            $product->translateOrNew($targetLang)->local_additional = $translatedData['local_additional'] ?? [];
+            $product->translateOrNew($targetLang)->slug = Str::slug($translatedData['name'] ?? $incoming['name']);
+        }
 
         $product->save();
 

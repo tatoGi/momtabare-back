@@ -159,10 +159,14 @@
                                     <label for="brand_{{ $locale }}" class="block text-sm font-semibold text-gray-700 mb-2">
                                         Brand ({{ __('admin.locale_' . $locale) }})
                                     </label>
+                                    @php
+                                        $translation = $product->translate($locale);
+                                        $brandValue = old($locale . '.brand', $translation->local_additional['ბრენდი'] ?? $translation->local_additional['brand'] ?? '');
+                                    @endphp
                                     <input type="text"
                                            name="{{ $locale }}[brand]"
                                            id="brand_{{ $locale }}"
-                                           value="{{ old($locale . '.brand', $product->translate($locale)->brand ?? '') }}"
+                                           value="{{ $brandValue }}"
                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                            placeholder="e.g., Nike, Adidas">
                                 </div>
@@ -172,10 +176,13 @@
                                     <label for="color_{{ $locale }}" class="block text-sm font-semibold text-gray-700 mb-2">
                                         Color ({{ __('admin.locale_' . $locale) }})
                                     </label>
+                                    @php
+                                        $colorValue = old($locale . '.color', $translation->local_additional['ფერი'] ?? $translation->local_additional['color'] ?? '');
+                                    @endphp
                                     <input type="text"
                                            name="{{ $locale }}[color]"
                                            id="color_{{ $locale }}"
-                                           value="{{ old($locale . '.color', $product->translate($locale)->color ?? '') }}"
+                                           value="{{ $colorValue }}"
                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                            placeholder="e.g., Red, Blue, Black">
                                 </div>
@@ -331,10 +338,26 @@
 
                         <div>
                             <label for="size" class="block text-sm font-semibold text-gray-700 mb-2">Size</label>
+                            @php
+                                // Get size from first available translation's local_additional
+                                $sizeValue = old('size');
+                                if (!$sizeValue) {
+                                    foreach (config('app.locales') as $loc) {
+                                        $trans = $product->translate($loc);
+                                        if ($trans && isset($trans->local_additional['ზომა'])) {
+                                            $sizeValue = $trans->local_additional['ზომა'];
+                                            break;
+                                        } elseif ($trans && isset($trans->local_additional['size'])) {
+                                            $sizeValue = $trans->local_additional['size'];
+                                            break;
+                                        }
+                                    }
+                                }
+                            @endphp
                             <input type="text"
                                    name="size"
                                    id="size"
-                                   value="{{ old('size', $product->size) }}"
+                                   value="{{ $sizeValue }}"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                         </div>
 

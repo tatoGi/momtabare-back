@@ -112,11 +112,15 @@
                         <select name="brand" id="brand" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all">
                             <option value="">All Brands</option>
                             @php
-                                $uniqueBrands = \App\Models\ProductTranslation::select('brand')
-                                    ->whereNotNull('brand')
-                                    ->groupBy('brand')
+                                // Extract unique brands from JSON column using raw SQL
+                                $uniqueBrands = \Illuminate\Support\Facades\DB::table('product_translations')
+                                    ->select(\Illuminate\Support\Facades\DB::raw('DISTINCT JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ბრენდი")) as brand'))
+                                    ->whereNotNull('local_additional')
+                                    ->whereRaw('JSON_EXTRACT(local_additional, "$.ბრენდი") IS NOT NULL')
+                                    ->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ბრენდი")) != ""')
                                     ->orderBy('brand')
-                                    ->pluck('brand');
+                                    ->pluck('brand')
+                                    ->filter();
                             @endphp
                             @foreach($uniqueBrands as $brand)
                                 <option value="{{ $brand }}" {{ request('brand') == $brand ? 'selected' : '' }}>
@@ -142,12 +146,14 @@
                         <select name="color" id="color" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all">
                             <option value="">All Colors</option>
                             @php
-                                $colors = \App\Models\ProductTranslation::select('color')
-                                    ->whereNotNull('color')
-                                    ->where('color', '!=', '')
-                                    ->groupBy('color')
+                                $colors = \Illuminate\Support\Facades\DB::table('product_translations')
+                                    ->select(\Illuminate\Support\Facades\DB::raw('DISTINCT JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ფერი")) as color'))
+                                    ->whereNotNull('local_additional')
+                                    ->whereRaw('JSON_EXTRACT(local_additional, "$.ფერი") IS NOT NULL')
+                                    ->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ფერი")) != ""')
                                     ->orderBy('color')
-                                    ->pluck('color');
+                                    ->pluck('color')
+                                    ->filter();
                             @endphp
                             @foreach($colors as $color)
                                 <option value="{{ $color }}" {{ request('color') == $color ? 'selected' : '' }}>
@@ -173,11 +179,14 @@
                         <select name="size" id="size" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all">
                             <option value="">All Sizes</option>
                             @php
-                                $sizes = \App\Models\Product::select('size')
-                                    ->whereNotNull('size')
-                                    ->distinct()
+                                $sizes = \Illuminate\Support\Facades\DB::table('product_translations')
+                                    ->select(\Illuminate\Support\Facades\DB::raw('DISTINCT JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ზომა")) as size'))
+                                    ->whereNotNull('local_additional')
+                                    ->whereRaw('JSON_EXTRACT(local_additional, "$.ზომა") IS NOT NULL')
+                                    ->whereRaw('JSON_UNQUOTE(JSON_EXTRACT(local_additional, "$.ზომა")) != ""')
                                     ->orderBy('size')
-                                    ->pluck('size');
+                                    ->pluck('size')
+                                    ->filter();
                             @endphp
                             @foreach($sizes as $size)
                                 <option value="{{ $size }}" {{ request('size') == $size ? 'selected' : '' }}>
@@ -358,27 +367,34 @@
                             @endif
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap">
-                            @if($product->brand)
-                                <span class="text-sm font-medium text-gray-900">{{ $product->brand }}</span>
+                            @php
+                                $brand = $product->local_additional['ბრენდი'] ?? null;
+                            @endphp
+                            @if($brand)
+                                <span class="text-sm font-medium text-gray-900">{{ $brand }}</span>
                             @else
                                 <span class="text-sm text-gray-400">-</span>
                             @endif
                         </td>
                         <td class="px-4 py-4">
                             <div class="flex flex-wrap gap-1">
-                                @if($product->color)
+                                @php
+                                    $color = $product->local_additional['ფერი'] ?? null;
+                                    $size = $product->local_additional['ზომა'] ?? null;
+                                @endphp
+                                @if($color)
                                     <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-md bg-orange-100 text-orange-800 border border-orange-200">
                                         <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/></svg>
-                                        {{ $product->color }}
+                                        {{ $color }}
                                     </span>
                                 @endif
-                                @if($product->size)
+                                @if($size)
                                     <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-md bg-green-100 text-green-800 border border-green-200">
                                         <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"></path></svg>
-                                        {{ $product->size }}
+                                        {{ $size }}
                                     </span>
                                 @endif
-                                @if(!$product->color && !$product->size)
+                                @if(!$color && !$size)
                                     <span class="text-sm text-gray-400">-</span>
                                 @endif
                             </div>
