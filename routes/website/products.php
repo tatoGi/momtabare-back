@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public product routes
 Route::get('/products', [FrontendController::class, 'products'])->name('api.products.list');
+Route::get('/products/filters/options', [FrontendController::class, 'productFilterOptions'])->name('api.products.filter-options');
 Route::get('/products/{id}', [FrontendController::class, 'productShow'])->name('api.products.show');
 Route::get('/user/products', [FrontendController::class, 'userProducts'])->name('api.user.products');
 

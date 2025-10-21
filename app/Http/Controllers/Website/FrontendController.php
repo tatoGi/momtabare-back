@@ -353,17 +353,83 @@ class FrontendController extends Controller
             ])
             ->withAvg('ratings', 'rating')
             ->notBlocked()
-            ->where('active', 1)
-            ->orderBy('sort_order');
+            ->where('active', 1);
 
         // Filter by category if provided
         if ($request->has('category_id') && $request->category_id) {
             $query->where('category_id', $request->category_id);
         }
 
+        // Filter by category slug if provided (for Vue frontend)
+        if ($request->has('category_slug') && $request->category_slug) {
+            // Find category by slug in translations table
+            $categoryTranslation = \App\Models\CategoryTranslation::where('slug', $request->category_slug)->first();
+            if ($categoryTranslation) {
+                $query->where('category_id', $categoryTranslation->category_id);
+            }
+        }
+
         // Search by title if provided
         if ($request->has('search') && $request->search) {
             $query->whereTranslationLike('title', '%'.$request->search.'%');
+        }
+
+        // Filter by brands if provided (comma-separated string)
+        if ($request->has('brands') && $request->brands) {
+            $brands = explode(',', $request->brands);
+            $query->whereHas('translations', function ($q) use ($brands) {
+                $q->where(function ($subQuery) use ($brands) {
+                    foreach ($brands as $brand) {
+                        $brand = trim($brand);
+                        $subQuery->orWhere('local_additional', 'LIKE', "%{$brand}%");
+                    }
+                });
+            });
+        }
+
+        // Filter by colors if provided (comma-separated string)
+        if ($request->has('colors') && $request->colors) {
+            $colors = explode(',', $request->colors);
+            $query->whereHas('translations', function ($q) use ($colors) {
+                $q->where(function ($subQuery) use ($colors) {
+                    foreach ($colors as $color) {
+                        $color = trim($color);
+                        $subQuery->orWhere('local_additional', 'LIKE', "%{$color}%");
+                    }
+                });
+            });
+        }
+
+        // Filter by price range
+        if ($request->has('min_price') && $request->min_price) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->has('max_price') && $request->max_price) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        // Apply sorting
+        $sort = $request->get('sort', 'recent'); // Default to recent
+        switch ($sort) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'popularity':
+                // Sort by views (most popular first)
+                $query->orderBy('views', 'desc');
+                break;
+            case 'rating':
+                // Sort by average rating (highest first)
+                $query->orderBy('ratings_avg_rating', 'desc');
+                break;
+            case 'recent':
+            default:
+                // Sort by creation date (newest first)
+                $query->orderBy('created_at', 'desc');
+                break;
         }
 
         // Pagination
@@ -429,6 +495,132 @@ class FrontendController extends Controller
                 'from' => $products->firstItem(),
                 'to' => $products->lastItem(),
             ],
+        ]);
+    }
+
+    /**
+     * Get available filter options for products
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function productFilterOptions(Request $request)
+    {
+        // Start with base query for active, non-blocked products
+        $query = Product::with(['category', 'translations'])
+            ->notBlocked()
+            ->where('active', 1);
+
+        // Filter by category slug if provided
+        if ($request->has('category_slug') && $request->category_slug) {
+            // Find category by slug in translations table
+            $categoryTranslation = \App\Models\CategoryTranslation::where('slug', $request->category_slug)->first();
+            if ($categoryTranslation) {
+                $query->where('category_id', $categoryTranslation->category_id);
+            }
+        }
+
+        // Get filtered products
+        $products = $query->get();
+
+        // Extract brands
+        $brandCounts = [];
+        $colorCounts = [];
+        $minPrice = null;
+        $maxPrice = null;
+
+        foreach ($products as $product) {
+            // Extract brand
+            $brand = $product->local_additional['ბრენდი'] ?? $product->local_additional['brand'] ?? null;
+            if ($brand) {
+                $brandKey = is_array($brand) ? ($brand['ka'] ?? $brand['en'] ?? '') : $brand;
+                if ($brandKey) {
+                    if (!isset($brandCounts[$brandKey])) {
+                        $brandCounts[$brandKey] = [
+                            'key' => \Illuminate\Support\Str::slug($brandKey),
+                            'translations' => is_array($brand) ? $brand : ['ka' => $brand, 'en' => $brand],
+                            'count' => 0,
+                        ];
+                    }
+                    $brandCounts[$brandKey]['count']++;
+                }
+            }
+
+            // Extract color
+            $color = $product->local_additional['ფერი'] ?? $product->local_additional['color'] ?? null;
+            if ($color) {
+                $colorKey = is_array($color) ? ($color['ka'] ?? $color['en'] ?? '') : $color;
+                if ($colorKey) {
+                    $colorSlug = \Illuminate\Support\Str::slug($colorKey);
+                    if (!isset($colorCounts[$colorSlug])) {
+                        $colorCounts[$colorSlug] = [
+                            'key' => $colorSlug,
+                            'translations' => is_array($color) ? $color : ['ka' => $color, 'en' => $color],
+                            'count' => 0,
+                        ];
+                    }
+                    $colorCounts[$colorSlug]['count']++;
+                }
+            }
+
+            // Track price range
+            if ($product->price) {
+                if ($minPrice === null || $product->price < $minPrice) {
+                    $minPrice = $product->price;
+                }
+                if ($maxPrice === null || $product->price > $maxPrice) {
+                    $maxPrice = $product->price;
+                }
+            }
+        }
+
+        // Sort brands by count (most popular first)
+        uasort($brandCounts, function ($a, $b) {
+            return $b['count'] <=> $a['count'];
+        });
+
+        // Sort colors by count (most popular first)
+        uasort($colorCounts, function ($a, $b) {
+            return $b['count'] <=> $a['count'];
+        });
+
+        // Get all categories
+        $categories = \App\Models\Category::whereNull('parent_id')
+            ->with('children')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'slug' => $category->slug,
+                    'name' => $category->title,
+                    'translations' => [
+                        'ka' => $category->translate('ka')->title ?? $category->title,
+                        'en' => $category->translate('en')->title ?? $category->title,
+                    ],
+                    'children' => $category->children->map(function ($child) {
+                        return [
+                            'id' => $child->id,
+                            'slug' => $child->slug,
+                            'name' => $child->title,
+                            'translations' => [
+                                'ka' => $child->translate('ka')->title ?? $child->title,
+                                'en' => $child->translate('en')->title ?? $child->title,
+                            ],
+                        ];
+                    }),
+                ];
+            });
+
+        return response()->json([
+            'brands' => array_values($brandCounts),
+            'colors' => array_values($colorCounts),
+            'price_range' => [
+                'min' => $minPrice ?? 0,
+                'max' => $maxPrice ?? 0,
+            ],
+            'categories' => $categories,
+            'total_products' => $products->count(),
         ]);
     }
 

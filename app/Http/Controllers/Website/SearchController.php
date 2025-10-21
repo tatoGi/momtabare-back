@@ -38,7 +38,8 @@ class SearchController extends Controller
                     ->where(function ($q) use ($searchText) {
                         $q->where('title', 'LIKE', "%{$searchText}%")
                             ->orWhere('description', 'LIKE', "%{$searchText}%")
-                            ->orWhere('brand', 'LIKE', "%{$searchText}%");
+                            // Brand is stored in local_additional JSON field
+                            ->orWhere('local_additional', 'LIKE', "%{$searchText}%");
                     });
             });
         }
