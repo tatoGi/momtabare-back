@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
-    public function edit()
+    public function edit(Request $request)
     {
-        $user = Auth::user();
+          $user = $request->user('sanctum');
         if (! $user instanceof WebUser) {
             return redirect()->route('login');
         }
@@ -23,7 +23,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user('sanctum');
         if (! $user instanceof WebUser) {
             if ($request->wantsJson()) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);

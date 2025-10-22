@@ -37,7 +37,7 @@ Route::middleware(['auth:web,sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Web-only routes (require session)
-    Route::middleware(['web'])->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/user_profile', [ProfileController::class, 'edit'])
             ->name('profile.edit');
 
