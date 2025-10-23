@@ -123,7 +123,10 @@ class FrontendService
 
     public function getCategories()
     {
-        return Category::with('products')->get();
+        return Category::with(['products', 'translations', 'children' => function ($query) {
+            $query->with(['products', 'translations']);
+        }])
+        ->get();
     }
 
     /**

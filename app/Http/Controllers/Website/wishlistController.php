@@ -161,10 +161,10 @@ class wishlistController extends Controller
         try {
             // Validate the request
             $request->validate([
-                'productId' => 'required|integer|exists:products,id',
+                'product_id' => 'required|integer|exists:products,id',
             ]);
 
-            $productId = $request->input('productId');
+            $productId = $request->input('product_id');
 
             // Check if user is authenticated
             $user = $request->user('sanctum');

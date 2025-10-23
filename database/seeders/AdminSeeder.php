@@ -22,5 +22,14 @@ class AdminSeeder extends Seeder
                 'password' => bcrypt('password'), // Update with your desired password
             ]);
         }
+
+        // Add developer user
+        if (! User::where('email', 'developer@dev.com')->exists()) {
+            User::create([
+                'name' => 'Developer',
+                'email' => 'developer@dev.com',
+                'password' => bcrypt('devpassword'), // Update with your desired password
+            ]);
+        }
     }
 }
