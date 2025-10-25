@@ -1,11 +1,7 @@
 <?php
 
 return [
-    'email_contact' => [
-        'title' => 'Email',
-        'type' => 'text',
-        'value' => 'info@gametech.ge',
-    ],
+
     'email_for_footer' => [
         'title' => 'Email',
         'type' => 'text',
@@ -16,7 +12,7 @@ return [
         'type' => 'text',
         'value' => 'https://www.google.com/',
     ],
-    'twitter' => [
+    'youtube' => [
         'title' => 'Twitter Link',
         'type' => 'text',
         'value' => 'https://www.twitter.com/',
