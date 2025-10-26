@@ -21,27 +21,28 @@ class FrontendService
     {
         return Page::whereHas('translations', function ($query) {
             $query->where('active', 1);
-        })->with(['translations' => function ($query) {
-            $query->where('active', 1);
-        }])
-            ->with(['products' => function ($query) {
-                $query->where('active', 1)
-                    ->with(['images', 'translations']);
-            }])
-            ->with(['banners' => function ($query) {
-                $query->with('images');
-            }])
-            ->with(['posts' => function ($query) use ($postsPerPage) {
-                $query->where('active', 1)
-                    ->orderBy('sort_order', 'asc')
-                    ->orderBy('published_at', 'desc')
-                    ->limit($postsPerPage) // Limit posts per page
-                    ->with([
-                        'translations',
-                        'attributes',
-                        'category.translations',
-                    ]);
-            }])
+        })
+            ->with([
+                'translations' => function ($query) {
+                    $query->where('active', 1);
+                },
+                'products' => function ($query) {
+                    $query->where('active', 1)
+                        ->with(['images', 'translations']);
+                },
+                'banners.images',
+                'posts' => function ($query) use ($postsPerPage) {
+                    $query->where('active', 1)
+                        ->orderBy('sort_order', 'asc')
+                        ->orderBy('published_at', 'desc')
+                        ->limit($postsPerPage)
+                        ->with([
+                            'translations',
+                            'attributes',
+                            'category.translations',
+                        ]);
+                },
+            ])
             ->get()
             ->map(function ($page) {
                 // Transform posts to add post type information for homepage
@@ -79,41 +80,55 @@ class FrontendService
     {
         $pages = Page::whereHas('translations', function ($query) {
             $query->where('active', 1);
-        })->with(['translations' => function ($query) {
-            $query->where('active', 1);
-        }])
-            ->with(['products' => function ($query) {
-                $query->where('active', 1)
-                    ->with(['images', 'translations']);
-            }])
-            ->with(['banners' => function ($query) {
-                $query->with('images');
-            }])
+        })
+            ->with([
+                'translations' => function ($query) {
+                    $query->where('active', 1);
+                },
+                'products' => function ($query) {
+                    $query->where('active', 1)
+                        ->with(['images', 'translations']);
+                },
+                'banners.images',
+            ])
             ->get();
 
-        // Add paginated posts to each page
+        // Use lazy loading for posts to avoid N+1 queries
+        $pageIds = $pages->pluck('id')->toArray();
+
+        // Get all posts for all pages in a single query with pagination
+        $allPosts = Post::whereIn('page_id', $pageIds)
+            ->where('active', 1)
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('published_at', 'desc')
+            ->with([
+                'translations',
+                'attributes',
+                'category.translations',
+            ])
+            ->get()
+            ->groupBy('page_id');
+
+        // Add paginated posts to each page using chunking
         foreach ($pages as $page_item) {
-            $posts = Post::where('page_id', $page_item->id)
-                ->where('active', 1)
-                ->orderBy('sort_order', 'asc')
-                ->orderBy('published_at', 'desc')
-                ->with([
-                    'translations',
-                    'attributes',
-                    'category.translations',
-                ])
-                ->paginate($postsPerPage, ['*'], 'page', $page);
+            $pagePosts = $allPosts->get($page_item->id, collect());
+
+            // Manual pagination using chunking
+            $totalPosts = $pagePosts->count();
+            $offset = ($page - 1) * $postsPerPage;
+            $paginatedPosts = $pagePosts->slice($offset, $postsPerPage);
+            $lastPage = ceil($totalPosts / $postsPerPage);
 
             $page_item->paginated_posts = [
-                'data' => $posts->items(),
+                'data' => $paginatedPosts->values(),
                 'pagination' => [
-                    'current_page' => $posts->currentPage(),
-                    'last_page' => $posts->lastPage(),
-                    'per_page' => $posts->perPage(),
-                    'total' => $posts->total(),
-                    'from' => $posts->firstItem(),
-                    'to' => $posts->lastItem(),
-                    'has_more_pages' => $posts->hasMorePages(),
+                    'current_page' => $page,
+                    'last_page' => $lastPage,
+                    'per_page' => $postsPerPage,
+                    'total' => $totalPosts,
+                    'from' => $totalPosts > 0 ? $offset + 1 : null,
+                    'to' => min($offset + $postsPerPage, $totalPosts),
+                    'has_more_pages' => $page < $lastPage,
                 ],
             ];
         }
@@ -123,10 +138,23 @@ class FrontendService
 
     public function getCategories()
     {
-        return Category::with(['products', 'translations', 'children' => function ($query) {
-            $query->with(['products', 'translations']);
-        }])
-        ->get();
+        return Category::with([
+            'products' => function ($query) {
+                $query->where('active', 1)
+                    ->with(['images', 'translations']);
+            },
+            'translations',
+            'children' => function ($query) {
+                $query->with([
+                    'products' => function ($query) {
+                        $query->where('active', 1)
+                            ->with(['images', 'translations']);
+                    },
+                    'translations',
+                ]);
+            },
+        ])
+            ->get();
     }
 
     /**
@@ -137,7 +165,9 @@ class FrontendService
      */
     public function getLatestBlogPosts($limit = 10)
     {
-        $blogPage = Page::where('type_id', 2)->first();
+        $blogPage = Page::where('type_id', 2)
+            ->select(['id', 'type_id'])
+            ->first();
 
         if (! $blogPage) {
             return [
@@ -154,7 +184,7 @@ class FrontendService
             ->with([
                 'translations',
                 'attributes',
-                'category.translations',
+                'category',
             ])
             ->limit($limit)
             ->get();
@@ -202,7 +232,12 @@ class FrontendService
     {
         return Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->with('category')
+            ->where('active', 1)
+            ->with([
+                'category',
+                'images',
+                'translations',
+            ])
             ->take(4)
             ->get();
     }
@@ -221,22 +256,35 @@ class FrontendService
             })
             ->firstOrFail();
 
+        // Use chunking for products to improve memory usage
         $products = Product::where('active', '1')
-            ->with('category')
-            ->with('translations')
-            ->with('images')
+            ->with([
+                'category',
+                'translations',
+                'images',
+            ])
             ->paginate(10);
 
         $categories = $products->pluck('category')->filter()->unique();
         $categoryIds = $products->pluck('category.id');
-        $blogpage = Page::where('type_id', 2)->first();
-        $blogPosts = Post::where('page_id', $blogpage->id)
-            ->where('active', '1')
-            ->orderBy('sort_order', 'asc')
-            ->orderBy('published_at', 'desc')
-            ->with('translations')
-            ->with('attributes')
-            ->paginate(10);
+
+        // Optimize blog page query
+        $blogpage = Page::where('type_id', 2)
+            ->select(['id', 'type_id'])
+            ->first();
+
+        $blogPosts = collect();
+        if ($blogpage) {
+            $blogPosts = Post::where('page_id', $blogpage->id)
+                ->where('active', '1')
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('published_at', 'desc')
+                ->with([
+                    'translations',
+                    'attributes',
+                ])
+                ->paginate(10);
+        }
 
         return [
             'section' => $section,
@@ -258,26 +306,31 @@ class FrontendService
     /**
      * Get homepage data
      *
+     * @param  int  $limit  Limit number of products (default: 50)
      * @return array
      */
-    public function getHomePageData()
+    public function getHomePageData($limit = 50)
     {
+        // Use chunking and limit for products to improve performance
         $products = Product::where('active', '1')
-            ->with('translations')
-            ->with('category')
-            ->with('images')
-
+            ->with([
+                'translations',
+                'category',
+                'images',
+            ])
+            ->limit($limit)
             ->get();
 
+        // Optimize banner query with lazy loading
         $mainBanner = Banner::whereHas('translations')
             ->where('type_id', 1)
             ->orderBy('created_at', 'desc')
+            ->with(['translations', 'images'])
             ->get();
-        $blogpage = Page::where('type_id', 2)->first();
 
         return [
             'mainBanner' => $mainBanner,
-            'categories' => $products->pluck('category')->unique(),
+            'categories' => $products->pluck('category')->filter()->unique(),
             'products' => $products,
         ];
     }

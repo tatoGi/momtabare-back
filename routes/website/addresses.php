@@ -32,6 +32,7 @@ Route::prefix('users/{userId}/addresses')->group(function () {
 // Test endpoint to verify authentication
 Route::get('/test-address-auth', function (Illuminate\Http\Request $request) {
     $user = $request->user('sanctum');
+
     return response()->json([
         'authenticated' => $user ? true : false,
         'user' => $user ? [

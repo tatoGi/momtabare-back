@@ -19,7 +19,7 @@ class WebUserAddressController extends Controller
             $user = $request->user('sanctum');
 
             // Ensure the user can only access their own addresses
-            if (!$user || $user->id != $userId) {
+            if (! $user || $user->id != $userId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access',
@@ -37,7 +37,7 @@ class WebUserAddressController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching user addresses: ' . $e->getMessage(), [
+            Log::error('Error fetching user addresses: '.$e->getMessage(), [
                 'user_id' => $userId,
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -66,7 +66,7 @@ class WebUserAddressController extends Controller
             ]);
 
             // Check if user is authenticated
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Not authenticated. Please login first.',
@@ -90,7 +90,7 @@ class WebUserAddressController extends Controller
             ]);
 
             // If this is the first address, make it default
-            $isFirstAddress = !WebUserAddress::where('web_user_id', $userId)->exists();
+            $isFirstAddress = ! WebUserAddress::where('web_user_id', $userId)->exists();
 
             $address = WebUserAddress::create([
                 'web_user_id' => $userId,
@@ -116,7 +116,7 @@ class WebUserAddressController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            Log::error('Error creating address: ' . $e->getMessage(), [
+            Log::error('Error creating address: '.$e->getMessage(), [
                 'user_id' => $userId,
                 'data' => $request->all(),
                 'trace' => $e->getTraceAsString(),
@@ -138,7 +138,7 @@ class WebUserAddressController extends Controller
             $user = $request->user('sanctum');
 
             // Ensure the user can only update their own addresses
-            if (!$user || $user->id != $userId) {
+            if (! $user || $user->id != $userId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access',
@@ -187,7 +187,7 @@ class WebUserAddressController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            Log::error('Error updating address: ' . $e->getMessage(), [
+            Log::error('Error updating address: '.$e->getMessage(), [
                 'user_id' => $userId,
                 'address_id' => $addressId,
                 'trace' => $e->getTraceAsString(),
@@ -209,7 +209,7 @@ class WebUserAddressController extends Controller
             $user = $request->user('sanctum');
 
             // Ensure the user can only delete their own addresses
-            if (!$user || $user->id != $userId) {
+            if (! $user || $user->id != $userId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access',
@@ -246,7 +246,7 @@ class WebUserAddressController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            Log::error('Error deleting address: ' . $e->getMessage(), [
+            Log::error('Error deleting address: '.$e->getMessage(), [
                 'user_id' => $userId,
                 'address_id' => $addressId,
                 'trace' => $e->getTraceAsString(),
@@ -268,7 +268,7 @@ class WebUserAddressController extends Controller
             $user = $request->user('sanctum');
 
             // Ensure the user can only modify their own addresses
-            if (!$user || $user->id != $userId) {
+            if (! $user || $user->id != $userId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access',
@@ -299,7 +299,7 @@ class WebUserAddressController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            Log::error('Error setting default address: ' . $e->getMessage(), [
+            Log::error('Error setting default address: '.$e->getMessage(), [
                 'user_id' => $userId,
                 'address_id' => $addressId,
                 'trace' => $e->getTraceAsString(),

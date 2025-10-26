@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.2",
         "astrotomic/laravel-translatable": "^11.12",
+        "bog/payment": "^1.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "inertiajs/inertia-laravel": "*",
         "laravel/boost": "^1.0.18",

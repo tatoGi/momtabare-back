@@ -246,13 +246,13 @@ class ProductController extends Controller
 
                 // Build local_additional JSON object from individual fields
                 $localAdditional = [];
-                if (!empty($data[$locale]['brand'])) {
+                if (! empty($data[$locale]['brand'])) {
                     $localAdditional['ბრენდი'] = $data[$locale]['brand'];
                 }
-                if (!empty($data[$locale]['color'])) {
+                if (! empty($data[$locale]['color'])) {
                     $localAdditional['ფერი'] = $data[$locale]['color'];
                 }
-                if (!empty($data['size'])) {
+                if (! empty($data['size'])) {
                     $localAdditional['ზომა'] = $data['size'];
                 }
 

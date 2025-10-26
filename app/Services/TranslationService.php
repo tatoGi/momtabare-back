@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Stichoza\GoogleTranslate\GoogleTranslate;
 use Illuminate\Support\Facades\Log;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class TranslationService
 {
@@ -11,16 +11,13 @@ class TranslationService
 
     public function __construct()
     {
-        $this->translator = new GoogleTranslate();
+        $this->translator = new GoogleTranslate;
     }
 
     /**
      * Translate text from source language to target language
      *
-     * @param string $text
-     * @param string $sourceLang (e.g., 'ka' for Georgian, 'en' for English)
-     * @param string $targetLang
-     * @return string|null
+     * @param  string  $sourceLang  (e.g., 'ka' for Georgian, 'en' for English)
      */
     public function translate(string $text, string $sourceLang, string $targetLang): ?string
     {
@@ -36,7 +33,7 @@ class TranslationService
 
             Log::info("Translation: {$sourceLang} -> {$targetLang}", [
                 'original' => $text,
-                'translated' => $translated
+                'translated' => $translated,
             ]);
 
             return $translated;
@@ -46,7 +43,7 @@ class TranslationService
                 'error' => $e->getMessage(),
                 'text' => $text,
                 'from' => $sourceLang,
-                'to' => $targetLang
+                'to' => $targetLang,
             ]);
 
             // Return original text if translation fails
@@ -57,9 +54,9 @@ class TranslationService
     /**
      * Auto-translate product fields from one language to another
      *
-     * @param array $data Array containing the translatable fields
-     * @param string $sourceLang Source language code (ka or en)
-     * @param string $targetLang Target language code (ka or en)
+     * @param  array  $data  Array containing the translatable fields
+     * @param  string  $sourceLang  Source language code (ka or en)
+     * @param  string  $targetLang  Target language code (ka or en)
      * @return array Translated data
      */
     public function translateProductFields(array $data, string $sourceLang, string $targetLang): array
@@ -67,15 +64,15 @@ class TranslationService
         $translated = [];
 
         // Translate main fields
-        if (isset($data['name']) && !empty($data['name'])) {
+        if (isset($data['name']) && ! empty($data['name'])) {
             $translated['name'] = $this->translate($data['name'], $sourceLang, $targetLang);
         }
 
-        if (isset($data['description']) && !empty($data['description'])) {
+        if (isset($data['description']) && ! empty($data['description'])) {
             $translated['description'] = $this->translate($data['description'], $sourceLang, $targetLang);
         }
 
-        if (isset($data['location']) && !empty($data['location'])) {
+        if (isset($data['location']) && ! empty($data['location'])) {
             $translated['location'] = $this->translate($data['location'], $sourceLang, $targetLang);
         }
 
@@ -83,7 +80,7 @@ class TranslationService
         if (isset($data['local_additional']) && is_array($data['local_additional'])) {
             $translated['local_additional'] = [];
             foreach ($data['local_additional'] as $key => $value) {
-                if (!empty($value)) {
+                if (! empty($value)) {
                     $translated['local_additional'][$key] = $this->translate($value, $sourceLang, $targetLang);
                 } else {
                     $translated['local_additional'][$key] = $value;

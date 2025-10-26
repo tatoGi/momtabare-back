@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Models\WebUser;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,7 +12,7 @@ class ProfileController extends Controller
 {
     public function edit(Request $request)
     {
-          $user = $request->user('sanctum');
+        $user = $request->user('sanctum');
         if (! $user instanceof WebUser) {
             return redirect()->route('login');
         }

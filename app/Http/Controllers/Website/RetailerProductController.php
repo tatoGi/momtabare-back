@@ -58,7 +58,7 @@ class RetailerProductController extends Controller
             // Decode local_additional if it's a JSON string
             if ($request->has('local_additional') && is_string($request->local_additional)) {
                 $request->merge([
-                    'local_additional' => json_decode($request->local_additional, true)
+                    'local_additional' => json_decode($request->local_additional, true),
                 ]);
             }
 
@@ -117,11 +117,11 @@ class RetailerProductController extends Controller
             $targetLang = $sourceLang === 'ka' ? 'en' : 'ka';
 
             // Initialize translation service
-            $translationService = new TranslationService();
+            $translationService = new TranslationService;
 
             // Convert local_additional from [{key, value, type}] to {key: value} format for storage and translation
             $localAdditional = [];
-            if (!empty($validated['local_additional']) && is_array($validated['local_additional'])) {
+            if (! empty($validated['local_additional']) && is_array($validated['local_additional'])) {
                 foreach ($validated['local_additional'] as $item) {
                     if (isset($item['key']) && isset($item['value'])) {
                         $localAdditional[$item['key']] = $item['value'];
@@ -239,7 +239,7 @@ class RetailerProductController extends Controller
         // Decode local_additional if it's a JSON string
         if ($request->has('local_additional') && is_string($request->local_additional)) {
             $request->merge([
-                'local_additional' => json_decode($request->local_additional, true)
+                'local_additional' => json_decode($request->local_additional, true),
             ]);
         }
 
@@ -292,11 +292,11 @@ class RetailerProductController extends Controller
         $targetLang = $sourceLang === 'ka' ? 'en' : 'ka';
 
         // Initialize translation service
-        $translationService = new TranslationService();
+        $translationService = new TranslationService;
 
         // Convert local_additional from [{key, value, type}] to {key: value} format for storage and translation
         $localAdditional = [];
-        if (!empty($validated['local_additional']) && is_array($validated['local_additional'])) {
+        if (! empty($validated['local_additional']) && is_array($validated['local_additional'])) {
             foreach ($validated['local_additional'] as $item) {
                 if (isset($item['key']) && isset($item['value'])) {
                     $localAdditional[$item['key']] = $item['value'];

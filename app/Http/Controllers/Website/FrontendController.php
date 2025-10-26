@@ -501,7 +501,6 @@ class FrontendController extends Controller
     /**
      * Get available filter options for products
      *
-     * @param  Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function productFilterOptions(Request $request)
@@ -535,7 +534,7 @@ class FrontendController extends Controller
             if ($brand) {
                 $brandKey = is_array($brand) ? ($brand['ka'] ?? $brand['en'] ?? '') : $brand;
                 if ($brandKey) {
-                    if (!isset($brandCounts[$brandKey])) {
+                    if (! isset($brandCounts[$brandKey])) {
                         $brandCounts[$brandKey] = [
                             'key' => \Illuminate\Support\Str::slug($brandKey),
                             'translations' => is_array($brand) ? $brand : ['ka' => $brand, 'en' => $brand],
@@ -552,7 +551,7 @@ class FrontendController extends Controller
                 $colorKey = is_array($color) ? ($color['ka'] ?? $color['en'] ?? '') : $color;
                 if ($colorKey) {
                     $colorSlug = \Illuminate\Support\Str::slug($colorKey);
-                    if (!isset($colorCounts[$colorSlug])) {
+                    if (! isset($colorCounts[$colorSlug])) {
                         $colorCounts[$colorSlug] = [
                             'key' => $colorSlug,
                             'translations' => is_array($color) ? $color : ['ka' => $color, 'en' => $color],
@@ -819,14 +818,14 @@ class FrontendController extends Controller
         ]);
     }
 
-  public function getRetailerOrUser($id)
-{
-    $retailer = WebUser::with(['products.category', 'products.images','retailerShop', 'comments', 'addresses' ])
+    public function getRetailerOrUser($id)
+    {
+        $retailer = WebUser::with(['products.category', 'products.images', 'retailerShop', 'comments', 'addresses'])
+            ->findOrFail($id);
 
-    ->findOrFail($id);
-    return response()->json([
-        'success' => true,
-        'data' => $retailer
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'data' => $retailer,
+        ]);
+    }
 }
