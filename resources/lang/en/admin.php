@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'about_us_text_updated' => 'About Us text updated successfully.',
+    'about_us_text' => 'This is the about us page content. You can update this text in the translation files.',
+    'about_us' => 'About Us',
+    'our_services' => 'Our Services',
+    'confidential' => 'Confidential',
+    'privacy' => 'Privacy',
+    'policy' => 'Policy',
     'Statistics' => 'Statistics',
     'List' => 'List',
     'email_contact' => 'Email contact',

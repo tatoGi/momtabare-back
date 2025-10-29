@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\RateProductController;
+
+use App\Http\Controllers\website\FrontendController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -68,3 +70,9 @@ Route::get('/change-locale/{lang}', function ($lang) {
 
     return back();
 })->name('change.locale');
+
+// About, Service, Confidential, and Privacy API routes
+Route::get('/about', [FrontendController::class, 'about']);
+Route::get('/service', [FrontendController::class, 'service']);
+Route::get('/confidential', [FrontendController::class, 'confidential']);
+Route::get('/privacy', [FrontendController::class, 'privacy']);

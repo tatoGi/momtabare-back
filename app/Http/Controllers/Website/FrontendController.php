@@ -4,18 +4,20 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
-use App\Models\Contact;
-use App\Models\Language;
-use App\Models\Product;
-use App\Models\RetailerShop;
-use App\Models\Subscriber;
-use App\Models\WebUser;
 use App\Services\Frontend\FrontendService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Models\{About, Service, Confidential,
+     Privacy, WebUser,
+      Subscriber,
+      RetailerShop,Product,
+    Language,
+    Contact
+};
+
 
 class FrontendController extends Controller
 {
@@ -826,6 +828,45 @@ class FrontendController extends Controller
         return response()->json([
             'success' => true,
             'data' => $retailer,
+        ]);
+    }
+      public function about(Request $request)
+    {
+        $locale = $request->get('lang', app()->getLocale());
+        $about = About::first();
+        return response()->json([
+            'text' => $about ? $about->{'text_' . $locale} : '',
+            'locale' => $locale,
+        ]);
+    }
+
+    public function service(Request $request)
+    {
+        $locale = $request->get('lang', app()->getLocale());
+        $service = Service::first();
+        return response()->json([
+            'text' => $service ? $service->{'text_' . $locale} : '',
+            'locale' => $locale,
+        ]);
+    }
+
+    public function confidential(Request $request)
+    {
+        $locale = $request->get('lang', app()->getLocale());
+        $confidential = Confidential::first();
+        return response()->json([
+            'text' => $confidential ? $confidential->{'text_' . $locale} : '',
+            'locale' => $locale,
+        ]);
+    }
+
+    public function privacy(Request $request)
+    {
+        $locale = $request->get('lang', app()->getLocale());
+        $privacy = Privacy::first();
+        return response()->json([
+            'text' => $privacy ? $privacy->{'text_' . $locale} : '',
+            'locale' => $locale,
         ]);
     }
 }

@@ -10,7 +10,10 @@ use Bog\Payment\Services\BogPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use App\Jobs\PostProcessProducts;
 
 class BogPaymentController extends Controller
 {
@@ -66,12 +69,7 @@ class BogPaymentController extends Controller
             $result = $this->bogPayment->createOrder($token['access_token'], $payload);
 
             // Log successful order creation
-            Log::info('BOG Order created successfully', [
-                'external_order_id' => $validated['external_order_id'] ?? null,
-                'amount' => $validated['amount'],
-                'currency' => $validated['currency'] ?? 'GEL',
-                'bog_order_id' => $result['id'] ?? null,
-            ]);
+
 
             return response()->json([
                 'success' => true,
@@ -94,6 +92,9 @@ class BogPaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create payment order',
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'trace' => app()->environment('local') ? $e->getTraceAsString() : null,
             ], 500);
         }
     }
@@ -374,120 +375,162 @@ class BogPaymentController extends Controller
         return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
     }
 
-    /**
-     * Bulk update product rental status
-     * Endpoint: POST /api/products/bulk-rental-status
-     */
+
     public function bulkUpdateRentalStatus(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'products' => 'required|array|min:1',
-                'products.*.product_id' => 'required|integer|exists:products,id',
-                'products.*.rental_start_date' => 'nullable|date',
-                'products.*.rental_end_date' => 'nullable|date|after_or_equal:products.*.rental_start_date',
-                'products.*.quantity' => 'nullable|integer|min:1',
-                'payment_id' => 'nullable|integer|exists:bog_payments,id',
-            ]);
+        $validated = $request->validate([
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|integer|exists:products,id',
+            'products.*.rental_start_date' => 'nullable|date',
+            'products.*.rental_end_date' => 'nullable|date|after_or_equal:products.*.rental_start_date',
+            'products.*.quantity' => 'nullable|integer|min:1',
+            'payment_id' => 'nullable|integer|exists:bog_payments,id',
+            'idempotency_key' => 'nullable|string',
+        ]);
 
-            // Get authenticated user
-            $user = $request->user('sanctum');
-            if (! $user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not authenticated',
-                ], 401);
-            }
-
-            $updatedProducts = [];
-            $errors = [];
-
-            foreach ($validated['products'] as $productData) {
-                try {
-                    $product = \App\Models\Product::find($productData['product_id']);
-
-                    if (! $product) {
-                        $errors[] = "Product {$productData['product_id']} not found";
-
-                        continue;
-                    }
-
-                    $updateData = [
-                        'is_ordered' => true,
-                        'ordered_at' => now(),
-                        'ordered_by' => $user->id,
-                    ];
-
-                    // If rental dates are provided, mark as rented
-                    if (! empty($productData['rental_start_date']) && ! empty($productData['rental_end_date'])) {
-                        $updateData['is_rented'] = true;
-                        $updateData['rented_at'] = now();
-                        $updateData['rental_start_date'] = $productData['rental_start_date'];
-                        $updateData['rental_end_date'] = $productData['rental_end_date'];
-                        // Note: rented_by has FK to users table, not web_users, so set to null
-                        $updateData['rented_by'] = null;
-                    }
-
-                    $product->update($updateData);
-                    $updatedProducts[] = [
-                        'product_id' => $product->id,
-                        'status' => 'updated',
-                        'is_rented' => $product->is_rented,
-                        'rental_start_date' => $product->rental_start_date,
-                        'rental_end_date' => $product->rental_end_date,
-                    ];
-
-                    Log::info('Product rental status updated via bulk endpoint', [
-                        'product_id' => $product->id,
-                        'user_id' => $user->id,
-                        'is_rented' => $product->is_rented,
-                        'rental_dates' => [
-                            'start' => $product->rental_start_date,
-                            'end' => $product->rental_end_date,
-                        ],
-                    ]);
-                } catch (\Exception $e) {
-                    $errors[] = "Failed to update product {$productData['product_id']}: {$e->getMessage()}";
-                    Log::error('Failed to update product rental status', [
-                        'product_id' => $productData['product_id'],
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            return response()->json([
-                'success' => count($updatedProducts) > 0,
-                'message' => count($updatedProducts) > 0
-                    ? 'Product rental status updated successfully'
-                    : 'No products were updated',
-                'updated_products' => $updatedProducts,
-                'errors' => $errors,
-                'summary' => [
-                    'total_requested' => count($validated['products']),
-                    'successfully_updated' => count($updatedProducts),
-                    'failed' => count($errors),
-                ],
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Bulk rental status update failed', [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update product rental status',
-                'error' => $e->getMessage(),
-            ], 500);
+        $user = $request->user('sanctum');
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
+
+        // Optional idempotency: fast-return if same operation already processed recently
+        if (! empty($validated['idempotency_key'])) {
+            $cacheKey = 'bulk_rental_status:' . $validated['idempotency_key'];
+            if (! Cache::add($cacheKey, 1, 60 * 60)) { // 1 hour
+                return response()->json(['success' => true, 'message' => 'Already processed'], 200);
+            }
+        }
+
+        $productDatas = $validated['products'];
+        $productIds = collect($productDatas)->pluck('product_id')->unique()->values()->all();
+
+        $tries = 3;
+        $attempt = 0;
+        $updatedProducts = [];
+        $errors = [];
+
+        while (true) {
+            $attempt++;
+            try {
+                $result = DB::transaction(function () use ($productIds, $productDatas, $user, $validated, &$updatedProducts, &$errors) {
+                    // Lock rows for update to prevent concurrent modifications
+                    $products = \App\Models\Product::whereIn('id', $productIds)
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('id');
+
+                    foreach ($productDatas as $pData) {
+                        $pid = (int) $pData['product_id'];
+                        try {
+                            if (! isset($products[$pid])) {
+                                $errors[] = "Product {$pid} not found";
+                                continue;
+                            }
+
+                            $product = $products[$pid];
+
+                            $updateData = [
+                                'is_ordered' => true,
+                                'ordered_at' => now(),
+                                'ordered_by' => $user->id,
+                            ];
+
+                            if (! empty($pData['rental_start_date']) && ! empty($pData['rental_end_date'])) {
+                                $updateData['is_rented'] = true;
+                                $updateData['rented_at'] = now();
+                                $updateData['rental_start_date'] = $pData['rental_start_date'];
+                                $updateData['rental_end_date'] = $pData['rental_end_date'];
+                                $updateData['rented_by'] = null; // keep compatibility with vendor note
+                            }
+
+                            // Example inventory change if quantity provided
+                            if (! empty($pData['quantity'])) {
+                                $requestedQty = (int) $pData['quantity'];
+                                $available = (int) ($product->available_quantity ?? 0);
+                                $product->available_quantity = max(0, $available - $requestedQty);
+                            }
+
+                            $product->fill($updateData);
+                            $product->save();
+
+                            // Ensure pivot insertion is idempotent: use insertOrIgnore
+                            if (! empty($validated['payment_id'])) {
+                                DB::table('bog_payment_product')->insertOrIgnore([
+                                    'bog_payment_id' => $validated['payment_id'],
+                                    'product_id' => $pid,
+                                    'quantity' => $pData['quantity'] ?? 1,
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]);
+                            }
+
+                            $updatedProducts[] = [
+                                'product_id' => $product->id,
+                                'status' => 'updated',
+                                'is_rented' => $product->is_rented ?? false,
+                                'rental_start_date' => $product->rental_start_date ?? null,
+                                'rental_end_date' => $product->rental_end_date ?? null,
+                            ];
+
+                            Log::info('Product rental status updated via bulk endpoint', [
+                                'product_id' => $product->id,
+                                'user_id' => $user->id,
+                                'is_rented' => $product->is_rented ?? false,
+                                'rental_dates' => [
+                                    'start' => $product->rental_start_date ?? null,
+                                    'end' => $product->rental_end_date ?? null,
+                                ],
+                            ]);
+                        } catch (\Exception $e) {
+                            $errors[] = "Failed to update product {$pid}: {$e->getMessage()}";
+                            Log::error('Failed to update product rental status', ['product_id' => $pid, 'error' => $e->getMessage()]);
+                        }
+                    }
+
+                    return ['updated' => $updatedProducts, 'errors' => $errors];
+                }, 5);
+
+                // success
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                $msg = $e->getMessage();
+                $isDeadlock = Str::contains($msg, ['Deadlock', 'deadlock', '1213', '40001']);
+                Log::warning('bulkUpdateRentalStatus transaction failed attempt '.$attempt, ['exception' => $msg]);
+                if ($attempt >= $tries || ! $isDeadlock) {
+                    return response()->json(['success' => false, 'message' => 'Failed to update products', 'error' => $msg], 500);
+                }
+                // backoff
+                usleep(100000 * $attempt);
+                continue;
+            } catch (\Exception $e) {
+                Log::error('bulkUpdateRentalStatus unexpected error', ['exception' => $e->getMessage()]);
+                return response()->json(['success' => false, 'message' => 'Failed to update products', 'error' => $e->getMessage()], 500);
+            }
+        }
+
+        // Dispatch post-processing job after commit (if payment_id provided)
+        if (! empty($validated['payment_id'])) {
+            try {
+                PostProcessProducts::dispatch($validated['payment_id'], $productIds, $user->id);
+            } catch (\Exception $e) {
+                Log::warning('Failed to dispatch PostProcessProducts job', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json([
+            'success' => count($updatedProducts) > 0,
+            'message' => count($updatedProducts) > 0 ? 'Product rental status updated successfully' : 'No products were updated',
+            'updated_products' => $updatedProducts,
+            'errors' => $errors,
+            'summary' => [
+                'total_requested' => count($productDatas),
+                'successfully_updated' => count($updatedProducts),
+                'failed' => count($errors),
+            ],
+        ], 200);
     }
+
+
 
     /**
      * Prepare order payload for BOG API

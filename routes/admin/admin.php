@@ -8,6 +8,11 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\WebUserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AboutController;
+use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\ConfidentialController;
+use App\Http\Controllers\Admin\PrivacyController;
+use App\Http\Controllers\Admin\HelpController;
 
 Route::resource('/categories', CategoryController::class);
 Route::get('/contact', [ContactController::class, 'index'])->name('admin.contact');
@@ -67,3 +72,14 @@ Route::prefix('pages/{page}')->name('admin.pages.')->group(function () {
     Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 });
+Route::get('/about-us',[AboutController::class, 'edit'])->name('admin.about_us');
+Route::post('/about/update', [AboutController::class, 'update'])->name('about.update');
+Route::get('/our-services', [ServiceController::class, 'edit'])->name('admin.our_services');
+Route::post('/our-services/update', [ServiceController::class, 'update'])->name('our_services.update');
+Route::get('/confidential', [ConfidentialController::class, 'edit'])->name('admin.confidential');
+Route::post('/confidential/update', [ConfidentialController::class, 'update'])->name('confidential.update');
+Route::get('/privacy', [PrivacyController::class, 'edit'])->name('admin.privacy');
+Route::post('/privacy/update', [PrivacyController::class, 'update'])->name('privacy.update');
+Route::get('/help', [HelpController::class, 'edit'])->name('admin.help');
+Route::post('/help/update', [HelpController::class, 'update'])->name('help.update');
+

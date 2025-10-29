@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'about_us_text_updated' => 'ჩვენს შესახებ გვერდის ტექსტი წარმატებით განახლდა.',
+    'about_us_text' => 'ეს არის ჩვენს შესახებ გვერდის ტექსტი. შეგიძლიათ შეცვალოთ ეს ტექსტი თარგმანის ფაილებში.',
+    'about_us' => 'ჩვენს შესახებ',
+    'our_services' => 'ჩვენი სერვისები',
+    'confidential' => 'კონფიდენციალური',
+    'privacy' => 'კონფიდენციალურობა',
+    'policy' => 'პოლიტიკა',
     'email_contact' => 'Email contact',
     'email_for_header' => 'email for footer',
     'facebook' => 'facebook',

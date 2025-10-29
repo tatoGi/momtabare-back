@@ -22,6 +22,31 @@ class SearchController extends Controller
         $page = $request->input('page', 1);
         $locale = $request->header('X-Localization', app()->getLocale());
 
+        // If no search, location, or rental period, return empty data
+        if (empty($searchText) && empty($location) && (empty($startDate) || empty($endDate))) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'products' => [],
+                    'categories' => [],
+                    'pagination' => [
+                        'total' => 0,
+                        'per_page' => $perPage,
+                        'current_page' => $page,
+                        'last_page' => 1,
+                        'from' => null,
+                        'to' => null,
+                    ],
+                    'filters' => [
+                        'search' => $searchText,
+                        'start_date' => $startDate,
+                        'end_date' => $endDate,
+                        'location' => $location,
+                    ],
+                ],
+            ]);
+        }
+
         // Base query for available products with translations
         $products = Product::query()
             ->available() // Only get available products (not blocked, not rented, active)
@@ -48,7 +73,8 @@ class SearchController extends Controller
         if (! empty($location)) {
             $products->whereHas('translations', function ($query) use ($location, $locale) {
                 $query->where('locale', $locale)
-                    ->where('location', 'LIKE', "%{$location}%");
+                      ->whereNotNull('location')
+                      ->where('location', 'LIKE', "%{$location}%");
             });
         }
 

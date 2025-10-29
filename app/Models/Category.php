@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Astrotomic\Translatable\Translatable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Category extends Model implements TranslatableContract
+class Category extends Model implements TranslatableContract, HasMedia
 {
-    use HasFactory,Translatable;
+    use HasFactory, Translatable, InteractsWithMedia;
 
     protected $fillable = ['parent_id', 'active', 'icon'];
 

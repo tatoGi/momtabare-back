@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'about_us_text_updated' => 'Текст страницы "О нас" успешно обновлен.',
+    'about_us_text' => 'Это содержимое страницы о нас. Вы можете обновить этот текст в файлах перевода.',
+    'about_us' => 'О нас',
+    'our_services' => 'Наши услуги',
+    'confidential' => 'Конфиденциально',
+    'privacy' => 'Конфиденциальность',
+    'policy' => 'Политика',
     'Statistics' => 'Statistics',
     'List' => 'List',
     'email_contact' => 'Email contact',

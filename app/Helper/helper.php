@@ -53,7 +53,7 @@ function settingTransAttrs($setting)
 {
     return collect($setting)->filter(
         function ($item) {
-            return is_array($item['value']);
+            return isset($item['value']) && is_array($item['value']);
         }
     );
 }
@@ -61,7 +61,7 @@ function settingNonTransAttrs($setting)
 {
     return collect($setting)->filter(
         function ($item) {
-            return ! is_array($item['value']);
+            return isset($item['value']) && !is_array($item['value']);
         }
     );
 }

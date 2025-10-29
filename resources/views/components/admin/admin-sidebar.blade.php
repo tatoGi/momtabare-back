@@ -1,3 +1,4 @@
+
 @php
     $links = [
         ['icon' => 'fa-tachometer-alt', 'title' => __('admin.Statistics'), 'url' => 'admin'],
@@ -20,12 +21,16 @@
         ['icon' => 'fa-credit-card', 'title' => __('admin.Payments'), 'url' => 'admin/payments'],
         ['icon' => 'fa-comments', 'title' => __('admin.Subscribers'), 'url' => 'admin/subscribers'],
         ['icon' => 'fa-book', 'title' => __('admin.Languages'), 'url' => 'admin/languages'],
-        ['icon' => 'fa-life-ring', 'title' => __('admin.Help'), 'url' => '#'],
+        ['icon' => 'fa-life-ring', 'title' => __('admin.Help'), 'url' => 'admin/help'],
 
         ['icon' => 'fa-address-book', 'title' => __('admin.Contacts'), 'url' => 'admin/contact'],
         // ['icon' => 'fa-envelope', 'title' => __('admin.Mail'), 'url' => '#'],
         // ['icon' => 'fa-rocket', 'title' => __('admin.SEO'), 'url' => '#'],
-        ['icon' => 'fa-rocket', 'title' => __('admin.Settings'), 'url' => 'admin/settings/edit'],
+    ['icon' => 'fa-rocket', 'title' => __('admin.Settings'), 'url' => 'admin/settings/edit'],
+    ['icon' => 'fa-info-circle', 'title' => __('admin.about_us'), 'url' => 'admin/about-us'],
+    ['icon' => 'fa-cogs', 'title' => __('admin.our_services'), 'url' => 'admin/our-services'],
+    ['icon' => 'fa-user-secret', 'title' => __('admin.confidential'), 'url' => 'admin/confidential'],
+    ['icon' => 'fa-balance-scale', 'title' => __('admin.policy'), 'url' => 'admin/policy'],
     ];
 @endphp
 <aside class="w-60 -translate-x-48 fixed transition transform ease-in-out duration-1000 z-50 flex h-screen bg-[#1E293B] ">
