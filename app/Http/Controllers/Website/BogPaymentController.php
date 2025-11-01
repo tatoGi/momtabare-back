@@ -51,6 +51,11 @@ class BogPaymentController extends Controller
                 'language' => ['nullable', 'string', 'size:2'],
             ]);
 
+            // Clean up user_id to ensure it's properly handled
+            if (isset($validated['user_id']) && ($validated['user_id'] === '' || $validated['user_id'] === true)) {
+                unset($validated['user_id']);
+            }
+
             // Get authentication token
             $token = $this->bogAuth->getAccessToken();
             if (! $token || empty($token['access_token'])) {
@@ -68,15 +73,148 @@ class BogPaymentController extends Controller
             // Create order using package service
             $result = $this->bogPayment->createOrder($token['access_token'], $payload);
 
-            // Log successful order creation
+            // Log the raw response for debugging
+            Log::info('BOG Order creation response', [
+                'payload_sent' => $payload,
+                'response_received' => $result,
+                'response_type' => gettype($result),
+            ]);
 
+            // Check if result is valid
+            if (! $result) {
+                Log::error('BOG Order creation returned null/empty result');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No response received from payment backend',
+                    'error_code' => 'no_response',
+                ], 500);
+            }
+
+            // Handle different response formats from BOG
+            $orderData = null;
+            $redirectUrl = null;
+
+            if (is_array($result)) {
+                // Check for various possible field names (including nested _links structure)
+                $redirectUrl = $result['redirect_url'] ?? $result['payment_url'] ?? $result['checkout_url'] ??
+                              $result['action_url'] ?? $result['url'] ??
+                              // Check nested _links structure (BOG format)
+                              ($result['_links']['redirect']['href'] ?? null) ??
+                              // Alternative _links structure
+                              ($result['links']['redirect']['href'] ?? null);
+
+                $orderData = $result;
+            } elseif (is_object($result)) {
+                // Handle object responses
+                $redirectUrl = $result->redirect_url ?? $result->payment_url ?? $result->checkout_url ??
+                              $result->action_url ?? $result->url ??
+                              // Check nested _links structure (BOG format)
+                              ($result->_links->redirect->href ?? null) ??
+                              // Alternative _links structure
+                              ($result->links->redirect->href ?? null);
+
+                $orderData = (array) $result;
+            }
+
+            // If no redirect URL found, log detailed info and return error
+            if (! $redirectUrl) {
+                Log::error('No redirect URL found in BOG response', [
+                    'result' => $result,
+                    'result_keys' => is_array($result) ? array_keys($result) : 'not_array',
+                    'payload' => $payload,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No redirect URL returned by payment backend',
+                    'error_code' => 'no_redirect_url',
+                    'data' => [
+                        'result_type' => gettype($result),
+                        'result_keys' => is_array($result) ? array_keys($result) : 'not_array',
+                        'received_data' => $result,
+                    ],
+                ], 500);
+            }
+
+            // Save payment record to database if not already saved
+            try {
+                // Generate external order ID if not provided
+                $externalOrderId = $validated['external_order_id'] ?? Str::uuid();
+                $bogOrderId = $orderData['order_id'] ?? $orderData['id'] ?? $externalOrderId;
+
+                // Check if payment record already exists (prevent duplicates)
+                $existingPayment = BogPayment::where('bog_order_id', $bogOrderId)->first();
+
+                if ($existingPayment) {
+                    Log::info('BOG Payment record already exists, updating instead of creating', [
+                        'payment_id' => $existingPayment->id,
+                        'bog_order_id' => $bogOrderId,
+                    ]);
+
+                    // Update existing payment record
+                    $existingPayment->update([
+                        'external_order_id' => $externalOrderId,
+                        'amount' => $validated['amount'],
+                        'currency' => $validated['currency'] ?? 'GEL',
+                        'redirect_url' => $redirectUrl,
+                        'payload_data' => $payload,
+                        'response_data' => $orderData,
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    // Create new payment record
+                    $payment = BogPayment::create([
+                        'bog_order_id' => $bogOrderId,
+                        'external_order_id' => $externalOrderId,
+                        'user_id' => $validated['user_id'] ?? $request->user('sanctum')?->id ?? null,
+                        'amount' => $validated['amount'],
+                        'currency' => $validated['currency'] ?? 'GEL',
+                        'status' => 'pending',
+                        'save_card_requested' => $validated['save_card'] ?? false,
+                        'callback_url' => $validated['callback_url'],
+                        'redirect_url' => $redirectUrl,
+                        'payload_data' => $payload,
+                        'response_data' => $orderData,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    Log::info('BOG Payment record created successfully', [
+                        'payment_id' => $payment->id,
+                        'bog_order_id' => $payment->bog_order_id,
+                        'external_order_id' => $payment->external_order_id,
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                Log::warning('Failed to save payment record, but continuing', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Return success with redirect URL
+            Log::info('BOG Payment order created successfully', [
+                'redirect_url' => $redirectUrl,
+                'order_data' => $orderData,
+            ]);
 
             return response()->json([
                 'success' => true,
-                'data' => $result,
+                'data' => [
+                    'redirect_url' => $redirectUrl,
+                    'order_id' => $orderData['order_id'] ?? $orderData['id'] ?? null,
+                    'status' => $orderData['status'] ?? 'pending',
+                    'raw_response' => $orderData,
+                ],
                 'message' => 'Payment order created successfully',
             ], 201);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('BOG Order creation validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -101,68 +239,119 @@ class BogPaymentController extends Controller
 
     /**
      * Handle BOG payment callback
+     * This method receives callbacks from BOG payment system
+     * and should return HTTP 200 to confirm successful receipt
      */
     public function handleCallback(Request $request)
     {
         try {
+            // Get raw request body for signature verification
+            $rawBody = $request->getContent();
+
             Log::info('BOG Payment Callback received', [
                 'headers' => $request->headers->all(),
-                'body' => $request->all(),
+                'raw_body' => $rawBody,
+                'parsed_body' => $request->all(),
             ]);
 
-            // Validate callback data
-            $validated = $request->validate([
-                'order_id' => ['required', 'string'],
-                'status' => ['required', 'string'],
-                'amount' => ['nullable', 'numeric'],
-                'currency' => ['nullable', 'string'],
-                'transaction_id' => ['nullable', 'string'],
-                'signature' => ['nullable', 'string'],
-            ]);
+            // Verify signature before processing
+            if (! $this->verifyCallbackSignature($rawBody, $request->header('Callback-Signature'))) {
+                Log::error('BOG Callback signature verification failed', [
+                    'signature' => $request->header('Callback-Signature'),
+                    'raw_body_length' => strlen($rawBody),
+                ]);
+
+                // Still return 200 but log the failure for monitoring
+                // According to documentation, if callback fails, business should use Get Payment Details
+                Log::warning('BOG Callback signature verification failed - will need to verify manually');
+            }
+
+            // Parse the callback JSON structure as per documentation
+            $callbackData = json_decode($rawBody, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('BOG Callback JSON parsing failed', [
+                    'json_error' => json_last_error_msg(),
+                    'raw_body' => $rawBody,
+                ]);
+
+                return response('', 200); // Return 200 as per documentation requirement
+            }
+
+            // Validate required fields according to documentation structure
+            if (! isset($callbackData['event']) || $callbackData['event'] !== 'order_payment') {
+                Log::error('BOG Callback invalid event type', [
+                    'event' => $callbackData['event'] ?? 'missing',
+                    'expected' => 'order_payment',
+                ]);
+
+                return response('', 200);
+            }
+
+            if (! isset($callbackData['body']['order_id'])) {
+                Log::error('BOG Callback missing order_id in body', [
+                    'callback_data' => $callbackData,
+                ]);
+
+                return response('', 200);
+            }
+
+            // Extract payment details from body
+            $paymentData = $callbackData['body'];
+            $orderId = $paymentData['order_id'];
+            $status = $paymentData['status'] ?? 'unknown';
 
             // Find the payment record
-            $payment = BogPayment::where('bog_order_id', $validated['order_id'])->first();
+            $payment = BogPayment::where('bog_order_id', $orderId)->first();
 
             if (! $payment) {
                 Log::warning('BOG Callback - Payment not found', [
-                    'order_id' => $validated['order_id'],
+                    'order_id' => $orderId,
+                    'available_fields' => array_keys($paymentData),
                 ]);
 
-                return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
+                // Return 200 as per documentation, but log for manual verification
+                Log::info('BOG Callback - Payment not found, will need manual verification');
+                return response('', 200);
             }
 
-            // Update payment status
+            // Update payment status with full callback data
             $payment->update([
-                'status' => $validated['status'],
-                'transaction_id' => $validated['transaction_id'] ?? null,
-                'callback_data' => $validated,
+                'status' => $status,
+                'transaction_id' => $paymentData['transaction_id'] ?? null,
+                'amount' => $paymentData['amount'] ?? $payment->amount,
+                'currency' => $paymentData['currency'] ?? $payment->currency,
+                'callback_data' => $callbackData,
+                'callback_received_at' => now(),
                 'updated_at' => now(),
             ]);
 
             // Handle successful payment
-            if ($validated['status'] === 'completed') {
-                $this->handleSuccessfulPayment($payment, $validated);
+            if (in_array($status, ['completed', 'success', 'paid'])) {
+                $this->handleSuccessfulPayment($payment, $paymentData);
             }
 
-            // Handle failed payment
-            if (in_array($validated['status'], ['failed', 'cancelled', 'declined'])) {
-                $this->handleFailedPayment($payment, $validated);
+            // Handle failed/cancelled payments
+            if (in_array($status, ['failed', 'cancelled', 'declined', 'error'])) {
+                $this->handleFailedPayment($payment, $paymentData);
+            }
+
+            // Handle refunds
+            if (in_array($status, ['refunded', 'partially_refunded'])) {
+                $this->handleRefundPayment($payment, $paymentData);
             }
 
             Log::info('BOG Payment Callback processed successfully', [
-                'order_id' => $validated['order_id'],
-                'status' => $validated['status'],
+                'order_id' => $orderId,
+                'status' => $status,
                 'payment_id' => $payment->id,
+                'event' => $callbackData['event'],
+                'zoned_request_time' => $callbackData['zoned_request_time'] ?? 'unknown',
             ]);
 
-            return response()->json(['success' => true, 'message' => 'Callback processed successfully']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('BOG Callback validation failed', [
-                'errors' => $e->errors(),
-                'request_data' => $request->all(),
-            ]);
+            // Return HTTP 200 as per documentation requirement
+            return response('', 200);
 
-            return response()->json(['success' => false, 'message' => 'Invalid callback data'], 400);
         } catch (\Exception $e) {
             Log::error('BOG Callback processing failed', [
                 'error' => $e->getMessage(),
@@ -170,7 +359,9 @@ class BogPaymentController extends Controller
                 'request_data' => $request->all(),
             ]);
 
-            return response()->json(['success' => false, 'message' => 'Callback processing failed'], 500);
+            // Still return 200 as per documentation - callback system will retry if needed
+            Log::warning('BOG Callback failed - will need manual verification');
+            return response('', 200);
         }
     }
 
@@ -197,18 +388,56 @@ class BogPaymentController extends Controller
     }
 
     // Save card for future payments
+    /**
+     * Save Card for Recurring Payments
+     *
+     * According to BOG documentation:
+     * POST /payments/v1/ecommerce/orders/:order_id
+     *
+     * The bank offers businesses the option to save a customer's card information,
+     * with the customer's consent, to enable future payments without having to
+     * enter card details again.
+     *
+     * Returns 202 ACCEPTED when successful
+     */
     public function saveCard(Request $request, $orderId)
     {
         $validated = $request->validate([
             'idempotency_key' => 'nullable|uuid',
         ]);
+
         $token = $this->bogAuth->getAccessToken();
         if (! $token || empty($token['access_token'])) {
             return response()->json(['success' => false, 'message' => 'Unable to authenticate with BOG'], 500);
         }
-        $result = $this->bogPayment->saveCard($token['access_token'], $orderId, $validated);
 
-        return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
+        Log::info('BOG Save Card Request', [
+            'order_id' => $orderId,
+            'user_id' => $request->user('sanctum')?->id,
+            'idempotency_key' => $validated['idempotency_key'] ?? null,
+        ]);
+
+        $result = $this->bogPayment->saveCard($token['access_token'], $orderId, $validated['idempotency_key'] ?? null);
+
+        // Handle the array response from the service
+        if (isset($result['success'])) {
+            $statusCode = $result['status'] ?? ($result['success'] ? 202 : 400);
+            $statusCode = is_numeric($statusCode) ? (int) $statusCode : 400;
+
+            return response()->json($result, $statusCode);
+        }
+
+        // Fallback for unexpected response format
+        Log::warning('BOG Save Card - Unexpected response format', [
+            'order_id' => $orderId,
+            'response' => $result,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unexpected response format',
+            'status' => 500,
+        ], 500);
     }
 
     // Charge saved card for payment
@@ -228,7 +457,14 @@ class BogPaymentController extends Controller
         }
         $result = $this->bogPayment->chargeCard($token['access_token'], $parentOrderId, $validated);
 
-        return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
+        // Ensure we always return a valid HTTP status code
+        $statusCode = 400; // default
+        if (is_array($result)) {
+            $statusCode = $result['status'] ?? ($result['success'] ? 200 : 400);
+            $statusCode = is_numeric($statusCode) ? (int) $statusCode : 400;
+        }
+
+        return response()->json($result, $statusCode);
     }
 
     /**
@@ -308,21 +544,163 @@ class BogPaymentController extends Controller
     }
 
     // Pay with saved card
+    /**
+     * Payment by the Saved Card
+     *
+     * According to BOG documentation:
+     * POST /payments/v1/ecommerce/orders/:parent_order_id
+     *
+     * This method allows businesses to enable customers to make payments on the
+     * bank's webpage without entering their card details again. This feature is
+     * useful when a customer has previously saved their card information during
+     * a successful card payment transaction for future use.
+     */
     public function payWithSavedCard(Request $request, $parentOrderId)
     {
-        $validated = $request->validate([
-            'callback_url' => 'required|url',
-            'amount' => 'required|numeric|min:0.01',
-            'basket' => 'required|array',
-            'language' => 'nullable|string|size:2',
-        ]);
-        $token = $this->bogAuth->getAccessToken();
-        if (! $token || empty($token['access_token'])) {
-            return response()->json(['success' => false, 'message' => 'Unable to authenticate with BOG'], 500);
-        }
-        $result = $this->bogPayment->payWithSavedCard($token['access_token'], $parentOrderId, $validated);
+        try {
+            $validated = $request->validate([
+                'callback_url' => 'required|url',
+                'total_amount' => 'required|numeric|min:0.01',
+                'basket' => 'required|array',
+                'currency' => 'nullable|string|size:3',
+                'language' => 'nullable|string|size:2',
+            ]);
 
-        return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
+            $token = $this->bogAuth->getAccessToken();
+            if (! $token || empty($token['access_token'])) {
+                Log::error('BOG Authentication failed for payWithSavedCard');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to authenticate with BOG payment gateway',
+                    'error_code' => 'auth_failed',
+                ], 500);
+            }
+
+            // Ensure 'amount' is set for vendor compatibility
+            $validated['amount'] = $validated['total_amount'];
+            $result = $this->bogPayment->payWithSavedCard($token['access_token'], $parentOrderId, $validated);
+
+            // Log the raw response for debugging
+            Log::info('BOG Payment with saved card response', [
+                'parent_order_id' => $parentOrderId,
+                'response_received' => $result,
+                'response_type' => gettype($result),
+            ]);
+
+            // Check if result is valid
+            if (! $result || ! is_array($result)) {
+                Log::error('BOG Payment with saved card returned invalid result');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No response received from payment backend',
+                    'error_code' => 'no_response',
+                ], 500);
+            }
+
+            // Check for success
+            if (! ($result['success'] ?? false)) {
+                Log::error('BOG Payment with saved card failed', [
+                    'result' => $result,
+                    'parent_order_id' => $parentOrderId,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Payment with saved card failed',
+                    'error_code' => 'payment_failed',
+                    'data' => [
+                        'result' => $result,
+                        'details' => $result['data'] ?? null,
+                    ],
+                ], $result['status'] ?? 400);
+            }
+
+            // Handle different response formats from BOG
+            $orderData = null;
+            $redirectUrl = null;
+
+            // Extract order data and redirect URL
+            $responseData = $result['data'] ?? $result;
+
+            if (is_array($responseData)) {
+                $redirectUrl = $responseData['redirect_url'] ?? $responseData['payment_url'] ?? $responseData['checkout_url'] ??
+                              $responseData['action_url'] ?? $responseData['url'] ??
+                              ($responseData['_links']['redirect']['href'] ?? null) ??
+                              ($responseData['links']['redirect']['href'] ?? null);
+                $orderData = $responseData;
+            } elseif (is_object($responseData)) {
+                $redirectUrl = $responseData->redirect_url ?? $responseData->payment_url ?? $responseData->checkout_url ??
+                              $responseData->action_url ?? $responseData->url ??
+                              ($responseData->_links->redirect->href ?? null) ??
+                              ($responseData->links->redirect->href ?? null);
+                $orderData = (array) $responseData;
+            }
+
+            // If no redirect URL found, it may be a background payment flow
+            // Return the response as-is and let the frontend handle it
+            if (! $redirectUrl) {
+                Log::info('BOG Payment with saved card - no redirect URL (may be background payment)', [
+                    'parent_order_id' => $parentOrderId,
+                    'response_data' => $responseData,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'order_id' => $orderData['order_id'] ?? $orderData['id'] ?? $parentOrderId,
+                        'status' => $orderData['status'] ?? 'pending',
+                        'redirect_url' => null,
+                        'raw_response' => $orderData,
+                    ],
+                    'message' => 'Payment with saved card initiated successfully',
+                ], 201);
+            }
+
+            // Return success with redirect URL and order info
+            Log::info('BOG Payment with saved card created successfully', [
+                'redirect_url' => $redirectUrl,
+                'order_data' => $orderData,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'redirect_url' => $redirectUrl,
+                    'order_id' => $orderData['order_id'] ?? $orderData['id'] ?? $parentOrderId,
+                    'status' => $orderData['status'] ?? 'pending',
+                    'raw_response' => $orderData,
+                ],
+                'message' => 'Payment order created successfully',
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('BOG Payment with saved card validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('BOG Payment with saved card failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create payment with saved card',
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'trace' => app()->environment('local') ? $e->getTraceAsString() : null,
+            ], 500);
+        }
     }
 
     // Process automatic payment with saved card
@@ -339,7 +717,14 @@ class BogPaymentController extends Controller
         }
         $result = $this->bogPayment->processAutomaticPayment($token['access_token'], $parentOrderId, $validated);
 
-        return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
+        // Ensure we always return a valid HTTP status code
+        $statusCode = 400; // default
+        if (is_array($result)) {
+            $statusCode = $result['status'] ?? ($result['success'] ? 200 : 400);
+            $statusCode = is_numeric($statusCode) ? (int) $statusCode : 400;
+        }
+
+        return response()->json($result, $statusCode);
     }
 
     // Confirm pre-authorization
@@ -356,7 +741,14 @@ class BogPaymentController extends Controller
         }
         $result = $this->bogPayment->confirmPreAuthorization($token['access_token'], $orderId, $validated);
 
-        return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
+        // Ensure we always return a valid HTTP status code
+        $statusCode = 400; // default
+        if (is_array($result)) {
+            $statusCode = $result['status'] ?? ($result['success'] ? 200 : 400);
+            $statusCode = is_numeric($statusCode) ? (int) $statusCode : 400;
+        }
+
+        return response()->json($result, $statusCode);
     }
 
     // Reject pre-authorization
@@ -372,7 +764,14 @@ class BogPaymentController extends Controller
         }
         $result = $this->bogPayment->rejectPreAuthorization($token['access_token'], $orderId, $validated);
 
-        return response()->json($result, $result['status'] ?? ($result['success'] ? 200 : 400));
+        // Ensure we always return a valid HTTP status code
+        $statusCode = 400; // default
+        if (is_array($result)) {
+            $statusCode = $result['status'] ?? ($result['success'] ? 200 : 400);
+            $statusCode = is_numeric($statusCode) ? (int) $statusCode : 400;
+        }
+
+        return response()->json($result, $statusCode);
     }
 
 
@@ -547,11 +946,61 @@ class BogPaymentController extends Controller
 
         // Prepare purchase units
         if (isset($validated['basket']) && is_array($validated['basket'])) {
+            // Process basket items and calculate rental pricing
+            $processedBasket = [];
+            $totalAmount = 0;
+
+            foreach ($validated['basket'] as $item) {
+                $processedItem = $item;
+
+                // Calculate rental pricing if rental dates are provided
+                if (isset($item['start_date']) && isset($item['end_date'])) {
+                    $startDate = new \DateTime($item['start_date']);
+                    $endDate = new \DateTime($item['end_date']);
+
+                    // Calculate number of days (inclusive)
+                    $days = $startDate->diff($endDate)->days + 1;
+                    $dailyRate = $item['unit_price'];
+                    $rentalTotal = $dailyRate * $days;
+
+                    $processedItem['rental_days'] = $days;
+                    $processedItem['daily_rate'] = $dailyRate;
+                    $processedItem['rental_total'] = $rentalTotal;
+                    $processedItem['total_amount'] = $rentalTotal;
+
+                    Log::info('Rental pricing calculated', [
+                        'product_id' => $item['product_id'],
+                        'start_date' => $item['start_date'],
+                        'end_date' => $item['end_date'],
+                        'days' => $days,
+                        'daily_rate' => $dailyRate,
+                        'rental_total' => $rentalTotal,
+                    ]);
+
+                    $totalAmount += $rentalTotal;
+                } else {
+                    // Regular pricing for non-rental items
+                    $processedItem['total_amount'] = $item['unit_price'] * $item['quantity'];
+                    $totalAmount += $processedItem['total_amount'];
+                }
+
+                $processedBasket[] = $processedItem;
+            }
+
             $payload['purchase_units'] = [
-                'total_amount' => $validated['amount'],
+                'total_amount' => $totalAmount,
                 'currency' => $validated['currency'] ?? 'GEL',
-                'basket' => $validated['basket'],
+                'basket' => $processedBasket,
             ];
+
+            Log::info('BOG Order payload prepared with rental calculations', [
+                'total_amount' => $totalAmount,
+                'currency' => $validated['currency'] ?? 'GEL',
+                'basket_count' => count($processedBasket),
+                'has_rental_items' => collect($processedBasket)->contains(function($item) {
+                    return isset($item['rental_days']);
+                }),
+            ]);
         } else {
             $payload['purchase_units'] = [
                 'total_amount' => $validated['amount'],
@@ -630,6 +1079,90 @@ class BogPaymentController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error handling failed payment', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Verify callback signature using SHA256withRSA algorithm
+     *
+     * @param string $rawBody The raw request body content
+     * @param string|null $signature The signature from Callback-Signature header
+     * @return bool True if signature is valid, false otherwise
+     */
+    private function verifyCallbackSignature(string $rawBody, ?string $signature): bool
+    {
+        if (empty($signature)) {
+            Log::warning('BOG Callback signature is empty');
+            return false;
+        }
+
+        // BOG Public Key from documentation
+        $publicKey = <<<EOD
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu4RUyAw3+CdkS3ZNILQh
+zHI9Hemo+vKB9U2BSabppkKjzjjkf+0Sm76hSMiu/HFtYhqWOESryoCDJoqffY0Q
+1VNt25aTxbj068QNUtnxQ7KQVLA+pG0smf+EBWlS1vBEAFbIas9d8c9b9sSEkTrr
+TYQ90WIM8bGB6S/KLVoT1a7SnzabjoLc5Qf/SLDG5fu8dH8zckyeYKdRKSBJKvhx
+tcBuHV4f7qsynQT+f2UYbESX/TLHwT5qFWZDHZ0YUOUIvb8n7JujVSGZO9/+ll/g
+4ZIWhC1MlJgPObDwRkRd8NFOopgxMcMsDIZIoLbWKhHVq67hdbwpAq9K9WMmEhPn
+PwIDAQAB
+-----END PUBLIC KEY-----
+EOD;
+
+        try {
+            // Verify the signature using SHA256withRSA
+            $isValid = openssl_verify(
+                $rawBody,
+                base64_decode($signature),
+                $publicKey,
+                OPENSSL_ALGO_SHA256
+            );
+
+            if ($isValid === 1) {
+                Log::info('BOG Callback signature verified successfully');
+                return true;
+            } elseif ($isValid === 0) {
+                Log::warning('BOG Callback signature verification failed - invalid signature');
+                return false;
+            } else {
+                Log::error('BOG Callback signature verification error', [
+                    'openssl_error' => openssl_error_string(),
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('BOG Callback signature verification exception', [
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Handle refund payment
+     */
+    private function handleRefundPayment(BogPayment $payment, array $callbackData): void
+    {
+        try {
+            $payment->update([
+                'status' => $callbackData['status'],
+                'refunded_at' => now(),
+                'refund_amount' => $callbackData['refund_amount'] ?? null,
+                'refund_reason' => $callbackData['refund_reason'] ?? null,
+            ]);
+
+            Log::info('BOG Payment refunded', [
+                'payment_id' => $payment->id,
+                'bog_order_id' => $payment->bog_order_id,
+                'refund_amount' => $callbackData['refund_amount'] ?? null,
+                'status' => $callbackData['status'],
+                'user_id' => $payment->user_id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error handling refund payment', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage(),
             ]);

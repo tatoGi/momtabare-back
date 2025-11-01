@@ -72,6 +72,7 @@ Route::get('/change-locale/{lang}', function ($lang) {
 })->name('change.locale');
 
 // About, Service, Confidential, and Privacy API routes
+Route::get('/settings', [FrontendController::class, 'settings']);
 Route::get('/about', [FrontendController::class, 'about']);
 Route::get('/service', [FrontendController::class, 'service']);
 Route::get('/confidential', [FrontendController::class, 'confidential']);

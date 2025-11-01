@@ -38,18 +38,54 @@ class BogPaymentService
     }
 
     /**
-     * Make a payment with a saved card
+     * Make a payment with a saved card - triggers SMS verification
      */
     public function payWithSavedCard(string $accessToken, string $parentOrderId, array $paymentData): array
     {
-        $endpoint = "/v1/orders/{$parentOrderId}/payments";
+        Log::info('BOG Payment - Starting saved card payment flow', [
+            'parent_order_id' => $parentOrderId,
+            'amount' => $paymentData['amount'],
+            'callback_url' => $paymentData['callback_url'],
+        ]);
+
+        $endpoint = config('services.bog.api_base_url', 'https://api.bog.ge/payments') . "/v1/ecommerce/orders/{$parentOrderId}";
+
+        // Prepare payload according to BOG documentation - same format as order request
+        // Support both 'amount' and 'total_amount' for backward compatibility
+        $amount = $paymentData['amount'] ?? $paymentData['total_amount'] ?? 0;
 
         $payload = [
-            'callback_url' => $paymentData['callback_url'],
-            'amount' => $paymentData['amount'],
-            'basket' => $paymentData['basket'],
-            'language' => $paymentData['language'] ?? 'ka',
+            'callback_url' => $paymentData['callback_url'] ?? '',
+            'purchase_units' => [
+                'total_amount' => $amount,
+                'basket' => $paymentData['basket'] ?? [],
+            ],
         ];
+        // Only add currency if present (optional in BOG docs)
+        if (isset($paymentData['currency'])) {
+            $payload['purchase_units']['currency'] = $paymentData['currency'];
+        }
+
+        // Add language if provided
+        if (isset($paymentData['language'])) {
+            $payload['language'] = $paymentData['language'];
+        }
+
+        // Maintain backward compatibility by including amount at top level too
+        // This ensures existing integrations continue to work
+        if (isset($paymentData['amount'])) {
+            $payload['amount'] = $paymentData['amount'];
+        }
+
+        // Clean up null redirect_urls
+        if (isset($payload['redirect_urls']) && is_null($payload['redirect_urls'])) {
+            unset($payload['redirect_urls']);
+        }
+
+        Log::info('BOG Payment - Sending saved card payment request', [
+            'endpoint' => $endpoint,
+            'payload' => $payload,
+        ]);
 
         $response = $this->makeRequest('POST', $endpoint, $accessToken, $payload);
 
@@ -58,19 +94,57 @@ class BogPaymentService
                 'error' => $response['error'],
                 'parent_order_id' => $parentOrderId,
                 'response' => $response,
+                'payload_sent' => $payload,
             ]);
 
             return [
                 'success' => false,
                 'message' => $response['error']['message'] ?? 'Payment with saved card failed',
                 'status' => $this->getLastHttpStatus() ?? 400,
+                'error_details' => $response,
             ];
         }
+
+        // Check if response contains redirect URL for SMS verification
+        $redirectUrl = null;
+        if (is_array($response)) {
+            $redirectUrl = $response['redirect_url'] ?? $response['payment_url'] ?? $response['checkout_url'] ??
+                          $response['action_url'] ?? $response['url'] ??
+                          // Check nested _links structure (BOG format)
+                          ($response['_links']['redirect']['href'] ?? null) ??
+                          // Alternative _links structure
+                          ($response['links']['redirect']['href'] ?? null);
+        }
+
+        if ($redirectUrl) {
+            Log::info('BOG Payment - Saved card payment requires verification', [
+                'parent_order_id' => $parentOrderId,
+                'redirect_url' => $redirectUrl,
+                'verification_required' => true,
+            ]);
+
+            return [
+                'success' => true,
+                'data' => $response,
+                'redirect_url' => $redirectUrl,
+                'message' => 'SMS verification required - redirect to payment page',
+                'requires_verification' => true,
+            ];
+        }
+
+        Log::info('BOG Payment - Saved card payment initiated successfully', [
+            'parent_order_id' => $parentOrderId,
+            'response' => $response,
+            'verification_required' => empty($redirectUrl),
+        ]);
 
         return [
             'success' => true,
             'data' => $response,
-            'message' => 'Payment with saved card initiated successfully',
+            'message' => empty($redirectUrl) ?
+                       'Payment with saved card completed (no verification required)' :
+                       'Payment with saved card initiated - SMS verification required',
+            'requires_verification' => !empty($redirectUrl),
         ];
     }
 
@@ -549,80 +623,99 @@ class BogPaymentService
 
     /**
      * Save card details during payment process
+     *
+     * According to BOG documentation:
+     * POST /payments/v1/ecommerce/orders/:order_id
+     * Returns 202 ACCEPTED when successful
      */
     public function saveCard(string $accessToken, string $orderId, ?string $idempotencyKey = null): array
     {
-        $url = config('services.bog.orders_url', 'https://api.bog.ge/payments/v1/ecommerce/orders')."/{$orderId}/save-card";
+        $url = config('services.bog.api_base_url', 'https://api.bog.ge/payments') . "/v1/ecommerce/orders/{$orderId}";
 
         $headers = [
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'Authorization' => 'Bearer '.$accessToken,
+            'Accept-Language' => 'ka', // Default to Georgian as per documentation
         ];
 
         if ($idempotencyKey) {
             $headers['Idempotency-Key'] = $idempotencyKey;
         }
 
-        Log::debug('BOG API - Save Card', [
+        Log::info('BOG API - Save Card Request', [
             'url' => $url,
             'order_id' => $orderId,
+            'idempotency_key' => $idempotencyKey,
             'headers' => array_merge($headers, ['Authorization' => 'Bearer [REDACTED]']),
-            'access_token_length' => strlen($accessToken),
         ]);
 
-        $response = $this->makeRequest('POST', $url, $accessToken, [], $headers);
+        try {
+            $response = $this->makeRequest('POST', $url, $accessToken, [], $headers);
 
-        if (! $response) {
-            Log::error('BOG API - Failed to save card', [
+            // For save card operation, we expect 202 ACCEPTED according to documentation
+            $statusCode = $this->getLastHttpStatus();
+
+            if ($statusCode === 202) {
+                Log::info('BOG API - Card saved successfully', [
+                    'order_id' => $orderId,
+                    'status_code' => $statusCode,
+                    'response' => $response,
+                ]);
+
+                return [
+                    'success' => true,
+                    'status' => 202,
+                    'data' => $response,
+                    'message' => 'Card saved successfully',
+                    'card_saved' => true,
+                ];
+            } elseif ($statusCode === 200 || $statusCode === 201) {
+                // Some implementations might return 200/201 instead of 202
+                Log::info('BOG API - Card saved successfully (alternative status)', [
+                    'order_id' => $orderId,
+                    'status_code' => $statusCode,
+                    'response' => $response,
+                ]);
+
+                return [
+                    'success' => true,
+                    'status' => $statusCode,
+                    'data' => $response,
+                    'message' => 'Card saved successfully',
+                    'card_saved' => true,
+                ];
+            } else {
+                Log::error('BOG API - Failed to save card', [
+                    'order_id' => $orderId,
+                    'status_code' => $statusCode,
+                    'expected_status' => 202,
+                    'error' => $this->lastError,
+                    'response' => $response,
+                ]);
+
+                return [
+                    'success' => false,
+                    'status' => $statusCode ?? 500,
+                    'message' => 'Failed to save card',
+                    'error' => $this->lastError ?? 'Unknown error',
+                    'expected_status' => 202,
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('BOG API - Exception while saving card', [
                 'order_id' => $orderId,
-                'status_code' => $this->lastHttpStatus,
-                'error' => $this->lastError,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to save card',
-                'error' => $this->lastError,
-                'status' => $this->lastHttpStatus ?? 500,
+                'status' => 500,
+                'message' => 'Exception occurred while saving card',
+                'error' => $e->getMessage(),
             ];
         }
-
-        Log::info('BOG API - Card saved successfully', [
-            'order_id' => $orderId,
-            'response' => $response,
-        ]);
-
-        // Log the actual response structure for debugging
-        Log::info('BOG API - Card save response structure', [
-            'order_id' => $orderId,
-            'response_keys' => array_keys($response),
-            'response_data' => $response,
-        ]);
-
-        // Check if the response contains card data
-        if (isset($response['card_token']) || isset($response['card_mask']) || isset($response['card_type'])) {
-            Log::info('BOG Payment - Card details found in save card response', [
-                'order_id' => $orderId,
-                'card_token' => $response['card_token'] ?? null,
-                'card_mask' => $response['card_mask'] ?? null,
-                'card_type' => $response['card_type'] ?? null,
-                'expiry_month' => $response['expiry_month'] ?? null,
-                'expiry_year' => $response['expiry_year'] ?? null,
-            ]);
-        } else {
-            Log::warning('BOG Payment - No card details found in save card response', [
-                'order_id' => $orderId,
-                'response_keys' => array_keys($response),
-                'full_response' => $response,
-            ]);
-        }
-
-        return [
-            'success' => true,
-            'data' => $response,
-            'message' => 'Card saved successfully',
-        ];
     }
 
     /**

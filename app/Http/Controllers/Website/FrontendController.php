@@ -869,4 +869,13 @@ class FrontendController extends Controller
             'locale' => $locale,
         ]);
     }
+    public function settings(Request $request)
+    {
+        $settings = config('settings.settings');
+        $result = [];
+        foreach ($settings as $key => $item) {
+            $result[$key] = $item['value'] ?? null;
+        }
+        return response()->json($result);
+    }
 }

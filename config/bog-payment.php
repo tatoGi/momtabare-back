@@ -5,7 +5,7 @@ return [
     'auth_url' => env('BOG_AUTH_URL'),
     'orders_url' => env('BOG_ORDERS_URL', 'https://api.bog.ge/payments/v1/ecommerce/orders'),
     'receipt_url' => env('BOG_RECEIPT_URL', 'https://api.bog.ge/payments/v1/receipt'),
-    'callback_url' => env('BOG_CALLBACK_URL'),
+    'callback_url' => env('BOG_CALLBACK_URL', 'http://127.0.0.1:8000/api/payment/bog/callback'),
     'client_id' => env('BOG_CLIENT_ID'),
     'client_secret' => env('BOG_CLIENT_SECRET'),
 
