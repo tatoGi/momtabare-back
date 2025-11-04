@@ -33,9 +33,25 @@ class ImageService
         // Read and convert image to WebP
         $image = Image::read($file);
 
+        // Resize large images to prevent memory issues
+        $width = $image->width();
+        $height = $image->height();
+        $maxDimension = 2000; // Max 2000px on longest side
+
+        if ($width > $maxDimension || $height > $maxDimension) {
+            if ($width > $height) {
+                $image->scale(width: $maxDimension);
+            } else {
+                $image->scale(height: $maxDimension);
+            }
+        }
+
         // Save main image
         $mainPath = $fullPath . '/' . $webpFilename;
         $image->toWebp($quality)->save($mainPath);
+
+        // Free memory
+        unset($image);
 
         // Generate additional sizes if requested
         if (!empty($sizes)) {
@@ -45,6 +61,7 @@ class ImageService
 
                 $resizedImage = Image::read($file);
                 $resizedImage->scale(width: $width)->toWebp($quality)->save($sizePath);
+                unset($resizedImage);
             }
         }
 
@@ -144,8 +161,29 @@ class ImageService
             throw new \Exception("Image not found: {$existingPath}");
         }
 
+        // Check file size and skip if too large for memory
+        $fileSize = filesize($fullPath);
+        $maxSize = 10 * 1024 * 1024; // 10MB
+
+        if ($fileSize > $maxSize) {
+            throw new \Exception("Image too large ({$fileSize} bytes). Skipping to prevent memory exhaustion.");
+        }
+
         // Read existing image
         $image = Image::read($fullPath);
+
+        // Resize large images to prevent memory issues
+        $width = $image->width();
+        $height = $image->height();
+        $maxDimension = 2000; // Max 2000px on longest side
+
+        if ($width > $maxDimension || $height > $maxDimension) {
+            if ($width > $height) {
+                $image->scale(width: $maxDimension);
+            } else {
+                $image->scale(height: $maxDimension);
+            }
+        }
 
         // Generate WebP filename
         $pathInfo = pathinfo($existingPath);
@@ -155,6 +193,10 @@ class ImageService
 
         // Save as WebP
         $image->toWebp($quality)->save($webpFullPath);
+
+        // Free memory
+        unset($image);
+        gc_collect_cycles();
 
         // Delete original file if requested
         if ($deleteOriginal && $existingPath !== $webpPath) {

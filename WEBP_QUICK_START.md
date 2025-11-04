@@ -80,6 +80,14 @@ php artisan images:convert-to-webp
 1. ✅ Convert all images to WebP format
 2. ✅ Delete original JPG/PNG/GIF files
 3. ✅ **Automatically update database paths to .webp**
+4. ✅ **Memory optimized** - automatically resizes large images
+5. ✅ **Skips files > 10MB** to prevent memory exhaustion
+
+**Memory Management:**
+- Increases memory limit to 256M
+- Resizes images > 2000px to prevent issues
+- Garbage collection every 10 images
+- Safe for shared hosting environments
 
 ### Update Database Paths Only
 If you've already converted images but need to update database:
@@ -143,6 +151,43 @@ Use `--keep-originals` flag to keep both original and WebP versions.
 - **Better SEO scores**
 - **Reduced bandwidth costs**
 - **Automatic optimization**
+
+---
+
+## Troubleshooting
+
+### Memory Exhausted Error on Hosting
+If you see "Allowed memory size exhausted" error:
+
+**Problem:** Shared hosting has memory limits (typically 128MB)
+
+**Solutions:**
+
+1. **Increase PHP memory limit** (if allowed):
+   ```bash
+   # In php.ini or .htaccess
+   memory_limit = 256M
+   ```
+
+2. **Process directories one at a time**:
+   ```bash
+   php artisan images:convert-to-webp --directory=products
+   php artisan images:convert-to-webp --directory=banners
+   php artisan images:convert-to-webp --directory=categories
+   ```
+
+3. **The command automatically**:
+   - ✅ Limits memory usage
+   - ✅ Resizes images > 2000px
+   - ✅ Skips files > 10MB
+   - ✅ Runs garbage collection
+
+4. **Contact your hosting provider** to temporarily increase memory limit
+
+### Very Large Images
+Images larger than 10MB will be skipped with a warning. To convert them:
+- Manually resize before uploading
+- Or use image compression tools first
 
 ---
 

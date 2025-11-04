@@ -34,14 +34,21 @@ class ConvertImagesToWebP extends Command
     {
         $this->imageService = $imageService;
 
+        // Increase memory limit for image processing
+        ini_set('memory_limit', '256M');
+
+        // Set max execution time
+        set_time_limit(300); // 5 minutes
+
         $directories = $this->option('directory')
             ? [$this->option('directory')]
-            : ['products', 'avatars', 'banners', 'retailer/avatars', 'retailer/covers', 'retailer-shops/avatars', 'retailer-shops/covers'];
+            : ['products', 'avatars', 'banners', 'categories', 'posts', 'editor-images', 'options', 'retailer/avatars', 'retailer/covers', 'retailer-shops/avatars', 'retailer-shops/covers'];
 
         $quality = (int) $this->option('quality');
         $deleteOriginals = !$this->option('keep-originals'); // Delete by default unless --keep-originals is set
 
         $this->info('Starting WebP conversion...');
+        $this->info('Memory limit: ' . ini_get('memory_limit'));
 
         if ($deleteOriginals) {
             $this->warn('Original images will be DELETED after conversion.');
@@ -90,12 +97,26 @@ class ConvertImagesToWebP extends Command
                     $webpPath = $this->imageService->convertExistingToWebP($file, $quality, $deleteOriginals);
                     $totalConverted++;
 
+                    // Free memory after each conversion
+                    if ($totalConverted % 10 === 0) {
+                        gc_collect_cycles();
+                    }
+
                     $bar->advance();
                 } catch (\Exception $e) {
                     $totalFailed++;
                     $bar->advance();
                     $this->newLine();
-                    $this->error("  Failed: {$file} - {$e->getMessage()}");
+
+                    // Check if it's a memory error
+                    if (strpos($e->getMessage(), 'memory') !== false || strpos($e->getMessage(), 'too large') !== false) {
+                        $this->warn("  Skipped (too large): {$file}");
+                    } else {
+                        $this->error("  Failed: {$file} - {$e->getMessage()}");
+                    }
+
+                    // Force garbage collection on error
+                    gc_collect_cycles();
                 }
             }
 
