@@ -1,0 +1,2 @@
+[01-Nov-2025 20:58:23 UTC] PHP Fatal error:  Trait "Spatie\MediaLibrary\InteractsWithMedia" not found in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/app/Models/Category.php on line 12
+[01-Nov-2025 20:58:52 UTC] PHP Fatal error:  Trait "Spatie\MediaLibrary\InteractsWithMedia" not found in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/app/Models/Category.php on line 12

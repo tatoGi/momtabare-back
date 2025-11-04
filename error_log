@@ -1,0 +1,8 @@
+[01-Nov-2025 20:59:02 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[01-Nov-2025 20:59:15 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[01-Nov-2025 20:59:15 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[04-Nov-2025 10:45:21 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[04-Nov-2025 10:45:32 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[04-Nov-2025 10:45:32 UTC] PHP Warning:  PHP Startup: session.gc_divisor must be greater than 0 in Unknown on line 0
+[04-Nov-2025 10:45:46 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 50331648 bytes) in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/vendor/intervention/image/src/Drivers/Gd/Encoders/WebpEncoder.php on line 24
+[04-Nov-2025 10:47:26 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 50331648 bytes) in /home/eabrgazc/public_html/admin.momtabare.com/momtabare-back/vendor/intervention/image/src/Drivers/Gd/Encoders/WebpEncoder.php on line 24
