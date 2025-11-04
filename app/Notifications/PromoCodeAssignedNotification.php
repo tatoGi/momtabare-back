@@ -89,7 +89,7 @@ class PromoCodeAssignedNotification extends Notification
             $mail->line('**This promo code is valid for ALL products!**');
         }
 
-        $mail->action('Shop Now', url('/'))
+        $mail->action('Shop Now', 'https://www.momtabare.com')
             ->line('Use this code at checkout to get your discount!')
             ->line('Thank you for being a valued customer!');
 

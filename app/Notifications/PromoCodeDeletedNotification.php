@@ -46,7 +46,7 @@ class PromoCodeDeletedNotification extends Notification
             ->line('**Discount:** ' . $this->discountPercentage . '% OFF')
             ->line('This promo code is no longer valid and cannot be used.')
             ->line('Don\'t worry! We have many other great deals available for you.')
-            ->action('Browse Deals', url('/'))
+            ->action('Browse Deals', 'https://www.momtabare.com')
             ->line('Thank you for your understanding!');
     }
 
