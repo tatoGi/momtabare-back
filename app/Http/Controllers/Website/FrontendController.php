@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
 use App\Services\Frontend\FrontendService;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -22,10 +23,12 @@ use App\Models\{About, Service, Confidential,
 class FrontendController extends Controller
 {
     protected $frontendService;
+    protected ImageService $imageService;
 
-    public function __construct(FrontendService $frontendService)
+    public function __construct(FrontendService $frontendService, ImageService $imageService)
     {
         $this->frontendService = $frontendService;
+        $this->imageService = $imageService;
     }
 
     /**
@@ -56,16 +59,18 @@ class FrontendController extends Controller
                 ], 401);
             }
 
-            // Handle file uploads
+            // Handle file uploads - convert to WebP
             $avatarPath = null;
             $coverPath = null;
 
             if ($request->hasFile('avatar')) {
-                $avatarPath = $request->file('avatar')->store('retailer-shops/avatars', 'public');
+                $quality = $this->imageService->getOptimalQuality($request->file('avatar'));
+                $avatarPath = $this->imageService->uploadAsWebP($request->file('avatar'), 'retailer-shops/avatars', $quality);
             }
 
             if ($request->hasFile('cover_image')) {
-                $coverPath = $request->file('cover_image')->store('retailer-shops/covers', 'public');
+                $quality = $this->imageService->getOptimalQuality($request->file('cover_image'));
+                $coverPath = $this->imageService->uploadAsWebP($request->file('cover_image'), 'retailer-shops/covers', $quality);
             }
 
             // Create the retailer shop

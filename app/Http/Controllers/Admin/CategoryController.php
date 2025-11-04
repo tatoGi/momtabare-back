@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateCategoryRequest;
 use App\Models\Category;
+use App\Services\ImageService;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -12,6 +13,13 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -56,11 +64,11 @@ class CategoryController extends Controller
         // Retrieve validated data from the request
         $data = $request->validated();
 
-        // Handle file upload before creating category
+        // Handle file upload before creating category - convert to WebP
         if ($request->hasFile('icon')) {
             $icon = $request->file('icon');
-            $iconFileName = time().'_'.$icon->getClientOriginalName();
-            $iconPath = $icon->storeAs('categories', $iconFileName, 'public');
+            $quality = $this->imageService->getOptimalQuality($icon);
+            $iconPath = $this->imageService->uploadAsWebP($icon, 'categories', $quality);
             $data['icon'] = $iconPath;
         }
 
@@ -125,16 +133,11 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
         $data = $request->all();
 
-        // Handle file upload
+        // Handle file upload - convert to WebP
         if ($request->hasFile('icon')) {
-            // Delete old icon if exists
-            if ($category->icon && Storage::disk('public')->exists($category->icon)) {
-                Storage::disk('public')->delete($category->icon);
-            }
-
             $icon = $request->file('icon');
-            $iconFileName = time().'_'.$icon->getClientOriginalName();
-            $iconPath = $icon->storeAs('categories', $iconFileName, 'public');
+            $quality = $this->imageService->getOptimalQuality($icon);
+            $iconPath = $this->imageService->updateImage($icon, $category->icon, 'categories', $quality);
             $data['icon'] = $iconPath;
         }
 

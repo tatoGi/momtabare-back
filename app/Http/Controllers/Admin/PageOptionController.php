@@ -6,10 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\PageOption;
 use App\Models\PageOptionsImage;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 
 class PageOptionController extends Controller
 {
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -55,10 +63,12 @@ class PageOptionController extends Controller
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $key => $image) {
-                $imageName = $image->getClientOriginalName();
-                $path = $image->storeAs('/options', $imageName);
+                // Upload and convert to WebP
+                $quality = $this->imageService->getOptimalQuality($image);
+                $path = $this->imageService->uploadAsWebP($image, 'options', $quality);
+
                 $optionImage = new PageOptionsImage;
-                $optionImage->image_name = $imageName; // Store the file path instead of the file name
+                $optionImage->image_name = basename($path);
                 $optionImage->page_option_id = $option->id;
                 $optionImage->save();
             }

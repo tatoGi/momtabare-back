@@ -19,6 +19,9 @@ class BogPayment extends Model
         'callback_data',
         'save_card_requested',
         'verified_at',
+        'promo_code',
+        'discount_amount',
+        'original_amount',
     ];
 
     protected $casts = [
@@ -26,6 +29,8 @@ class BogPayment extends Model
         'response_data' => 'array',
         'callback_data' => 'array',
         'amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'original_amount' => 'decimal:2',
         'save_card_requested' => 'boolean',
     ];
 

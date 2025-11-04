@@ -9,6 +9,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $unreadNotifications
+ * @property-read int|null $notifications_count
+ * @property-read int|null $unread_notifications_count
+ */
 class WebUser extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable;
@@ -154,5 +160,13 @@ class WebUser extends Authenticatable implements MustVerifyEmail
     public function addresses()
     {
         return $this->hasMany(WebUserAddress::class, 'web_user_id');
+    }
+
+    /**
+     * Get promo codes assigned to this user
+     */
+    public function promoCodes()
+    {
+        return $this->belongsToMany(PromoCode::class, 'promo_code_web_user', 'web_user_id', 'promo_code_id')->withTimestamps();
     }
 }

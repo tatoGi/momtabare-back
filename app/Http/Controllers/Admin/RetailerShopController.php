@@ -5,11 +5,19 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\RetailerShop;
 use App\Models\WebUser;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class RetailerShopController extends Controller
 {
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -37,13 +45,15 @@ class RetailerShopController extends Controller
     {
         $validated = $this->validateShop($request);
 
-        // Handle file uploads
+        // Handle file uploads - convert to WebP
         if ($request->hasFile('avatar')) {
-            $validated['avatar'] = $request->file('avatar')->store('retailer/avatars', 'public');
+            $quality = $this->imageService->getOptimalQuality($request->file('avatar'));
+            $validated['avatar'] = $this->imageService->uploadAsWebP($request->file('avatar'), 'retailer/avatars', $quality);
         }
 
         if ($request->hasFile('cover_image')) {
-            $validated['cover_image'] = $request->file('cover_image')->store('retailer/covers', 'public');
+            $quality = $this->imageService->getOptimalQuality($request->file('cover_image'));
+            $validated['cover_image'] = $this->imageService->uploadAsWebP($request->file('cover_image'), 'retailer/covers', $quality);
         }
 
         // Create the shop
@@ -93,22 +103,26 @@ class RetailerShopController extends Controller
     {
         $validated = $this->validateShop($request, $retailerShop->id);
 
-        // Handle avatar upload
+        // Handle avatar upload - convert to WebP
         if ($request->hasFile('avatar')) {
-            // Delete old avatar if exists
-            if ($retailerShop->avatar) {
-                Storage::disk('public')->delete($retailerShop->avatar);
-            }
-            $validated['avatar'] = $request->file('avatar')->store('retailer/avatars', 'public');
+            $quality = $this->imageService->getOptimalQuality($request->file('avatar'));
+            $validated['avatar'] = $this->imageService->updateImage(
+                $request->file('avatar'),
+                $retailerShop->avatar,
+                'retailer/avatars',
+                $quality
+            );
         }
 
-        // Handle cover image upload
+        // Handle cover image upload - convert to WebP
         if ($request->hasFile('cover_image')) {
-            // Delete old cover if exists
-            if ($retailerShop->cover_image) {
-                Storage::disk('public')->delete($retailerShop->cover_image);
-            }
-            $validated['cover_image'] = $request->file('cover_image')->store('retailer/covers', 'public');
+            $quality = $this->imageService->getOptimalQuality($request->file('cover_image'));
+            $validated['cover_image'] = $this->imageService->updateImage(
+                $request->file('cover_image'),
+                $retailerShop->cover_image,
+                'retailer/covers',
+                $quality
+            );
         }
 
         // Update the shop

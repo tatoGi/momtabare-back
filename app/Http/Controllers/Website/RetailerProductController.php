@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\ImageService;
 use App\Services\TranslationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,13 @@ use Illuminate\Support\Str;
 
 class RetailerProductController extends Controller
 {
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     /**
      * Get count of retailer's products
      */
@@ -158,11 +166,12 @@ class RetailerProductController extends Controller
                 $isFirstImage = true;
 
                 foreach ($images as $image) {
-                    $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
-                    $imagePath = $image->storeAs('products', $imageName, 'public');
+                    // Upload and convert to WebP
+                    $quality = $this->imageService->getOptimalQuality($image);
+                    $imagePath = $this->imageService->uploadAsWebP($image, 'products', $quality);
 
                     $product->images()->create([
-                        'image_name' => $imageName,
+                        'image_name' => basename($imagePath),
                         'image_path' => $imagePath,
                         'is_main' => $isFirstImage, // First image is main
                     ]);
@@ -354,11 +363,12 @@ class RetailerProductController extends Controller
             $isFirstImage = $existingImagesCount === 0; // Set first image as main if no images exist
 
             foreach ($images as $image) {
-                $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
-                $imagePath = $image->storeAs('products', $imageName, 'public');
+                // Upload and convert to WebP
+                $quality = $this->imageService->getOptimalQuality($image);
+                $imagePath = $this->imageService->uploadAsWebP($image, 'products', $quality);
 
                 $product->images()->create([
-                    'image_name' => $imageName,
+                    'image_name' => basename($imagePath),
                     'image_path' => $imagePath,
                     'is_main' => $isFirstImage,
                 ]);
@@ -439,11 +449,12 @@ class RetailerProductController extends Controller
         $isFirstImage = $existingImagesCount === 0;
 
         foreach ($request->file('images') as $image) {
-            $imageName = time().'_'.uniqid().'_'.$image->getClientOriginalName();
-            $imagePath = $image->storeAs('products', $imageName, 'public');
+            // Upload and convert to WebP
+            $quality = $this->imageService->getOptimalQuality($image);
+            $imagePath = $this->imageService->uploadAsWebP($image, 'products', $quality);
 
             $productImage = $product->images()->create([
-                'image_name' => $imageName,
+                'image_name' => basename($imagePath),
                 'image_path' => $imagePath,
                 'is_main' => $isFirstImage,
             ]);

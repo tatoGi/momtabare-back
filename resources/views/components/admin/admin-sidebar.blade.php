@@ -19,6 +19,7 @@
         // ['icon' => 'fa-briefcase', 'title' => __('admin.Companies'), 'url' => '#'],
         ['icon' => 'fa-id-card-alt', 'title' => __('admin.Users'), 'url' => 'admin/webusers'],
         ['icon' => 'fa-credit-card', 'title' => __('admin.Payments'), 'url' => 'admin/payments'],
+        ['icon' => 'fa-tags', 'title' => __('admin.Promo Codes'), 'url' => 'admin/promo-codes'],
         ['icon' => 'fa-comments', 'title' => __('admin.Subscribers'), 'url' => 'admin/subscribers'],
         ['icon' => 'fa-book', 'title' => __('admin.Languages'), 'url' => 'admin/languages'],
         ['icon' => 'fa-life-ring', 'title' => __('admin.Help'), 'url' => 'admin/help'],

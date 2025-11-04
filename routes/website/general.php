@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\PromoCodeController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Website\FrontendController;
 use App\Http\Controllers\Website\SearchController;
@@ -36,6 +37,9 @@ Route::post('/locale/sync', [FrontendController::class, 'localeSync'])->name('lo
 Route::post('/auth/send-welcome-email', [FrontendController::class, 'sendWelcomeEmail'])
     ->middleware('throttle:5,1')
     ->name('auth.email.welcome');
+
+// Promo code validation (public, for customers)
+Route::post('/promo-codes/validate', [PromoCodeController::class, 'validateCode'])->name('promo-codes.validate');
 
 // Sitemap
 Route::get('/sitemap', [SitemapController::class, 'generate']);

@@ -22,6 +22,7 @@ return [
     'Companies' => 'კომპანიები',
     'User' => 'მომხმარებლები',
     'Payments' => 'გადახდები',
+    'Promo Codes' => 'პრომო კოდები',
     'Banners' => 'ბანერები',
     'Messages' => 'მესიჯები',
     'Blog' => 'ბლოგი',

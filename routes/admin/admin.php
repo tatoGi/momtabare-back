@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\PromoCodeController;
 use App\Http\Controllers\Admin\WebUserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AboutController;
@@ -83,3 +84,9 @@ Route::post('/privacy/update', [PrivacyController::class, 'update'])->name('priv
 Route::get('/help', [HelpController::class, 'edit'])->name('admin.help');
 Route::post('/help/update', [HelpController::class, 'update'])->name('help.update');
 
+// Promo Code management routes
+Route::resource('/promo-codes', PromoCodeController::class)->parameters([
+    'promo-codes' => 'promoCode',
+]);
+Route::get('/promo-codes/available/products', [PromoCodeController::class, 'getAvailableProducts'])->name('promo-codes.available-products');
+Route::get('/promo-codes/available/categories', [PromoCodeController::class, 'getAvailableCategories'])->name('promo-codes.available-categories');

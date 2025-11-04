@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Services\ImageService;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -17,9 +18,12 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    public function __construct()
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
     {
         $this->middleware('auth');
+        $this->imageService = $imageService;
     }
 
     /**
@@ -136,15 +140,17 @@ class ProductController extends Controller
         if ($request->hasFile('images')) {
             $firstImage = null;
             foreach ($request->file('images') as $key => $image) {
-                $imageName = $image->getClientOriginalName();
-                $path = $image->storeAs('products', $imageName, 'public');
+                // Upload and convert to WebP with optimal quality
+                $quality = $this->imageService->getOptimalQuality($image);
+                $path = $this->imageService->uploadAsWebP($image, 'products', $quality);
+
                 $productImage = new ProductImage;
-                $productImage->image_name = 'products/'.$imageName;
+                $productImage->image_name = $path;
                 $productImage->product_id = $product->id;
                 $productImage->save();
 
                 if ($key === 0) {
-                    $firstImage = $imageName;
+                    $firstImage = basename($path);
                 }
             }
 
@@ -264,10 +270,12 @@ class ProductController extends Controller
         // Handle product images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $key => $image) {
-                $imageName = time().'_'.$image->getClientOriginalName();
-                $path = $image->storeAs('products', $imageName, 'public');
+                // Upload and convert to WebP with optimal quality
+                $quality = $this->imageService->getOptimalQuality($image);
+                $path = $this->imageService->uploadAsWebP($image, 'products', $quality);
+
                 $productImage = new ProductImage;
-                $productImage->image_name = 'products/'.$imageName;
+                $productImage->image_name = $path;
                 $productImage->product_id = $product->id;
                 $productImage->save();
             }
@@ -438,15 +446,17 @@ class ProductController extends Controller
         if ($request->hasFile('images')) {
             $firstImage = null;
             foreach ($request->file('images') as $key => $image) {
-                $imageName = $image->getClientOriginalName();
-                $path = $image->storeAs('products', $imageName, 'public');
+                // Upload and convert to WebP with optimal quality
+                $quality = $this->imageService->getOptimalQuality($image);
+                $path = $this->imageService->uploadAsWebP($image, 'products', $quality);
+
                 $productImage = new ProductImage;
-                $productImage->image_name = 'products/'.$imageName;
+                $productImage->image_name = $path;
                 $productImage->product_id = $product->id;
                 $productImage->save();
 
                 if ($key === 0) {
-                    $firstImage = $imageName;
+                    $firstImage = basename($path);
                 }
             }
 

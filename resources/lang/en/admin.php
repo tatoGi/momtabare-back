@@ -50,6 +50,7 @@ return [
     'Retailer_Approved' => 'Retailer request approved successfully',
     'Retailer_Rejected' => 'Retailer request rejected successfully',
     'Payments' => 'Payments',
+    'Promo Codes' => 'Promo Codes',
     'Banners' => 'Banners',
     'Messages' => 'Messages',
     'Blog' => 'Blog',

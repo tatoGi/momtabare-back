@@ -49,6 +49,8 @@ class BogPaymentController extends Controller
                 'redirect_urls.success' => ['nullable', 'url'],
                 'redirect_urls.fail' => ['nullable', 'url'],
                 'language' => ['nullable', 'string', 'size:2'],
+                'promo_code' => ['nullable', 'string', 'max:50'],
+                'discount_amount' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             // Clean up user_id to ensure it's properly handled
@@ -159,6 +161,9 @@ class BogPaymentController extends Controller
                         'redirect_url' => $redirectUrl,
                         'payload_data' => $payload,
                         'response_data' => $orderData,
+                        'promo_code' => $validated['promo_code'] ?? null,
+                        'discount_amount' => $validated['discount_amount'] ?? null,
+                        'original_amount' => isset($validated['discount_amount']) ? ($validated['amount'] + $validated['discount_amount']) : $validated['amount'],
                         'updated_at' => now(),
                     ]);
                 } else {
@@ -175,6 +180,9 @@ class BogPaymentController extends Controller
                         'redirect_url' => $redirectUrl,
                         'payload_data' => $payload,
                         'response_data' => $orderData,
+                        'promo_code' => $validated['promo_code'] ?? null,
+                        'discount_amount' => $validated['discount_amount'] ?? null,
+                        'original_amount' => isset($validated['discount_amount']) ? ($validated['amount'] + $validated['discount_amount']) : $validated['amount'],
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);

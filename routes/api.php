@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\RateProductController;
-
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PromoCodeController;
 use App\Http\Controllers\website\FrontendController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,29 @@ require __DIR__.'/website/products.php';
 require __DIR__.'/website/comments.php';
 require __DIR__.'/website/addresses.php';
 require __DIR__.'/website/bog.php';
+
+// Notification routes (protected by Sanctum authentication)
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::get('/unread', [NotificationController::class, 'unread'])->name('api.notifications.unread');
+    Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('api.notifications.unread-count');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.mark-all-read');
+    Route::post('/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-read');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('api.notifications.destroy');
+    Route::delete('/', [NotificationController::class, 'destroyAll'])->name('api.notifications.destroy-all');
+});
+
+// Promo Code routes
+Route::prefix('promo-code')->group(function () {
+    // Public route - validate and apply promo code
+    Route::post('/apply', [PromoCodeController::class, 'apply'])->name('api.promo-code.apply');
+
+    // Protected route - get user's assigned promo codes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/my-codes', [PromoCodeController::class, 'myCodes'])->name('api.promo-code.my-codes');
+    });
+});
+
 // Rate product API
 Route::post('/rate-product', [RateProductController::class, 'set']);
 // Get product ratings API

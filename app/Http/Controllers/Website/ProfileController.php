@@ -4,12 +4,20 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Models\WebUser;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     public function edit(Request $request)
     {
         $user = $request->user('sanctum');
@@ -171,13 +179,10 @@ class ProfileController extends Controller
             'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:4096',
         ]);
 
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
-        }
-
+        // Upload new avatar as WebP and delete old one
         $file = $request->file('avatar');
-        $filename = time().'_'.$file->getClientOriginalName();
-        $path = $file->storeAs('avatars', $filename, 'public');
+        $quality = $this->imageService->getOptimalQuality($file);
+        $path = $this->imageService->updateImage($file, $user->avatar, 'avatars', $quality);
 
         $user->avatar = $path;
         $user->save();

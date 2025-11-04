@@ -6,15 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use App\Models\BannerImage;
 use App\Models\Page;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
 class BannerController extends Controller
 {
-    public function __construct()
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
     {
         $this->middleware('auth');
+        $this->imageService = $imageService;
     }
 
     public function index()
@@ -47,11 +51,11 @@ class BannerController extends Controller
         // Create the banner
         $banner = Banner::create($data);
 
-        // Handle multiple images upload
+        // Handle multiple images upload - convert to WebP
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $imageName = time().'_'.$image->getClientOriginalName();
-                $path = $image->storeAs('banners', $imageName, 'public');
+                $quality = $this->imageService->getOptimalQuality($image);
+                $path = $this->imageService->uploadAsWebP($image, 'banners', $quality);
 
                 $bannerImage = new BannerImage;
                 $bannerImage->image_name = $path;
@@ -112,11 +116,11 @@ class BannerController extends Controller
         $updateData = $request->except(['images']);
         $banner->update($updateData);
 
-        // Handle additional images
+        // Handle additional images - convert to WebP
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $imageName = time().'_'.$image->getClientOriginalName();
-                $path = $image->storeAs('banners', $imageName, 'public');
+                $quality = $this->imageService->getOptimalQuality($image);
+                $path = $this->imageService->uploadAsWebP($image, 'banners', $quality);
 
                 $bannerImage = new BannerImage;
                 $bannerImage->image_name = $path;

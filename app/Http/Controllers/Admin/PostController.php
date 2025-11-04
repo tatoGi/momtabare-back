@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\PostAttribute;
+use App\Services\ImageService;
 use App\Services\PageTypeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,13 @@ use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
 {
+    protected ImageService $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     /**
      * Display posts for a specific page
      */
@@ -269,7 +277,7 @@ class PostController extends Controller
                 continue;
             }
 
-            // Handle file uploads
+            // Handle file uploads - convert to WebP
             if (($config['type'] ?? null) === 'image' && $request->hasFile($key)) {
                 // Delete old file if exists
                 $oldAttribute = PostAttribute::where('post_id', $post->id)
@@ -277,14 +285,15 @@ class PostController extends Controller
                     ->whereNull('locale')
                     ->first();
 
-                if ($oldAttribute && $oldAttribute->attribute_value) {
-                    Storage::disk('public')->delete($oldAttribute->attribute_value);
-                }
-
-                // Store new file
+                // Store new file as WebP
                 $file = $request->file($key);
-                $filename = time().'_'.$file->getClientOriginalName();
-                $path = $file->storeAs('posts', $filename, 'public');
+                $quality = $this->imageService->getOptimalQuality($file);
+                $path = $this->imageService->updateImage(
+                    $file,
+                    $oldAttribute?->attribute_value,
+                    'posts',
+                    $quality
+                );
                 $value = $path;
             }
 
@@ -346,8 +355,8 @@ class PostController extends Controller
 
         try {
             $file = $request->file('file');
-            $filename = time().'_'.$file->getClientOriginalName();
-            $path = $file->storeAs('editor-images', $filename, 'public');
+            $quality = $this->imageService->getOptimalQuality($file);
+            $path = $this->imageService->uploadAsWebP($file, 'editor-images', $quality);
 
             return response()->json([
                 'location' => asset('storage/'.$path),
