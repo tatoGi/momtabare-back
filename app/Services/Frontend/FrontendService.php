@@ -336,6 +336,79 @@ class FrontendService
     }
 
     /**
+     * Get complete home page data in one call
+     * Combines: home page posts, banners, popular products, blog posts, pages list
+     *
+     * @param int $blogLimit Number of blog posts to return
+     * @param int $productsLimit Number of products to return
+     * @return array
+     */
+    public function getCompleteHomePageData($blogLimit = 10, $productsLimit = 50)
+    {
+        // Get home page (type_id = 1) with posts, banners, and products
+        $homePage = Page::where('type_id', 1)
+            ->whereHas('translations', function ($query) {
+                $query->where('active', 1);
+            })
+            ->with([
+                'translations' => function ($query) {
+                    $query->where('active', 1);
+                },
+                'posts' => function ($query) {
+                    $query->where('active', 1)
+                        ->orderBy('sort_order', 'asc')
+                        ->orderBy('published_at', 'desc')
+                        ->with([
+                            'translations',
+                            'attributes',
+                            'category.translations',
+                        ]);
+                },
+                'banners.images',
+                'products' => function ($query) {
+                    $query->where('active', 1)
+                        ->with(['images', 'translations']);
+                },
+            ])
+            ->first();
+
+        // Get popular products with better ordering
+        $popularProducts = Product::where('active', '1')
+            ->with([
+                'translations',
+                'category.translations',
+                'images',
+            ])
+            ->orderByDesc('views')
+            ->limit($productsLimit)
+            ->get();
+
+        // Get latest blog posts
+        $blogPosts = $this->getLatestBlogPosts($blogLimit);
+
+        // Get all active pages for navigation
+        $pages = Page::whereHas('translations', function ($query) {
+                $query->where('active', 1);
+            })
+            ->with([
+                'translations' => function ($query) {
+                    $query->where('active', 1);
+                },
+            ])
+            ->orderBy('sort', 'asc')
+            ->get();
+
+        return [
+            'posts' => $homePage->posts ?? [],
+            'banners' => $homePage->banners ?? [],
+            'products' => $homePage->products ?? [],
+            'popular_products' => $popularProducts,
+            'blog_posts' => $blogPosts,
+            'pages' => $pages,
+        ];
+    }
+
+    /**
      * Generate breadcrumbs for a section
      *
      * @param  mixed  $section

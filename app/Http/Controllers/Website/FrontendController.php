@@ -145,6 +145,22 @@ class FrontendController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Get complete home page data in one API call
+     * Includes: posts, banners, products, popular products, blog posts, pages
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function completeHomePage(Request $request)
+    {
+        $blogLimit = $request->get('blog_limit', 10);
+        $productsLimit = $request->get('products_limit', 50);
+
+        $data = $this->frontendService->getCompleteHomePageData($blogLimit, $productsLimit);
+
+        return response()->json($data);
+    }
+
     public function index($slug = null)
     {
         if (empty($slug)) {

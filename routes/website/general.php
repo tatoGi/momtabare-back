@@ -17,11 +17,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public API routes
+Route::get('/home', [FrontendController::class, 'completeHomePage'])->name('api.home.complete');
 Route::get('/pages', [FrontendController::class, 'pages']);
 Route::get('/categories', [FrontendController::class, 'categories']);
 Route::get('/blog-posts', [FrontendController::class, 'latestBlogPosts'])->name('api.blog.latest');
 Route::get('/languages', [FrontendController::class, 'languages'])->name('api.languages');
-Route::get('/home', [FrontendController::class, 'homePage']);
 
 // Search functionality
 Route::get('/search', [SearchController::class, 'search'])->name('search');

@@ -34,7 +34,7 @@ Route::middleware(['auth:web,sanctum'])->group(function () {
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])
         ->name('profile.avatar');
 
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Web-only routes (require session)
     Route::middleware(['auth:sanctum'])->group(function () {
