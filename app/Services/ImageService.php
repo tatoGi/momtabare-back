@@ -12,21 +12,19 @@ class ImageService
     /**
      * Upload and convert image to WebP format
      *
-     * @param UploadedFile $file
-     * @param string $directory
-     * @param int $quality Quality for WebP conversion (0-100)
-     * @param array $sizes Optional array of sizes ['thumbnail' => 150, 'medium' => 600]
+     * @param  int  $quality  Quality for WebP conversion (0-100)
+     * @param  array  $sizes  Optional array of sizes ['thumbnail' => 150, 'medium' => 600]
      * @return string Path to the uploaded WebP image
      */
     public function uploadAsWebP(UploadedFile $file, string $directory, int $quality = 80, array $sizes = []): string
     {
         // Generate unique filename
         $filename = Str::random(40);
-        $webpFilename = $filename . '.webp';
+        $webpFilename = $filename.'.webp';
 
         // Ensure directory exists
-        $fullPath = storage_path('app/public/' . $directory);
-        if (!file_exists($fullPath)) {
+        $fullPath = storage_path('app/public/'.$directory);
+        if (! file_exists($fullPath)) {
             mkdir($fullPath, 0755, true);
         }
 
@@ -47,17 +45,17 @@ class ImageService
         }
 
         // Save main image
-        $mainPath = $fullPath . '/' . $webpFilename;
+        $mainPath = $fullPath.'/'.$webpFilename;
         $image->toWebp($quality)->save($mainPath);
 
         // Free memory
         unset($image);
 
         // Generate additional sizes if requested
-        if (!empty($sizes)) {
+        if (! empty($sizes)) {
             foreach ($sizes as $sizeName => $width) {
-                $sizeFilename = $filename . '_' . $sizeName . '.webp';
-                $sizePath = $fullPath . '/' . $sizeFilename;
+                $sizeFilename = $filename.'_'.$sizeName.'.webp';
+                $sizePath = $fullPath.'/'.$sizeFilename;
 
                 $resizedImage = Image::read($file);
                 $resizedImage->scale(width: $width)->toWebp($quality)->save($sizePath);
@@ -65,26 +63,22 @@ class ImageService
             }
         }
 
-        return $directory . '/' . $webpFilename;
+        return $directory.'/'.$webpFilename;
     }
 
     /**
      * Upload and convert image to WebP with custom filename
      *
-     * @param UploadedFile $file
-     * @param string $directory
-     * @param string $customName
-     * @param int $quality
      * @return string Path to the uploaded WebP image
      */
     public function uploadAsWebPWithName(UploadedFile $file, string $directory, string $customName, int $quality = 80): string
     {
         // Generate WebP filename from custom name
-        $webpFilename = pathinfo($customName, PATHINFO_FILENAME) . '.webp';
+        $webpFilename = pathinfo($customName, PATHINFO_FILENAME).'.webp';
 
         // Ensure directory exists
-        $fullPath = storage_path('app/public/' . $directory);
-        if (!file_exists($fullPath)) {
+        $fullPath = storage_path('app/public/'.$directory);
+        if (! file_exists($fullPath)) {
             mkdir($fullPath, 0755, true);
         }
 
@@ -92,31 +86,30 @@ class ImageService
         $image = Image::read($file);
 
         // Save image
-        $mainPath = $fullPath . '/' . $webpFilename;
+        $mainPath = $fullPath.'/'.$webpFilename;
         $image->toWebp($quality)->save($mainPath);
 
-        return $directory . '/' . $webpFilename;
+        return $directory.'/'.$webpFilename;
     }
 
     /**
      * Delete image and its variations
      *
-     * @param string $path Path to the image
-     * @param array $variations Optional array of variation suffixes ['_thumbnail', '_medium']
-     * @return bool
+     * @param  string  $path  Path to the image
+     * @param  array  $variations  Optional array of variation suffixes ['_thumbnail', '_medium']
      */
     public function deleteImage(string $path, array $variations = []): bool
     {
         $deleted = Storage::disk('public')->delete($path);
 
-        if (!empty($variations)) {
+        if (! empty($variations)) {
             $pathInfo = pathinfo($path);
             $directory = $pathInfo['dirname'];
             $filename = $pathInfo['filename'];
             $extension = $pathInfo['extension'];
 
             foreach ($variations as $variation) {
-                $variationPath = $directory . '/' . $filename . $variation . '.' . $extension;
+                $variationPath = $directory.'/'.$filename.$variation.'.'.$extension;
                 Storage::disk('public')->delete($variationPath);
             }
         }
@@ -126,13 +119,6 @@ class ImageService
 
     /**
      * Update image - delete old and upload new as WebP
-     *
-     * @param UploadedFile $newFile
-     * @param string|null $oldPath
-     * @param string $directory
-     * @param int $quality
-     * @param array $sizes
-     * @return string
      */
     public function updateImage(UploadedFile $newFile, ?string $oldPath, string $directory, int $quality = 80, array $sizes = []): string
     {
@@ -148,16 +134,15 @@ class ImageService
     /**
      * Convert existing image to WebP and replace original
      *
-     * @param string $existingPath Path to existing image in public storage
-     * @param int $quality
-     * @param bool $deleteOriginal Delete original file after conversion
+     * @param  string  $existingPath  Path to existing image in public storage
+     * @param  bool  $deleteOriginal  Delete original file after conversion
      * @return string Path to the new WebP image
      */
     public function convertExistingToWebP(string $existingPath, int $quality = 80, bool $deleteOriginal = true): string
     {
-        $fullPath = storage_path('app/public/' . $existingPath);
+        $fullPath = storage_path('app/public/'.$existingPath);
 
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             throw new \Exception("Image not found: {$existingPath}");
         }
 
@@ -187,9 +172,9 @@ class ImageService
 
         // Generate WebP filename
         $pathInfo = pathinfo($existingPath);
-        $webpFilename = $pathInfo['filename'] . '.webp';
-        $webpPath = $pathInfo['dirname'] . '/' . $webpFilename;
-        $webpFullPath = storage_path('app/public/' . $webpPath);
+        $webpFilename = $pathInfo['filename'].'.webp';
+        $webpPath = $pathInfo['dirname'].'/'.$webpFilename;
+        $webpFullPath = storage_path('app/public/'.$webpPath);
 
         // Save as WebP
         $image->toWebp($quality)->save($webpFullPath);
@@ -208,9 +193,6 @@ class ImageService
 
     /**
      * Get optimized quality based on image size
-     *
-     * @param UploadedFile $file
-     * @return int
      */
     public function getOptimalQuality(UploadedFile $file): int
     {

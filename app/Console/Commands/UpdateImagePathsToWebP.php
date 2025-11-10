@@ -192,9 +192,9 @@ class UpdateImagePathsToWebP extends Command
         }
 
         $this->newLine();
-        $this->info("════════════════════════════════════════");
+        $this->info('════════════════════════════════════════');
         $this->info("  Total database records updated: {$totalUpdated}");
-        $this->info("════════════════════════════════════════");
+        $this->info('════════════════════════════════════════');
         $this->newLine();
         $this->info('✅ Database image paths updated successfully!');
 

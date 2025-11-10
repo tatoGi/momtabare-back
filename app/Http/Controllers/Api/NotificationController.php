@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\WebUser;
 
 class NotificationController extends Controller
 {
@@ -18,7 +18,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -56,7 +56,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -87,7 +87,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -125,7 +125,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -134,7 +134,7 @@ class NotificationController extends Controller
 
             $notification = $user->notifications()->find($id);
 
-            if (!$notification) {
+            if (! $notification) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification not found',
@@ -165,7 +165,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -196,7 +196,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -205,7 +205,7 @@ class NotificationController extends Controller
 
             $notification = $user->notifications()->find($id);
 
-            if (!$notification) {
+            if (! $notification) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification not found',
@@ -236,7 +236,7 @@ class NotificationController extends Controller
             /** @var WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',

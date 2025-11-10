@@ -40,7 +40,7 @@
         </div>
     @endif
 
-    <form action="{{ route('products.update', [app()->getlocale(), $product->id]) }}" method="POST" enctype="multipart/form-data">
+    <form id="productForm" action="{{ route('products.update', [app()->getlocale(), $product->id]) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         @if(request()->has('page_id'))
@@ -523,7 +523,7 @@
 
         <!-- Action Buttons - Centered Below Form -->
         <div class="mt-8 flex items-center justify-center gap-4">
-            <button type="submit"
+            <button type="button" onclick="handleFormSubmit()"
                     class="flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -547,6 +547,9 @@
 
     <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
     <script>
+        // Store CKEditor instances
+        const editorInstances = {};
+
         $(document).ready(function() {
             console.log('Script loaded');
 
@@ -556,6 +559,7 @@
                     ClassicEditor
                         .create(document.querySelector('#description_{{ $locale }}'))
                         .then(editor => {
+                            editorInstances['{{ $locale }}'] = editor;
                             console.log('CKEditor initialized for {{ $locale }}');
                         })
                         .catch(error => {
@@ -566,12 +570,12 @@
                 console.warn('ClassicEditor is not loaded - description fields will be plain textareas');
             }
 
-            // Language Tab Switching
+            // Language Tab Switching with Auto-Translation
             $('.language-tab').on('click', function(e) {
                 e.preventDefault();
-                const locale = $(this).data('locale');
+                const targetLocale = $(this).data('locale');
 
-                console.log('Language tab clicked:', locale);
+                console.log('Language tab clicked:', targetLocale);
 
                 // Update tab styles - use attr to set full class
                 $('.language-tab').each(function() {
@@ -585,11 +589,256 @@
                 $('.locale-content').each(function() {
                     $(this).addClass('hidden');
                 });
-                $('#locale-' + locale).removeClass('hidden');
+                $('#locale-' + targetLocale).removeClass('hidden');
 
                 console.log('Content visibility changed');
+
+                // Check if target locale is empty and auto-translate
+                checkAndAutoTranslate(targetLocale);
             });
         });
+
+        // Check if target locale fields are empty and trigger auto-translation
+        function checkAndAutoTranslate(targetLocale) {
+            const titleValue = $('#title_' + targetLocale).val();
+
+            // If title is empty, trigger auto-translation
+            if (!titleValue || titleValue.trim() === '') {
+                console.log('Target locale is empty, attempting auto-translation');
+
+                // Find source locale (first locale with data)
+                const locales = {!! json_encode(config('app.locales')) !!};
+                let sourceLocale = null;
+                let sourceData = null;
+
+                for (const locale of locales) {
+                    const title = $('#title_' + locale).val();
+                    if (title && title.trim() !== '' && locale !== targetLocale) {
+                        sourceLocale = locale;
+
+                        // Get description from CKEditor or textarea
+                        let description = '';
+                        if (editorInstances[locale]) {
+                            description = editorInstances[locale].getData();
+                        } else {
+                            description = $('#description_' + locale).val();
+                        }
+
+                        sourceData = {
+                            title: title,
+                            description: description,
+                            location: $('#location_' + locale).val(),
+                            brand: $('#brand_' + locale).val(),
+                            color: $('#color_' + locale).val(),
+                        };
+                        break;
+                    }
+                }
+
+                if (sourceLocale && sourceData) {
+                    console.log('Found source locale:', sourceLocale, sourceData);
+                    performAutoTranslation(sourceLocale, targetLocale, sourceData);
+                } else {
+                    console.log('No source locale with data found');
+                }
+            }
+        }
+
+        // Handle form submit with auto-translation check
+        function handleFormSubmit() {
+            const locales = {!! json_encode(config('app.locales')) !!};
+            const missingLocales = [];
+            let sourceLocale = null;
+            let sourceData = null;
+
+            // Find source locale and check for missing translations
+            for (const locale of locales) {
+                const title = $('#title_' + locale).val();
+                if (title && title.trim() !== '') {
+                    if (!sourceLocale) {
+                        sourceLocale = locale;
+
+                        // Get description from CKEditor or textarea
+                        let description = '';
+                        if (editorInstances[locale]) {
+                            description = editorInstances[locale].getData();
+                        } else {
+                            description = $('#description_' + locale).val();
+                        }
+
+                        sourceData = {
+                            title: title,
+                            description: description,
+                            location: $('#location_' + locale).val(),
+                            brand: $('#brand_' + locale).val(),
+                            color: $('#color_' + locale).val(),
+                        };
+                    }
+                } else {
+                    missingLocales.push(locale);
+                }
+            }
+
+            // If there are missing locales, translate them first
+            if (missingLocales.length > 0 && sourceLocale && sourceData) {
+                console.log('Missing locales detected:', missingLocales);
+                console.log('Will translate from:', sourceLocale);
+
+                // Translate all missing locales
+                translateMissingLocales(sourceLocale, sourceData, missingLocales);
+            } else {
+                // All locales filled, submit form directly
+                document.getElementById('productForm').submit();
+            }
+        }
+
+        // Translate multiple missing locales before form submission
+        function translateMissingLocales(sourceLocale, sourceData, missingLocales) {
+            let completed = 0;
+            const total = missingLocales.length;
+
+            // Show global loading message
+            const globalLoadingHtml = '<div id="global-translate-loading" class="fixed top-4 right-4 z-50 p-4 bg-blue-600 text-white rounded-lg shadow-2xl"><div class="flex items-center gap-3"><svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><div><div class="font-bold">Auto-translating missing languages...</div><div class="text-sm opacity-90"><span id="translate-progress">0</span>/' + total + ' completed</div></div></div></div>';
+            $('body').append(globalLoadingHtml);
+
+            missingLocales.forEach(targetLocale => {
+                $.ajax({
+                    url: '/{{ app()->getLocale() }}/admin/products/auto-translate',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        source_locale: sourceLocale,
+                        target_locale: targetLocale,
+                        title: sourceData.title,
+                        description: sourceData.description,
+                        location: sourceData.location,
+                        brand: sourceData.brand,
+                        color: sourceData.color,
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Populate fields with translated data
+                            $('#title_' + targetLocale).val(response.data.title);
+                            $('#slug_' + targetLocale).val(response.data.slug);
+                            $('#location_' + targetLocale).val(response.data.location);
+                            $('#brand_' + targetLocale).val(response.data.brand);
+                            $('#color_' + targetLocale).val(response.data.color);
+
+                            // Set description in CKEditor or textarea
+                            if (editorInstances[targetLocale]) {
+                                editorInstances[targetLocale].setData(response.data.description);
+                            } else {
+                                $('#description_' + targetLocale).val(response.data.description);
+                            }
+                        }
+
+                        completed++;
+                        $('#translate-progress').text(completed);
+
+                        // If all translations completed, submit form
+                        if (completed === total) {
+                            $('#global-translate-loading').remove();
+
+                            // Show success message briefly before submit
+                            const successMsg = '<div id="translate-success" class="fixed top-4 right-4 z-50 p-4 bg-green-600 text-white rounded-lg shadow-2xl"><div class="flex items-center gap-3"><svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><div class="font-bold">Translation complete! Saving...</div></div></div>';
+                            $('body').append(successMsg);
+
+                            setTimeout(function() {
+                                $('#translate-success').remove();
+                                document.getElementById('productForm').submit();
+                            }, 1000);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Translation failed for ' + targetLocale + ':', error);
+                        completed++;
+                        $('#translate-progress').text(completed);
+
+                        // Continue even if one fails
+                        if (completed === total) {
+                            $('#global-translate-loading').remove();
+
+                            const errorMsg = '<div id="translate-error" class="fixed top-4 right-4 z-50 p-4 bg-red-600 text-white rounded-lg shadow-2xl"><div class="flex items-center gap-3"><svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg><div><div class="font-bold">Some translations failed</div><div class="text-sm">Attempting to save anyway...</div></div></div></div>';
+                            $('body').append(errorMsg);
+
+                            setTimeout(function() {
+                                $('#translate-error').remove();
+                                document.getElementById('productForm').submit();
+                            }, 2000);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Perform auto-translation via API
+        function performAutoTranslation(sourceLocale, targetLocale, sourceData) {
+            // Show loading indicator
+            const loadingHtml = '<div class="auto-translate-loading p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4"><div class="flex items-center gap-3"><svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-blue-800 font-semibold">Auto-translating from ' + (sourceLocale === 'ka' ? 'Georgian' : 'English') + ' to ' + (targetLocale === 'ka' ? 'Georgian' : 'English') + '...</span></div></div>';
+            $('#locale-' + targetLocale).prepend(loadingHtml);
+
+            $.ajax({
+                url: '/{{ app()->getLocale() }}/admin/products/auto-translate',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    source_locale: sourceLocale,
+                    target_locale: targetLocale,
+                    title: sourceData.title,
+                    description: sourceData.description,
+                    location: sourceData.location,
+                    brand: sourceData.brand,
+                    color: sourceData.color,
+                },
+                success: function(response) {
+                    $('.auto-translate-loading').remove();
+
+                    if (response.success) {
+                        console.log('Translation successful:', response.data);
+
+                        // Populate fields with translated data
+                        $('#title_' + targetLocale).val(response.data.title);
+                        $('#slug_' + targetLocale).val(response.data.slug);
+                        $('#location_' + targetLocale).val(response.data.location);
+                        $('#brand_' + targetLocale).val(response.data.brand);
+                        $('#color_' + targetLocale).val(response.data.color);
+
+                        // Set description in CKEditor or textarea
+                        if (editorInstances[targetLocale]) {
+                            editorInstances[targetLocale].setData(response.data.description);
+                        } else {
+                            $('#description_' + targetLocale).val(response.data.description);
+                        }
+
+                        // Show success message
+                        const successHtml = '<div class="auto-translate-success p-4 bg-green-50 border border-green-200 rounded-lg mb-4"><div class="flex items-center gap-3"><svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span class="text-green-800 font-semibold">Auto-translation completed successfully!</span></div></div>';
+                        $('#locale-' + targetLocale).prepend(successHtml);
+
+                        // Remove success message after 3 seconds
+                        setTimeout(function() {
+                            $('.auto-translate-success').fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                        }, 3000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('.auto-translate-loading').remove();
+                    console.error('Translation failed:', error);
+
+                    // Show error message
+                    const errorHtml = '<div class="auto-translate-error p-4 bg-red-50 border border-red-200 rounded-lg mb-4"><div class="flex items-center gap-3"><svg class="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg><span class="text-red-800 font-semibold">Auto-translation failed. Please fill manually.</span></div></div>';
+                    $('#locale-' + targetLocale).prepend(errorHtml);
+
+                    // Remove error message after 5 seconds
+                    setTimeout(function() {
+                        $('.auto-translate-error').fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    }, 5000);
+                }
+            });
+        }
 
         // Image Preview Function
         function previewImages(event) {

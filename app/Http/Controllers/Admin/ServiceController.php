@@ -11,6 +11,7 @@ class ServiceController extends Controller
     public function edit()
     {
         $service = Service::first();
+
         return view('admin.service.edit', compact('service'));
     }
 
@@ -22,12 +23,13 @@ class ServiceController extends Controller
             'text_.ka' => 'required|string',
         ]);
         $service = Service::first();
-        if (!$service) {
-            $service = new Service();
+        if (! $service) {
+            $service = new Service;
         }
         $service->text_en = $data['text_']['en'];
         $service->text_ka = $data['text_']['ka'];
         $service->save();
+
         return redirect()->back()->with('success', __('admin.our_services_text_updated'));
     }
 }

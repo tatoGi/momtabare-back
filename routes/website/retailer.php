@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Route;
 // Public retailer routes
 Route::get('/retailer/{id}', [FrontendController::class, 'getRetailerOrUser'])->name('retailer.show');
 
-// Protected retailer routes (require auth and retailer middleware)
-Route::prefix('retailer')->group(function () {
+// Protected retailer routes (require auth:sanctum middleware)
+Route::middleware('auth:sanctum')->prefix('retailer')->group(function () {
     Route::get('/user/products', [RetailerProductController::class, 'index'])->name('retailer.products.index');
     Route::post('/products', [RetailerProductController::class, 'store'])->name('retailer.products.store');
     Route::get('/products/{id}', [RetailerProductController::class, 'show'])->name('retailer.products.show');
@@ -34,5 +34,5 @@ Route::prefix('retailer')->group(function () {
     Route::post('/retailer-shop/store', [FrontendController::class, 'storeRetailerShop'])->name('retailer-shop.store');
     Route::get('/retailer-shop/count', [FrontendController::class, 'retailerShopCount'])->name('retailer-shop.count');
     Route::get('/retailer-shops', [FrontendController::class, 'retailerShops'])->name('retailer-shops');
-    Route::get('/retailer-shop', [FrontendController::class, 'retailerShopEdit'])->name('retailer-shop.edit');
+    Route::get('/retailer-shop/edit', [FrontendController::class, 'retailerShopEdit'])->name('retailer-shop.edit');
 });

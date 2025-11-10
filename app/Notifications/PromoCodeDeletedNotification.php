@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,6 +11,7 @@ class PromoCodeDeletedNotification extends Notification
     use Queueable;
 
     protected $code;
+
     protected $discountPercentage;
 
     /**
@@ -40,10 +40,10 @@ class PromoCodeDeletedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Promo Code No Longer Available')
-            ->greeting('Hello ' . $notifiable->first_name . '!')
+            ->greeting('Hello '.$notifiable->first_name.'!')
             ->line('We wanted to inform you that a promotional code has been removed.')
-            ->line('**Promo Code:** ' . $this->code)
-            ->line('**Discount:** ' . $this->discountPercentage . '% OFF')
+            ->line('**Promo Code:** '.$this->code)
+            ->line('**Discount:** '.$this->discountPercentage.'% OFF')
             ->line('This promo code is no longer valid and cannot be used.')
             ->line('Don\'t worry! We have many other great deals available for you.')
             ->action('Browse Deals', 'https://www.momtabare.com')
@@ -60,7 +60,7 @@ class PromoCodeDeletedNotification extends Notification
         return [
             'code' => $this->code,
             'discount_percentage' => $this->discountPercentage,
-            'message' => 'Promo code ' . $this->code . ' with ' . $this->discountPercentage . '% discount has been removed and is no longer available.',
+            'message' => 'Promo code '.$this->code.' with '.$this->discountPercentage.'% discount has been removed and is no longer available.',
         ];
     }
 }

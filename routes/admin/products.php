@@ -9,6 +9,9 @@ Route::resource('/products', ProductController::class)->parameters([
     'products' => 'product',
 ]);
 
+// Product auto-translation API
+Route::post('/products/auto-translate', [ProductController::class, 'autoTranslate'])->name('products.auto-translate');
+
 // Product image management
 Route::delete('/products/delete/image/{image_id}', [ProductController::class, 'deleteImage'])->name('products.images.delete');
 Route::get('/products/cleanup-images', [ProductController::class, 'cleanupMissingImages'])->name('products.cleanup.images');

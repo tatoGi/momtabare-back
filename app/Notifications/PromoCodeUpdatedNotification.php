@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\PromoCode;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -39,21 +38,21 @@ class PromoCodeUpdatedNotification extends Notification
     {
         $mail = (new MailMessage)
             ->subject('Promo Code Updated!')
-            ->greeting('Hello ' . $notifiable->first_name . '!')
+            ->greeting('Hello '.$notifiable->first_name.'!')
             ->line('Your promotional discount code has been updated.')
-            ->line('**Promo Code:** ' . $this->promoCode->code)
-            ->line('**Discount:** ' . $this->promoCode->discount_percentage . '% OFF');
+            ->line('**Promo Code:** '.$this->promoCode->code)
+            ->line('**Discount:** '.$this->promoCode->discount_percentage.'% OFF');
 
         if ($this->promoCode->description) {
-            $mail->line('**Details:** ' . $this->promoCode->description);
+            $mail->line('**Details:** '.$this->promoCode->description);
         }
 
         if ($this->promoCode->valid_until) {
-            $mail->line('**Valid Until:** ' . $this->promoCode->valid_until->format('F j, Y'));
+            $mail->line('**Valid Until:** '.$this->promoCode->valid_until->format('F j, Y'));
         }
 
         if ($this->promoCode->minimum_order_amount) {
-            $mail->line('**Minimum Order:** $' . number_format((float)$this->promoCode->minimum_order_amount, 2));
+            $mail->line('**Minimum Order:** $'.number_format((float) $this->promoCode->minimum_order_amount, 2));
         }
 
         // Add applicable products information
@@ -64,11 +63,11 @@ class PromoCodeUpdatedNotification extends Notification
             $mail->line('---');
             $mail->line('**Applicable Products:**');
             foreach ($products->take(10) as $product) {
-                $productName = $product->title ?? $product->translate('title') ?? 'Product #' . $product->id;
-                $mail->line('• ' . $productName);
+                $productName = $product->title ?? $product->translate('title') ?? 'Product #'.$product->id;
+                $mail->line('• '.$productName);
             }
             if ($products->count() > 10) {
-                $mail->line('• ...and ' . ($products->count() - 10) . ' more products');
+                $mail->line('• ...and '.($products->count() - 10).' more products');
             }
         }
 
@@ -76,11 +75,11 @@ class PromoCodeUpdatedNotification extends Notification
             $mail->line('---');
             $mail->line('**Applicable Categories:**');
             foreach ($categories->take(10) as $category) {
-                $categoryName = $category->title ?? $category->translate('title') ?? 'Category #' . $category->id;
-                $mail->line('• ' . $categoryName);
+                $categoryName = $category->title ?? $category->translate('title') ?? 'Category #'.$category->id;
+                $mail->line('• '.$categoryName);
             }
             if ($categories->count() > 10) {
-                $mail->line('• ...and ' . ($categories->count() - 10) . ' more categories');
+                $mail->line('• ...and '.($categories->count() - 10).' more categories');
             }
         }
 
@@ -107,11 +106,11 @@ class PromoCodeUpdatedNotification extends Notification
         $categories = $this->promoCode->categories;
 
         $productNames = $products->map(function ($product) {
-            return $product->title ?? $product->translate('title') ?? 'Product #' . $product->id;
+            return $product->title ?? $product->translate('title') ?? 'Product #'.$product->id;
         })->toArray();
 
         $categoryNames = $categories->map(function ($category) {
-            return $category->title ?? $category->translate('title') ?? 'Category #' . $category->id;
+            return $category->title ?? $category->translate('title') ?? 'Category #'.$category->id;
         })->toArray();
 
         return [
@@ -127,7 +126,7 @@ class PromoCodeUpdatedNotification extends Notification
             'applicable_categories' => $categoryNames,
             'applicable_categories_count' => $categories->count(),
             'applies_to_all_products' => $products->isEmpty() && $categories->isEmpty(),
-            'message' => 'Your promo code ' . $this->promoCode->code . ' has been updated with ' . $this->promoCode->discount_percentage . '% discount!',
+            'message' => 'Your promo code '.$this->promoCode->code.' has been updated with '.$this->promoCode->discount_percentage.'% discount!',
         ];
     }
 }

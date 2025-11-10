@@ -48,7 +48,7 @@ class BogPaymentService
             'callback_url' => $paymentData['callback_url'],
         ]);
 
-        $endpoint = config('services.bog.api_base_url', 'https://api.bog.ge/payments') . "/v1/ecommerce/orders/{$parentOrderId}";
+        $endpoint = config('services.bog.api_base_url', 'https://api.bog.ge/payments')."/v1/ecommerce/orders/{$parentOrderId}";
 
         // Prepare payload according to BOG documentation - same format as order request
         // Support both 'amount' and 'total_amount' for backward compatibility
@@ -144,7 +144,7 @@ class BogPaymentService
             'message' => empty($redirectUrl) ?
                        'Payment with saved card completed (no verification required)' :
                        'Payment with saved card initiated - SMS verification required',
-            'requires_verification' => !empty($redirectUrl),
+            'requires_verification' => ! empty($redirectUrl),
         ];
     }
 
@@ -630,7 +630,7 @@ class BogPaymentService
      */
     public function saveCard(string $accessToken, string $orderId, ?string $idempotencyKey = null): array
     {
-        $url = config('services.bog.api_base_url', 'https://api.bog.ge/payments') . "/v1/ecommerce/orders/{$orderId}";
+        $url = config('services.bog.api_base_url', 'https://api.bog.ge/payments')."/v1/ecommerce/orders/{$orderId}";
 
         $headers = [
             'Content-Type' => 'application/json',

@@ -145,6 +145,7 @@ class PostController extends Controller
      */
     public function update(Request $request, Page $page, Post $post)
     {
+
         if (! $page->supportsPost() || $post->page_id !== $page->id) {
             return redirect()->back()->with('error', 'Invalid post or page.');
         }
@@ -238,6 +239,30 @@ class PostController extends Controller
             foreach (config('app.locales') as $locale) {
                 $value = $request->input("{$locale}.{$key}");
 
+                // Handle slug generation
+                if ($key === 'slug') {
+                    // If slug is provided, ensure it's properly formatted
+                    if (! empty($value)) {
+                        $value = \Illuminate\Support\Str::slug($value);
+                    } else {
+                        // Auto-generate slug from title if slug is empty
+                        $title = $request->input("{$locale}.title");
+                        if ($title) {
+                            $value = \Illuminate\Support\Str::slug($title);
+                        }
+                    }
+
+                    // Ensure slug is unique for this post locale within the page
+                    if (! empty($value)) {
+                        $originalSlug = $value;
+                        $counter = 1;
+                        while ($this->slugExists($value, $locale, $post->id, $post->page_id)) {
+                            $value = $originalSlug.'-'.$counter;
+                            $counter++;
+                        }
+                    }
+                }
+
                 if ($value !== null) {
                     $attribute = PostAttribute::updateOrCreate(
                         [
@@ -251,9 +276,7 @@ class PostController extends Controller
                     );
                 }
             }
-        }
-
-        // Save non-translatable attributes
+        }        // Save non-translatable attributes
         foreach ($nonTranslatableAttributes as $key => $config) {
             $value = $request->input($key);
 
@@ -366,5 +389,29 @@ class PostController extends Controller
                 'error' => 'Image upload failed: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Check if a slug already exists for a specific locale and page
+     */
+    private function slugExists($slug, $locale, $excludePostId = null, $pageId = null)
+    {
+        $query = PostAttribute::where('attribute_key', 'slug')
+            ->where('locale', $locale)
+            ->where('attribute_value', $slug);
+
+        // Exclude the current post being updated
+        if ($excludePostId) {
+            $query->where('post_id', '!=', $excludePostId);
+        }
+
+        // Only check slugs within the same page
+        if ($pageId) {
+            $query->whereHas('post', function ($q) use ($pageId) {
+                $q->where('page_id', $pageId);
+            });
+        }
+
+        return $query->exists();
     }
 }

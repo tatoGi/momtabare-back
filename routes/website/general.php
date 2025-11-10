@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/home', [FrontendController::class, 'completeHomePage'])->name('api.home.complete');
 Route::get('/pages', [FrontendController::class, 'pages']);
 Route::get('/categories', [FrontendController::class, 'categories']);
+Route::get('/categories/{id}', [FrontendController::class, 'showCategory'])->name('api.categories.show');
 Route::get('/blog-posts', [FrontendController::class, 'latestBlogPosts'])->name('api.blog.latest');
 Route::get('/languages', [FrontendController::class, 'languages'])->name('api.languages');
 

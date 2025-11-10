@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PostProcessProducts;
 use Bog\Payment\Models\BogCard;
 use Bog\Payment\Models\BogPayment;
 use Bog\Payment\Services\BogAuthService;
 use Bog\Payment\Services\BogPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Jobs\PostProcessProducts;
 
 class BogPaymentController extends Controller
 {
@@ -85,6 +85,7 @@ class BogPaymentController extends Controller
             // Check if result is valid
             if (! $result) {
                 Log::error('BOG Order creation returned null/empty result');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'No response received from payment backend',
@@ -320,6 +321,7 @@ class BogPaymentController extends Controller
 
                 // Return 200 as per documentation, but log for manual verification
                 Log::info('BOG Callback - Payment not found, will need manual verification');
+
                 return response('', 200);
             }
 
@@ -369,6 +371,7 @@ class BogPaymentController extends Controller
 
             // Still return 200 as per documentation - callback system will retry if needed
             Log::warning('BOG Callback failed - will need manual verification');
+
             return response('', 200);
         }
     }
@@ -782,7 +785,6 @@ class BogPaymentController extends Controller
         return response()->json($result, $statusCode);
     }
 
-
     public function bulkUpdateRentalStatus(Request $request)
     {
         $validated = $request->validate([
@@ -802,7 +804,7 @@ class BogPaymentController extends Controller
 
         // Optional idempotency: fast-return if same operation already processed recently
         if (! empty($validated['idempotency_key'])) {
-            $cacheKey = 'bulk_rental_status:' . $validated['idempotency_key'];
+            $cacheKey = 'bulk_rental_status:'.$validated['idempotency_key'];
             if (! Cache::add($cacheKey, 1, 60 * 60)) { // 1 hour
                 return response()->json(['success' => true, 'message' => 'Already processed'], 200);
             }
@@ -831,6 +833,7 @@ class BogPaymentController extends Controller
                         try {
                             if (! isset($products[$pid])) {
                                 $errors[] = "Product {$pid} not found";
+
                                 continue;
                             }
 
@@ -908,9 +911,11 @@ class BogPaymentController extends Controller
                 }
                 // backoff
                 usleep(100000 * $attempt);
+
                 continue;
             } catch (\Exception $e) {
                 Log::error('bulkUpdateRentalStatus unexpected error', ['exception' => $e->getMessage()]);
+
                 return response()->json(['success' => false, 'message' => 'Failed to update products', 'error' => $e->getMessage()], 500);
             }
         }
@@ -936,8 +941,6 @@ class BogPaymentController extends Controller
             ],
         ], 200);
     }
-
-
 
     /**
      * Prepare order payload for BOG API
@@ -1005,7 +1008,7 @@ class BogPaymentController extends Controller
                 'total_amount' => $totalAmount,
                 'currency' => $validated['currency'] ?? 'GEL',
                 'basket_count' => count($processedBasket),
-                'has_rental_items' => collect($processedBasket)->contains(function($item) {
+                'has_rental_items' => collect($processedBasket)->contains(function ($item) {
                     return isset($item['rental_days']);
                 }),
             ]);
@@ -1096,19 +1099,20 @@ class BogPaymentController extends Controller
     /**
      * Verify callback signature using SHA256withRSA algorithm
      *
-     * @param string $rawBody The raw request body content
-     * @param string|null $signature The signature from Callback-Signature header
+     * @param  string  $rawBody  The raw request body content
+     * @param  string|null  $signature  The signature from Callback-Signature header
      * @return bool True if signature is valid, false otherwise
      */
     private function verifyCallbackSignature(string $rawBody, ?string $signature): bool
     {
         if (empty($signature)) {
             Log::warning('BOG Callback signature is empty');
+
             return false;
         }
 
         // BOG Public Key from documentation
-        $publicKey = <<<EOD
+        $publicKey = <<<'EOD'
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu4RUyAw3+CdkS3ZNILQh
 zHI9Hemo+vKB9U2BSabppkKjzjjkf+0Sm76hSMiu/HFtYhqWOESryoCDJoqffY0Q
@@ -1131,20 +1135,24 @@ EOD;
 
             if ($isValid === 1) {
                 Log::info('BOG Callback signature verified successfully');
+
                 return true;
             } elseif ($isValid === 0) {
                 Log::warning('BOG Callback signature verification failed - invalid signature');
+
                 return false;
             } else {
                 Log::error('BOG Callback signature verification error', [
                     'openssl_error' => openssl_error_string(),
                 ]);
+
                 return false;
             }
         } catch (\Exception $e) {
             Log::error('BOG Callback signature verification exception', [
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

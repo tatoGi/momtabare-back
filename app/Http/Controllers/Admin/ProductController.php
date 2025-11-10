@@ -9,6 +9,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\ImageService;
+use App\Services\TranslationService;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -20,10 +21,13 @@ class ProductController extends Controller
 {
     protected ImageService $imageService;
 
-    public function __construct(ImageService $imageService)
+    protected TranslationService $translationService;
+
+    public function __construct(ImageService $imageService, TranslationService $translationService)
     {
         $this->middleware('auth');
         $this->imageService = $imageService;
+        $this->translationService = $translationService;
     }
 
     /**
@@ -113,10 +117,8 @@ class ProductController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function store(ProductRequest $request)
+    public function store(ProductRequest $request): RedirectResponse
     {
         // Validate the request data
         $data = $request->validated();
@@ -180,17 +182,6 @@ class ProductController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
@@ -210,13 +201,72 @@ class ProductController extends Controller
      * Update the specified resource in storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
      */
-    public function update(ProductRequest $request, $id)
+    public function update(ProductRequest $request, $id): RedirectResponse
     {
-        // Validate the request data
-        $data = $request->validated();
         $product = Product::findOrFail($id);
+
+        // Get all request data (not validated yet, so we can modify it)
+        $data = $request->all();
+
+        // Detect which locale has data (source locale for auto-translation)
+        $sourceLang = null;
+        $sourceData = null;
+        foreach (config('app.locales') as $locale) {
+            if (isset($data[$locale]) && ! empty($data[$locale]['title'])) {
+                $sourceLang = $locale;
+                $sourceData = $data[$locale];
+                break;
+            }
+        }
+
+        // Auto-translate missing locales BEFORE validation
+        if ($sourceLang && $sourceData) {
+            foreach (config('app.locales') as $locale) {
+                // Skip if this locale already has data
+                if (isset($data[$locale]) && ! empty($data[$locale]['title'])) {
+                    continue;
+                }
+
+                // Prepare data for translation
+                $translationData = [
+                    'name' => $sourceData['title'] ?? '',
+                    'description' => $sourceData['description'] ?? '',
+                    'location' => $sourceData['location'] ?? null,
+                ];
+
+                // Add local_additional fields for translation
+                if (! empty($sourceData['brand'])) {
+                    $translationData['local_additional']['ბრენდი'] = $sourceData['brand'];
+                }
+                if (! empty($sourceData['color'])) {
+                    $translationData['local_additional']['ფერი'] = $sourceData['color'];
+                }
+
+                // Translate
+                $translated = $this->translationService->translateProductFields(
+                    $translationData,
+                    $sourceLang,
+                    $locale
+                );
+
+                // Add translated data to request data
+                $data[$locale] = [
+                    'title' => $translated['name'] ?? '',
+                    'slug' => Str::slug($translated['name'] ?? ''),
+                    'description' => $translated['description'] ?? '',
+                    'location' => $translated['location'] ?? null,
+                    'brand' => $translated['local_additional']['ბრენდი'] ?? null,
+                    'color' => $translated['local_additional']['ფერი'] ?? null,
+                ];
+            }
+        }
+
+        // Now merge the auto-translated data back into the request
+        $request->merge($data);
+
+        // Validate the request data (now includes auto-translated fields)
+        $data = $request->validate($request->rules());
 
         // Handle active status
         $data['active'] = $request->has('active') ? 1 : 0;
@@ -228,7 +278,7 @@ class ProductController extends Controller
             }
         }
 
-        // Update the base product attributes (removed 'size' as it's now in JSON)
+        // Update the base product attributes
         $product->update([
             'category_id' => $data['category_id'] ?? null,
             'price' => $data['price'],
@@ -241,7 +291,7 @@ class ProductController extends Controller
             'is_rented' => $data['is_rented'] ?? 0,
         ]);
 
-        // Update translations for each locale
+        // Update translations for each locale (auto-translation already done above)
         foreach (config('app.locales') as $locale) {
             if (isset($data[$locale])) {
                 $translation = $product->translateOrNew($locale);
@@ -510,5 +560,61 @@ class ProductController extends Controller
 
         return redirect()->route('admin.pages.management.manage', ['page' => $page->id])
             ->with('success', 'Product has been removed from the page.');
+    }
+
+    /**
+     * Auto-translate product fields from one locale to another.
+     */
+    public function autoTranslate(Request $request)
+    {
+        $request->validate([
+            'source_locale' => 'required|string',
+            'target_locale' => 'required|string',
+            'title' => 'required|string',
+            'description' => 'nullable|string',
+            'location' => 'nullable|string',
+            'brand' => 'nullable|string',
+            'color' => 'nullable|string',
+        ]);
+
+        $sourceLocale = $request->source_locale;
+        $targetLocale = $request->target_locale;
+
+        // Prepare translation data
+        $translationData = [
+            'name' => $request->title,
+            'description' => $request->description,
+            'location' => $request->location,
+            'local_additional' => [
+                'ბრენდი' => $request->brand,
+                'ფერი' => $request->color,
+            ],
+        ];
+
+        try {
+            // Translate using TranslationService
+            $translated = $this->translationService->translateProductFields(
+                $translationData,
+                $sourceLocale,
+                $targetLocale
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'title' => $translated['name'],
+                    'slug' => Str::slug($translated['name']),
+                    'description' => $translated['description'],
+                    'location' => $translated['location'],
+                    'brand' => $translated['local_additional']['ბრენდი'] ?? $request->brand,
+                    'color' => $translated['local_additional']['ფერი'] ?? $request->color,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Translation failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

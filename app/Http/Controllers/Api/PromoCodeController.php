@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\PromoCode;
 use App\Models\Product;
+use App\Models\PromoCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -36,7 +36,7 @@ class PromoCodeController extends Controller
                 ->with(['products', 'categories', 'users'])
                 ->first();
 
-            if (!$promoCode) {
+            if (! $promoCode) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid promo code',
@@ -45,7 +45,7 @@ class PromoCodeController extends Controller
             }
 
             // Check if promo code is active and within validity period
-            if (!$promoCode->isValid()) {
+            if (! $promoCode->isValid()) {
                 $reason = 'Promo code is not active or has expired';
 
                 if ($promoCode->usage_limit && $promoCode->usage_count >= $promoCode->usage_limit) {
@@ -60,10 +60,10 @@ class PromoCodeController extends Controller
             }
 
             // Check minimum order amount
-            if (!$promoCode->meetsMinimumOrderAmount($orderAmount)) {
+            if (! $promoCode->meetsMinimumOrderAmount($orderAmount)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Minimum order amount of $' . number_format((float)$promoCode->minimum_order_amount, 2) . ' is required',
+                    'message' => 'Minimum order amount of $'.number_format((float) $promoCode->minimum_order_amount, 2).' is required',
                     'error_code' => 'MINIMUM_NOT_MET',
                     'minimum_amount' => (float) $promoCode->minimum_order_amount,
                     'current_amount' => $orderAmount,
@@ -75,7 +75,7 @@ class PromoCodeController extends Controller
             $assignedUsers = $promoCode->users;
 
             if ($assignedUsers->isNotEmpty()) {
-                if (!$user) {
+                if (! $user) {
                     return response()->json([
                         'success' => false,
                         'message' => 'This promo code requires authentication',
@@ -84,7 +84,7 @@ class PromoCodeController extends Controller
                 }
 
                 $isAssigned = $assignedUsers->contains('id', $user->id);
-                if (!$isAssigned) {
+                if (! $isAssigned) {
                     return response()->json([
                         'success' => false,
                         'message' => 'This promo code is not available for your account',
@@ -97,7 +97,7 @@ class PromoCodeController extends Controller
             $applicableProducts = [];
             $nonApplicableProducts = [];
 
-            if (!empty($productIds)) {
+            if (! empty($productIds)) {
                 $promoProducts = $promoCode->products;
                 $promoCategories = $promoCode->categories;
 
@@ -114,19 +114,19 @@ class PromoCodeController extends Controller
                         }
 
                         // Check if product's category is in the promo categories list
-                        if (!$applies && $promoCategories->contains('id', $product->category_id)) {
+                        if (! $applies && $promoCategories->contains('id', $product->category_id)) {
                             $applies = true;
                         }
 
                         if ($applies) {
                             $applicableProducts[] = [
                                 'id' => $product->id,
-                                'title' => $product->title ?? 'Product #' . $product->id,
+                                'title' => $product->title ?? 'Product #'.$product->id,
                             ];
                         } else {
                             $nonApplicableProducts[] = [
                                 'id' => $product->id,
-                                'title' => $product->title ?? 'Product #' . $product->id,
+                                'title' => $product->title ?? 'Product #'.$product->id,
                             ];
                         }
                     }
@@ -145,7 +145,7 @@ class PromoCodeController extends Controller
                     foreach ($products as $product) {
                         $applicableProducts[] = [
                             'id' => $product->id,
-                            'title' => $product->title ?? 'Product #' . $product->id,
+                            'title' => $product->title ?? 'Product #'.$product->id,
                         ];
                     }
                 }
@@ -215,7 +215,7 @@ class PromoCodeController extends Controller
             /** @var \App\Models\WebUser $user */
             $user = Auth::guard('sanctum')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated',
@@ -226,7 +226,7 @@ class PromoCodeController extends Controller
                 ->where('is_active', true)
                 ->where(function ($query) {
                     $query->whereNull('valid_until')
-                          ->orWhere('valid_until', '>=', now());
+                        ->orWhere('valid_until', '>=', now());
                 })
                 ->with(['products.translations', 'categories.translations'])
                 ->get()
@@ -245,13 +245,13 @@ class PromoCodeController extends Controller
                         'usage_count' => $promoCode->usage_count,
                         'usage_limit' => $promoCode->usage_limit,
                         'is_valid' => $promoCode->isValid(),
-                        'applicable_products' => $products->map(fn($p) => [
+                        'applicable_products' => $products->map(fn ($p) => [
                             'id' => $p->id,
-                            'title' => $p->title ?? 'Product #' . $p->id,
+                            'title' => $p->title ?? 'Product #'.$p->id,
                         ])->toArray(),
-                        'applicable_categories' => $categories->map(fn($c) => [
+                        'applicable_categories' => $categories->map(fn ($c) => [
                             'id' => $c->id,
-                            'title' => $c->title ?? 'Category #' . $c->id,
+                            'title' => $c->title ?? 'Category #'.$c->id,
                         ])->toArray(),
                         'applies_to_all_products' => $products->isEmpty() && $categories->isEmpty(),
                     ];

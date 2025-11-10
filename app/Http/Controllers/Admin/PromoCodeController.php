@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PromoCode;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\PromoCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -20,7 +20,7 @@ class PromoCodeController extends Controller
             $query = PromoCode::query();
 
             // Filter by search term
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->has('search') && ! empty($request->search)) {
                 $search = $request->search;
                 $query->where('code', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
@@ -82,6 +82,7 @@ class PromoCodeController extends Controller
         $products = Product::with('translations')->get();
         $categories = Category::with('translations')->get();
         $users = \App\Models\WebUser::select('id', 'first_name', 'email')->orderBy('first_name')->get();
+
         return view('admin.promo-codes.create', compact('products', 'categories', 'users'));
     }
 
@@ -110,10 +111,10 @@ class PromoCodeController extends Controller
             ]);
 
             // Convert datetime-local format to database format
-            if (!empty($validated['valid_from'])) {
+            if (! empty($validated['valid_from'])) {
                 $validated['valid_from'] = date('Y-m-d H:i:s', strtotime($validated['valid_from']));
             }
-            if (!empty($validated['valid_until'])) {
+            if (! empty($validated['valid_until'])) {
                 $validated['valid_until'] = date('Y-m-d H:i:s', strtotime($validated['valid_until']));
             }
 
@@ -130,13 +131,13 @@ class PromoCodeController extends Controller
             ]);
 
             // Sync relationships
-            if (!empty($validated['product_ids'])) {
+            if (! empty($validated['product_ids'])) {
                 $promoCode->products()->sync($validated['product_ids']);
             }
-            if (!empty($validated['category_ids'])) {
+            if (! empty($validated['category_ids'])) {
                 $promoCode->categories()->sync($validated['category_ids']);
             }
-            if (!empty($validated['user_ids'])) {
+            if (! empty($validated['user_ids'])) {
                 $promoCode->users()->sync($validated['user_ids']);
 
                 // Load products and categories for notifications
@@ -153,7 +154,7 @@ class PromoCodeController extends Controller
                 'promo_code_id' => $promoCode->id,
                 'code' => $promoCode->code,
                 'discount_percentage' => $promoCode->discount_percentage,
-                'assigned_users_count' => !empty($validated['user_ids']) ? count($validated['user_ids']) : 0,
+                'assigned_users_count' => ! empty($validated['user_ids']) ? count($validated['user_ids']) : 0,
             ]);
 
             // Check if request wants JSON
@@ -177,6 +178,7 @@ class PromoCodeController extends Controller
                     'errors' => $e->errors(),
                 ], 422);
             }
+
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             Log::error('Failed to create promo code', [
@@ -191,7 +193,8 @@ class PromoCodeController extends Controller
                     'error' => $e->getMessage(),
                 ], 500);
             }
-            return back()->with('error', 'Failed to create promo code: ' . $e->getMessage())->withInput();
+
+            return back()->with('error', 'Failed to create promo code: '.$e->getMessage())->withInput();
         }
     }
 
@@ -226,6 +229,7 @@ class PromoCodeController extends Controller
         $products = Product::with('translations')->get();
         $categories = Category::with('translations')->get();
         $users = \App\Models\WebUser::select('id', 'first_name', 'email')->orderBy('first_name')->get();
+
         return view('admin.promo-codes.edit', compact('promoCode', 'products', 'categories', 'users'));
     }
 
@@ -236,7 +240,7 @@ class PromoCodeController extends Controller
     {
         try {
             $validated = $request->validate([
-                'code' => 'sometimes|string|unique:promo_codes,code,' . $promoCode->id . '|min:3|max:50',
+                'code' => 'sometimes|string|unique:promo_codes,code,'.$promoCode->id.'|min:3|max:50',
                 'discount_percentage' => 'sometimes|numeric|min:0.01|max:100',
                 'description' => 'nullable|string|max:1000',
                 'max_uses' => 'nullable|integer|min:1',
@@ -254,10 +258,10 @@ class PromoCodeController extends Controller
             ]);
 
             // Convert datetime-local format to database format
-            if (!empty($validated['valid_from'])) {
+            if (! empty($validated['valid_from'])) {
                 $validated['valid_from'] = date('Y-m-d H:i:s', strtotime($validated['valid_from']));
             }
-            if (!empty($validated['valid_until'])) {
+            if (! empty($validated['valid_until'])) {
                 $validated['valid_until'] = date('Y-m-d H:i:s', strtotime($validated['valid_until']));
             }
 
@@ -315,7 +319,7 @@ class PromoCodeController extends Controller
                 $promoCode->load(['products.translations', 'categories.translations']);
 
                 // Send "assigned" notification to newly added users
-                if (!empty($addedUserIds)) {
+                if (! empty($addedUserIds)) {
                     $newUsers = \App\Models\WebUser::whereIn('id', $addedUserIds)->get();
                     foreach ($newUsers as $user) {
                         $user->notify(new \App\Notifications\PromoCodeAssignedNotification($promoCode));
@@ -323,7 +327,7 @@ class PromoCodeController extends Controller
                 }
 
                 // Send "updated" notification to all currently assigned users
-                if (!empty($newUserIds)) {
+                if (! empty($newUserIds)) {
                     $allUsers = \App\Models\WebUser::whereIn('id', $newUserIds)->get();
                     foreach ($allUsers as $user) {
                         $user->notify(new \App\Notifications\PromoCodeUpdatedNotification($promoCode));
@@ -369,6 +373,7 @@ class PromoCodeController extends Controller
                     'errors' => $e->errors(),
                 ], 422);
             }
+
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             Log::error('Failed to update promo code', [
@@ -383,6 +388,7 @@ class PromoCodeController extends Controller
                     'error' => $e->getMessage(),
                 ], 500);
             }
+
             return back()->with('error', 'Failed to update promo code')->withInput();
         }
     }
@@ -453,7 +459,7 @@ class PromoCodeController extends Controller
             $search = $request->get('search', '');
             $query = Product::query();
 
-            if (!empty($search)) {
+            if (! empty($search)) {
                 $query->whereHas('translations', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 });
@@ -496,7 +502,7 @@ class PromoCodeController extends Controller
             $search = $request->get('search', '');
             $query = Category::query();
 
-            if (!empty($search)) {
+            if (! empty($search)) {
                 $query->whereHas('translations', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 });
@@ -542,21 +548,21 @@ class PromoCodeController extends Controller
 
             $promoCode = PromoCode::where('code', strtoupper($validated['code']))->first();
 
-            if (!$promoCode) {
+            if (! $promoCode) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Promo code not found',
                 ], 404);
             }
 
-            if (!$promoCode->isValid()) {
+            if (! $promoCode->isValid()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Promo code is no longer valid',
                 ], 400);
             }
 
-            if (!$promoCode->meetsMinimumOrderAmount($validated['total_amount'])) {
+            if (! $promoCode->meetsMinimumOrderAmount($validated['total_amount'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Order amount does not meet minimum requirement',

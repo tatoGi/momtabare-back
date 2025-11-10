@@ -138,25 +138,53 @@ class FrontendService
 
     public function getCategories()
     {
-        return Category::with([
-            'products' => function ($query) {
-                $query->where('active', 1)
-                    ->with(['images', 'translations']);
-            },
-            'translations',
-            'children' => function ($query) {
-                $query->with([
-                    'products' => function ($query) {
-                        $query->where('active', 1)
-                            ->with(['images', 'translations']);
-                    },
-                    'translations',
-                ]);
-            },
-        ])
+        return Category::withCount(['products' => function ($query) {
+                $query->where('active', 1);
+            }])
+            ->with([
+                'products' => function ($query) {
+                    $query->where('active', 1)
+                        ->with(['images', 'translations']);
+                },
+                'translations',
+                'children' => function ($query) {
+                    $query->withCount(['products' => function ($q) {
+                            $q->where('active', 1);
+                        }])
+                        ->with([
+                            'products' => function ($query) {
+                                $query->where('active', 1)
+                                    ->with(['images', 'translations']);
+                            },
+                            'translations',
+                        ]);
+                },
+            ])
             ->get();
     }
 
+        public function getCategoryById($id)
+        {
+            $category = Category::withCount(['products' => function ($query) {
+                    $query->where('active', 1);
+                }])
+                ->with([
+                    'translations',
+                    'children' => function ($query) {
+                        $query->withCount(['products' => function ($q) {
+                                $q->where('active', 1);
+                            }])
+                            ->with('translations');
+                    },
+                ])
+                ->find($id);
+
+            if (!$category) {
+                return ['error' => 'Category not found'];
+            }
+
+            return $category;
+        }
     /**
      * Get latest blog posts for homepage
      *
@@ -339,8 +367,8 @@ class FrontendService
      * Get complete home page data in one call
      * Combines: home page posts, banners, popular products, blog posts, pages list
      *
-     * @param int $blogLimit Number of blog posts to return
-     * @param int $productsLimit Number of products to return
+     * @param  int  $blogLimit  Number of blog posts to return
+     * @param  int  $productsLimit  Number of products to return
      * @return array
      */
     public function getCompleteHomePageData($blogLimit = 10, $productsLimit = 50)
@@ -388,13 +416,13 @@ class FrontendService
 
         // Get all active pages for navigation
         $pages = Page::whereHas('translations', function ($query) {
-                $query->where('active', 1);
-            })
+            $query->where('active', 1);
+        })
             ->with([
-                'translations' => function ($query) {
-                    $query->where('active', 1);
-                },
-            ])
+            'translations' => function ($query) {
+                $query->where('active', 1);
+            },
+        ])
             ->orderBy('sort', 'asc')
             ->get();
 

@@ -11,6 +11,7 @@ class HelpController extends Controller
     public function edit()
     {
         $help = Help::first();
+
         return view('admin.help.edit', compact('help'));
     }
 
@@ -22,12 +23,13 @@ class HelpController extends Controller
             'text_.ka' => 'required|string',
         ]);
         $help = Help::first();
-        if (!$help) {
-            $help = new Help();
+        if (! $help) {
+            $help = new Help;
         }
         $help->text_en = $data['text_']['en'];
         $help->text_ka = $data['text_']['ka'];
         $help->save();
+
         return redirect()->back()->with('success', __('admin.help_text_updated'));
     }
 }

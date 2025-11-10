@@ -42,7 +42,7 @@ class PromoCode extends Model
     public function isValid(): bool
     {
         // Must be active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -95,7 +95,7 @@ class PromoCode extends Model
      */
     public function meetsMinimumOrderAmount(float $orderAmount): bool
     {
-        if (!$this->minimum_order_amount) {
+        if (! $this->minimum_order_amount) {
             return true;
         }
 

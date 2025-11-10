@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\RateProductController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PromoCodeController;
+use App\Http\Controllers\Api\RateProductController;
 use App\Http\Controllers\Website\FrontendController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;

@@ -61,7 +61,7 @@ function settingNonTransAttrs($setting)
 {
     return collect($setting)->filter(
         function ($item) {
-            return isset($item['value']) && !is_array($item['value']);
+            return isset($item['value']) && ! is_array($item['value']);
         }
     );
 }

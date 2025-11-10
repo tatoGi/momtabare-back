@@ -14,15 +14,16 @@ class PostProcessProducts implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $paymentId;
+
     public $productIds;
+
     public $userId;
 
     /**
      * Create a new job instance.
      *
-     * @param int $paymentId
-     * @param array $productIds
-     * @param int $userId
+     * @param  int  $paymentId
+     * @param  int  $userId
      */
     public function __construct($paymentId, array $productIds, $userId)
     {

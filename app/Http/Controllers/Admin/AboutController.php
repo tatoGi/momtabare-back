@@ -11,6 +11,7 @@ class AboutController extends Controller
     public function edit()
     {
         $about = About::first();
+
         return view('admin.about.about-us', compact('about'));
     }
 
@@ -22,12 +23,13 @@ class AboutController extends Controller
             'text_.ka' => 'required|string',
         ]);
         $about = About::first();
-        if (!$about) {
-            $about = new About();
+        if (! $about) {
+            $about = new About;
         }
         $about->text_en = $data['text_']['en'];
         $about->text_ka = $data['text_']['ka'];
         $about->save();
+
         return redirect()->back()->with('success', __('admin.about_us_text_updated'));
     }
 }

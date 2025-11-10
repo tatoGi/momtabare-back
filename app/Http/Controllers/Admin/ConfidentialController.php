@@ -11,6 +11,7 @@ class ConfidentialController extends Controller
     public function edit()
     {
         $confidential = Confidential::first();
+
         return view('admin.confidential.edit', compact('confidential'));
     }
 
@@ -22,12 +23,13 @@ class ConfidentialController extends Controller
             'text_.ka' => 'required|string',
         ]);
         $confidential = Confidential::first();
-        if (!$confidential) {
-            $confidential = new Confidential();
+        if (! $confidential) {
+            $confidential = new Confidential;
         }
         $confidential->text_en = $data['text_']['en'];
         $confidential->text_ka = $data['text_']['ka'];
         $confidential->save();
+
         return redirect()->back()->with('success', __('admin.confidential_text_updated'));
     }
 }

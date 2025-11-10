@@ -4,6 +4,16 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
+use App\Models\About;
+use App\Models\Confidential;
+use App\Models\Contact;
+use App\Models\Language;
+use App\Models\Privacy;
+use App\Models\Product;
+use App\Models\RetailerShop;
+use App\Models\Service;
+use App\Models\Subscriber;
+use App\Models\WebUser;
 use App\Services\Frontend\FrontendService;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
@@ -11,18 +21,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Models\{About, Service, Confidential,
-     Privacy, WebUser,
-      Subscriber,
-      RetailerShop,Product,
-    Language,
-    Contact
-};
-
 
 class FrontendController extends Controller
 {
     protected $frontendService;
+
     protected ImageService $imageService;
 
     public function __construct(FrontendService $frontendService, ImageService $imageService)
@@ -224,6 +227,17 @@ class FrontendController extends Controller
         return response()->json($data);
     }
 
+    public function showCategory($id)
+    {
+        $data = $this->frontendService->getCategoryById($id);
+
+        if (isset($data['error'])) {
+            return response()->json($data, 404);
+        }
+
+        return response()->json($data);
+    }
+
     /**
      * Sync locale with frontend via headers.
      * Reads X-Language or Accept-Language, resolves to supported locales,
@@ -420,6 +434,16 @@ class FrontendController extends Controller
                         $subQuery->orWhere('local_additional', 'LIKE', "%{$color}%");
                     }
                 });
+            });
+        }
+
+        // Filter by location if provided
+        if ($request->has('location') && $request->location) {
+            $location = $request->location;
+            // Search location across ALL translations to support multilingual location values
+            $query->whereHas('translations', function ($q) use ($location) {
+                $q->whereNotNull('location')
+                    ->where('location', '=', $location); // Exact match
             });
         }
 
@@ -831,8 +855,9 @@ class FrontendController extends Controller
 
     public function retailerShopEdit(Request $request)
     {
+
         $user = $request->user('sanctum');
-        $retailerShop = $user->retailerShop;
+        $retailerShop = $user->retailerShop()->first(); // Use first() instead of direct property access
         $countProduct = $user->products()->count();
 
         return response()->json([
@@ -851,12 +876,14 @@ class FrontendController extends Controller
             'data' => $retailer,
         ]);
     }
-      public function about(Request $request)
+
+    public function about(Request $request)
     {
         $locale = $request->get('lang', app()->getLocale());
         $about = About::first();
+
         return response()->json([
-            'text' => $about ? $about->{'text_' . $locale} : '',
+            'text' => $about ? $about->{'text_'.$locale} : '',
             'locale' => $locale,
         ]);
     }
@@ -865,8 +892,9 @@ class FrontendController extends Controller
     {
         $locale = $request->get('lang', app()->getLocale());
         $service = Service::first();
+
         return response()->json([
-            'text' => $service ? $service->{'text_' . $locale} : '',
+            'text' => $service ? $service->{'text_'.$locale} : '',
             'locale' => $locale,
         ]);
     }
@@ -875,8 +903,9 @@ class FrontendController extends Controller
     {
         $locale = $request->get('lang', app()->getLocale());
         $confidential = Confidential::first();
+
         return response()->json([
-            'text' => $confidential ? $confidential->{'text_' . $locale} : '',
+            'text' => $confidential ? $confidential->{'text_'.$locale} : '',
             'locale' => $locale,
         ]);
     }
@@ -885,11 +914,13 @@ class FrontendController extends Controller
     {
         $locale = $request->get('lang', app()->getLocale());
         $privacy = Privacy::first();
+
         return response()->json([
-            'text' => $privacy ? $privacy->{'text_' . $locale} : '',
+            'text' => $privacy ? $privacy->{'text_'.$locale} : '',
             'locale' => $locale,
         ]);
     }
+
     public function settings(Request $request)
     {
         $settings = config('settings.settings');
@@ -897,6 +928,7 @@ class FrontendController extends Controller
         foreach ($settings as $key => $item) {
             $result[$key] = $item['value'] ?? null;
         }
+
         return response()->json($result);
     }
 }

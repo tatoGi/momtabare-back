@@ -22,30 +22,8 @@ class SearchController extends Controller
         $page = $request->input('page', 1);
         $locale = $request->header('X-Localization', app()->getLocale());
 
-        // If no search, location, or rental period, return empty data
-        if (empty($searchText) && empty($location) && (empty($startDate) || empty($endDate))) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'products' => [],
-                    'categories' => [],
-                    'pagination' => [
-                        'total' => 0,
-                        'per_page' => $perPage,
-                        'current_page' => $page,
-                        'last_page' => 1,
-                        'from' => null,
-                        'to' => null,
-                    ],
-                    'filters' => [
-                        'search' => $searchText,
-                        'start_date' => $startDate,
-                        'end_date' => $endDate,
-                        'location' => $location,
-                    ],
-                ],
-            ]);
-        }
+        // Allow searching with any combination of filters (search, location, dates)
+        // No need to require all filters - user can search by any single filter or combination
 
         // Base query for available products with translations
         $products = Product::query()
@@ -71,10 +49,11 @@ class SearchController extends Controller
 
         // Filter by location if provided
         if (! empty($location)) {
-            $products->whereHas('translations', function ($query) use ($location, $locale) {
-                $query->where('locale', $locale)
-                      ->whereNotNull('location')
-                      ->where('location', 'LIKE', "%{$location}%");
+            // Search location across ALL translations, not just current locale
+            // Because location value might be in Georgian/English in different translations
+            $products->whereHas('translations', function ($query) use ($location) {
+                $query->whereNotNull('location')
+                    ->where('location', '=', $location); // Exact match for location
             });
         }
 
@@ -113,16 +92,21 @@ class SearchController extends Controller
             $categoryTranslation = $product->category ? $product->category->translate($locale) : null;
             $firstImage = $product->images()->first();
 
+            // Skip products without translation
+            if (! $translation) {
+                return null;
+            }
+
             return [
                 'id' => $product->id,
                 'slug' => $translation->slug ?? '#',
-                'title' => $translation->title,
+                'title' => $translation->title ?? 'N/A',
                 'description' => Str::limit(strip_tags($translation->description ?? ''), 150),
                 'brand' => $translation->local_additional['ბრენდი'] ?? $translation->local_additional['brand'] ?? null,
                 'price' => $product->price,
                 'currency' => $product->currency,
                 'image' => $firstImage ? asset("storage/{$firstImage->image_name}") : null,
-                'location' => $translation->location,
+                'location' => $translation->location ?? null,
                 'size' => $translation->local_additional['ზომა'] ?? $translation->local_additional['size'] ?? null,
                 'local_additional' => $translation->local_additional ?? [],
                 'category' => $categoryTranslation ? [
@@ -140,7 +124,7 @@ class SearchController extends Controller
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
             ];
-        });
+        })->filter(); // Remove null entries
 
         // Search in categories if search text is provided
         $categoryData = collect([]);
@@ -159,14 +143,19 @@ class SearchController extends Controller
             $categoryData = $categories->map(function ($category) use ($locale) {
                 $translation = $category->translate($locale);
 
+                // Skip categories without translation
+                if (! $translation) {
+                    return null;
+                }
+
                 return [
                     'id' => $category->id,
                     'slug' => $translation->slug ?? '#',
-                    'title' => $translation->title,
+                    'title' => $translation->title ?? 'N/A',
                     'description' => Str::limit(strip_tags($translation->description ?? ''), 100),
                     'image' => $category->getFirstMediaUrl('featured_image'),
                 ];
-            });
+            })->filter(); // Remove null entries
         }
 
         // Prepare the API response

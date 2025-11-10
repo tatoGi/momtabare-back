@@ -45,10 +45,10 @@ class ConvertImagesToWebP extends Command
             : ['products', 'avatars', 'banners', 'categories', 'posts', 'editor-images', 'options', 'retailer/avatars', 'retailer/covers', 'retailer-shops/avatars', 'retailer-shops/covers'];
 
         $quality = (int) $this->option('quality');
-        $deleteOriginals = !$this->option('keep-originals'); // Delete by default unless --keep-originals is set
+        $deleteOriginals = ! $this->option('keep-originals'); // Delete by default unless --keep-originals is set
 
         $this->info('Starting WebP conversion...');
-        $this->info('Memory limit: ' . ini_get('memory_limit'));
+        $this->info('Memory limit: '.ini_get('memory_limit'));
 
         if ($deleteOriginals) {
             $this->warn('Original images will be DELETED after conversion.');
@@ -66,8 +66,9 @@ class ConvertImagesToWebP extends Command
         foreach ($directories as $directory) {
             $this->info("Processing directory: {$directory}");
 
-            if (!Storage::disk('public')->exists($directory)) {
-                $this->warn("  Directory does not exist. Skipping...");
+            if (! Storage::disk('public')->exists($directory)) {
+                $this->warn('  Directory does not exist. Skipping...');
+
                 continue;
             }
 
@@ -82,13 +83,15 @@ class ConvertImagesToWebP extends Command
                 if ($ext === 'webp') {
                     $totalSkipped++;
                     $bar->advance();
+
                     continue;
                 }
 
                 // Only convert image files
-                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+                if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
                     $totalSkipped++;
                     $bar->advance();
+
                     continue;
                 }
 
