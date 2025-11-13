@@ -205,23 +205,72 @@
                             </div>
 
                             <!-- Upload Area -->
-                            <label id="upload-label"
+                            <label id="icon-upload-label"
                                    class="w-full flex flex-col items-center px-6 py-8 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-dashed border-green-300 rounded-xl cursor-pointer hover:border-green-500 hover:bg-green-50 transition-all duration-300">
                                 <svg class="w-12 h-12 text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
-                                <span id="upload-text" class="text-sm font-semibold text-gray-700 mb-1">
+                                <span id="icon-upload-text" class="text-sm font-semibold text-gray-700 mb-1">
                                     {{ $category->icon ? 'Change Icon' : 'Upload Icon' }}
                                 </span>
                                 <span class="text-xs text-gray-500">PNG, JPG, SVG up to 2MB</span>
-                                <input id="upload-input"
+                                <input id="icon-upload-input"
                                        type="file"
                                        name="icon"
                                        class="hidden"
                                        accept="image/*"
-                                       onchange="uploadFile(this)" />
+                                       onchange="previewFile(this, '#icon-preview', '#icon-upload-text', 'Change Icon')" />
                             </label>
-                            <div id="image-container" class="mt-4 w-full"></div>
+                            <div id="icon-preview" class="mt-4 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Upload Card -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                    <div class="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                            </svg>
+                            Category Image
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex flex-col items-center">
+                            <div id="current-image" class="mb-4 {{ $category->image ? '' : 'hidden' }}">
+                                <div class="relative group">
+                                    <img src="{{ $category->image ? asset('storage/' . $category->image) : '' }}"
+                                         alt="Category Image"
+                                         class="w-48 h-32 object-cover rounded-lg border-4 border-teal-200 shadow-md">
+                                    <button type="button"
+                                            data-route="{{ route('category.image.delete', [app()->getlocale(), $category->id]) }}"
+                                            data-token="{{ csrf_token() }}"
+                                            class="delete-image absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all transform hover:scale-110">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <label id="image-upload-label"
+                                   class="w-full flex flex-col items-center px-6 py-8 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-dashed border-teal-300 rounded-xl cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-all duration-300">
+                                <svg class="w-12 h-12 text-teal-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <span id="image-upload-text" class="text-sm font-semibold text-gray-700 mb-1">
+                                    {{ $category->image ? 'Change Image' : 'Upload Image' }}
+                                </span>
+                                <span class="text-xs text-gray-500">PNG, JPG up to 5MB</span>
+                                <input id="image-upload-input"
+                                       type="file"
+                                       name="image"
+                                       class="hidden"
+                                       accept="image/*"
+                                       onchange="previewFile(this, '#category-image-preview', '#image-upload-text')" />
+                            </label>
+                            <div id="category-image-preview" class="mt-4 w-full"></div>
                         </div>
                     </div>
                 </div>
@@ -355,15 +404,17 @@
                 console.log('Content visibility changed');
             });
 
-            // File Upload Preview
-            window.uploadFile = function(input) {
+            // Reusable file preview helper for icon and image pickers
+            window.previewFile = function(input, previewSelector, textSelector, changeLabel = 'Change Image') {
                 if (input.files && input.files[0]) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        $('#image-container').html(
+                        $(previewSelector).html(
                             '<div class="relative"><img src="' + e.target.result + '" class="w-full h-32 object-cover rounded-lg border-2 border-green-300 shadow-md mt-2"></div>'
                         );
-                        $('#upload-text').text('Change Icon');
+                        if (textSelector) {
+                            $(textSelector).text(changeLabel);
+                        }
                     };
                     reader.readAsDataURL(input.files[0]);
                 }
@@ -384,10 +435,36 @@
                             $('#current-icon').fadeOut(300, function() {
                                 $(this).remove();
                             });
+                            $('#icon-upload-text').text('Upload Icon');
                             alert('Icon deleted successfully!');
                         },
                         error: function() {
                             alert('Failed to delete icon. Please try again.');
+                        }
+                    });
+                }
+            });
+
+            // Delete Image
+            $('.delete-image').on('click', function(e) {
+                e.preventDefault();
+                const route = $(this).data('route');
+                const token = $(this).data('token');
+
+                if (confirm('Are you sure you want to delete this image?')) {
+                    $.ajax({
+                        url: route,
+                        type: 'DELETE',
+                        data: { _token: token },
+                        success: function() {
+                            $('#current-image').fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                            $('#image-upload-text').text('Upload Image');
+                            alert('Image deleted successfully!');
+                        },
+                        error: function() {
+                            alert('Failed to delete image. Please try again.');
                         }
                     });
                 }

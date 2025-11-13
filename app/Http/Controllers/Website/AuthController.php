@@ -8,10 +8,12 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -30,32 +32,58 @@ class AuthController extends Controller
             'email' => 'required|email|unique:web_users,email',
         ]);
 
-        $verificationCode = rand(100000, 999999);
-        $emailVerificationToken = Str::random(60);
+        DB::beginTransaction();
 
-        // Create user with temporary hashed password
-        $temporaryPassword = Str::random(16); // Generate a random temporary password
-        $user = WebUser::create([
-            'email' => $request->email,
-            'password' => Hash::make($temporaryPassword), // Hash the temporary password
-            'verification_code' => $verificationCode,
-            'verification_expires_at' => Carbon::now()->addMinutes(15),
-            'email_verification_token' => $emailVerificationToken,
-        ]);
+        try {
+            $verificationCode = rand(100000, 999999);
+            $emailVerificationToken = Str::random(60);
 
-        // Send verification email with code
-        Mail::send('emails.verification', [
-            'verificationCode' => $verificationCode,
-            'email' => $user->email,
-        ], function (Message $message) use ($user) {
-            $message->to($user->email)
-                ->subject('Your Verification Code');
-        });
+            // Create user with temporary hashed password
+            $temporaryPassword = Str::random(16); // Generate a random temporary password
+            $user = WebUser::create([
+                'email' => $request->email,
+                'password' => Hash::make($temporaryPassword), // Hash the temporary password
+                'verification_code' => $verificationCode,
+                'verification_expires_at' => Carbon::now()->addMinutes(15),
+                'email_verification_token' => $emailVerificationToken,
+                'is_active' => false, // Require admin approval before activation
+            ]);
 
-        return response()->json([
-            'message' => 'Verification code sent to your email',
-            'user_id' => $user->id,
-        ]);
+            // Send verification email with code
+            Mail::send('emails.verification', [
+                'verificationCode' => $verificationCode,
+                'email' => $user->email,
+            ], function (Message $message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Your Verification Code');
+            });
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Verification code sent to your email',
+                'user_id' => $user->id,
+            ]);
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Failed to send registration email', [
+                'email' => $request->email,
+                'exception' => $e,
+            ]);
+
+            $errorPayload = [
+                'success' => false,
+                'message' => 'Failed to send verification email.',
+            ];
+
+            if (config('app.debug')) {
+                $errorPayload['error'] = $e->getMessage();
+                $errorPayload['trace'] = $e->getTraceAsString();
+            }
+
+            return response()->json($errorPayload, 500);
+        }
     }
 
     /**
@@ -246,6 +274,13 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Please verify your email address before logging in.',
                 'requires_verification' => true,
+            ], 403);
+        }
+
+        if (! $user->is_active) {
+            return response()->json([
+                'message' => 'Your account is awaiting admin approval.',
+                'requires_approval' => true,
             ], 403);
         }
 

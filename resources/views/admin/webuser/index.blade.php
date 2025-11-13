@@ -370,12 +370,17 @@
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col gap-2">
                                         <a href="/{{ app()->getLocale() }}/admin/webusers/{{ $webUser->id }}"
-                                           class="inline-flex items-center justify-center px-4 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                                           class="inline-flex items-center justify-center px-4 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors relative">
                                             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                                                 <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
                                             </svg>
                                             View Details
+                                            @if($pendingComments > 0)
+                                                <span class="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse shadow-lg">
+                                                    {{ $pendingComments }}
+                                                </span>
+                                            @endif
                                         </a>
 
                                         <button onclick="toggleUserStatus({{ $webUser->id }})"

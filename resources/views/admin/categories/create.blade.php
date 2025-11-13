@@ -202,23 +202,56 @@
                     <div class="p-6">
                         <div class="flex flex-col items-center">
                             <!-- Upload Area -->
-                            <label id="upload-label"
+                            <label id="icon-upload-label"
                                    class="w-full flex flex-col items-center px-6 py-8 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-dashed border-green-300 rounded-xl cursor-pointer hover:border-green-500 hover:bg-green-50 transition-all duration-300">
                                 <svg class="w-12 h-12 text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
-                                <span id="upload-text" class="text-sm font-semibold text-gray-700 mb-1">
+                                <span id="icon-upload-text" class="text-sm font-semibold text-gray-700 mb-1">
                                     Upload Icon
                                 </span>
                                 <span class="text-xs text-gray-500">PNG, JPG, SVG up to 2MB</span>
-                                <input id="upload-input"
+                                <input id="icon-upload-input"
                                        type="file"
                                        name="icon"
                                        class="hidden"
                                        accept="image/*"
-                                       onchange="uploadFile(this)" />
+                                       onchange="previewFile(this, '#icon-preview', '#icon-upload-text', 'Change Icon')" />
                             </label>
-                            <div id="image-container" class="mt-4 w-full"></div>
+                            <div id="icon-preview" class="mt-4 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Upload Card -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                    <div class="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12m-2-2l4 4-4 4M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2h-5l-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Category Image
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex flex-col items-center">
+                            <label id="image-upload-label"
+                                   class="w-full flex flex-col items-center px-6 py-8 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-dashed border-teal-300 rounded-xl cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-all duration-300">
+                                <svg class="w-12 h-12 text-teal-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                </svg>
+                                <span id="image-upload-text" class="text-sm font-semibold text-gray-700 mb-1">
+                                    Upload Image
+                                </span>
+                                <span class="text-xs text-gray-500">PNG, JPG up to 5MB</span>
+                                <input id="image-upload-input"
+                                       type="file"
+                                       name="image"
+                                       class="hidden"
+                                       accept="image/*"
+                                       onchange="previewFile(this, '#category-image-preview', '#image-upload-text')" />
+                            </label>
+                            <div id="category-image-preview" class="mt-4 w-full"></div>
                         </div>
                     </div>
                 </div>
@@ -279,7 +312,7 @@
     <!-- Scripts -->
     <!-- CKEditor CDN -->
     <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
-    
+
     <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -352,15 +385,17 @@
                 console.log('Content visibility changed');
             });
 
-            // File Upload Preview
-            window.uploadFile = function(input) {
+            // Generic file preview helper so we can reuse it for multiple upload widgets
+            window.previewFile = function(input, previewSelector, textSelector, changeLabel = 'Change Image') {
                 if (input.files && input.files[0]) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        $('#image-container').html(
+                        $(previewSelector).html(
                             '<div class="relative"><img src="' + e.target.result + '" class="w-full h-32 object-cover rounded-lg border-2 border-green-300 shadow-md mt-2"></div>'
                         );
-                        $('#upload-text').text('Change Icon');
+                        if (textSelector) {
+                            $(textSelector).text(changeLabel);
+                        }
                     };
                     reader.readAsDataURL(input.files[0]);
                 }

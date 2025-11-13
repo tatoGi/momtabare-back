@@ -1,5 +1,7 @@
 
 @php
+    $pendingUsersCount = \App\Models\WebUser::where('is_active', false)->count();
+
     $links = [
         ['icon' => 'fa-tachometer-alt', 'title' => __('admin.Statistics'), 'url' => 'admin'],
         [
@@ -17,7 +19,7 @@
         ],
         ['icon' => 'fa-file-alt', 'title' => __('admin.Products'), 'url' => 'admin/products'],
         // ['icon' => 'fa-briefcase', 'title' => __('admin.Companies'), 'url' => '#'],
-        ['icon' => 'fa-id-card-alt', 'title' => __('admin.Users'), 'url' => 'admin/webusers'],
+    ['icon' => 'fa-id-card-alt', 'title' => __('admin.Users'), 'url' => 'admin/webusers', 'badge' => $pendingUsersCount],
         ['icon' => 'fa-credit-card', 'title' => __('admin.Payments'), 'url' => 'admin/payments'],
         ['icon' => 'fa-tags', 'title' => __('admin.Promo Codes'), 'url' => 'admin/promo-codes'],
         ['icon' => 'fa-comments', 'title' => __('admin.Subscribers'), 'url' => 'admin/subscribers'],
@@ -119,9 +121,14 @@
                 <!-- Single link -->
                 <a href="/{{ app()->getlocale() }}/{{ $link['url'] }}"
                     class="hover:ml-4 w-full cursor-pointer text-white hover:text-purple-500 dark:hover:text-blue-500 bg-[#1E293B] p-2 pl-8 rounded-full transform ease-in-out duration-300 flex flex-row items-center space-x-3">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <i class="ico fas {{ $link['icon'] }}"></i>
-                        {{ $link['title'] }}
+                        <span>{{ $link['title'] }}</span>
+                        @if(($link['badge'] ?? 0) > 0)
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-white bg-red-600 rounded-full">
+                                {{ $link['badge'] }}
+                            </span>
+                        @endif
                     </div>
                 </a>
             @endif

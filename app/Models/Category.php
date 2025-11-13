@@ -13,7 +13,7 @@ class Category extends Model implements HasMedia, TranslatableContract
 {
     use HasFactory, InteractsWithMedia, Translatable;
 
-    protected $fillable = ['parent_id', 'active', 'icon'];
+    protected $fillable = ['parent_id', 'active', 'icon', 'image'];
 
     public $translatedAttributes = ['title', 'slug', 'description'];
 

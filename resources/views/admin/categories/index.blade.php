@@ -162,7 +162,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center space-x-4">
                                         @if ($category->icon)
-                                            <img src="{{ asset('storage/' . $category->icon) }}"
+                                            <img src="{{ asset('storage/' . $category->image) }}"
                                                 alt="{{ $category->title }}"
                                                 class="h-16 w-16 rounded-lg object-cover shadow-md border-2 border-gray-200 dark:border-gray-600">
                                         @else

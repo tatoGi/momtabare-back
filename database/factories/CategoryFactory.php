@@ -15,6 +15,7 @@ class CategoryFactory extends Factory
             'parent_id' => null,
             'active' => $this->faker->boolean(),
             'icon' => null,
+            'image' => null,
         ];
     }
 

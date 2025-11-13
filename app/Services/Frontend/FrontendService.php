@@ -161,6 +161,7 @@ class FrontendService
                 },
             ])
             ->get();
+
     }
 
         public function getCategoryById($id)

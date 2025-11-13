@@ -64,12 +64,20 @@ class CategoryController extends Controller
         // Retrieve validated data from the request
         $data = $request->validated();
 
-        // Handle file upload before creating category - convert to WebP
+        // Handle icon upload before creating category - convert to WebP
         if ($request->hasFile('icon')) {
             $icon = $request->file('icon');
             $quality = $this->imageService->getOptimalQuality($icon);
             $iconPath = $this->imageService->uploadAsWebP($icon, 'categories', $quality);
             $data['icon'] = $iconPath;
+        }
+
+        // Handle main image upload before creating category - convert to WebP
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $quality = $this->imageService->getOptimalQuality($image);
+            $imagePath = $this->imageService->uploadAsWebP($image, 'categories/images', $quality);
+            $data['image'] = $imagePath;
         }
 
         // Create the category
@@ -131,7 +139,9 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $category = Category::findOrFail($id);
-        $data = $request->all();
+        $data = $request->except(['_token', '_method']);
+
+        $data['active'] = $request->boolean('active');
 
         // Handle file upload - convert to WebP
         if ($request->hasFile('icon')) {
@@ -139,6 +149,14 @@ class CategoryController extends Controller
             $quality = $this->imageService->getOptimalQuality($icon);
             $iconPath = $this->imageService->updateImage($icon, $category->icon, 'categories', $quality);
             $data['icon'] = $iconPath;
+        }
+
+        // Handle image upload - convert to WebP
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $quality = $this->imageService->getOptimalQuality($image);
+            $imagePath = $this->imageService->updateImage($image, $category->image, 'categories/images', $quality);
+            $data['image'] = $imagePath;
         }
 
         $category->update($data);
@@ -171,6 +189,18 @@ class CategoryController extends Controller
 
             // Remove the icon from the category
             $category->update(['icon' => null]);
+        }
+
+        return response()->json(['success' => 'Files Deleted']);
+    }
+
+    public function deleteImage($id)
+    {
+        $category = Category::findOrFail($id);
+
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+            $category->update(['image' => null]);
         }
 
         return response()->json(['success' => 'Files Deleted']);

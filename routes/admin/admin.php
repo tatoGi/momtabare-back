@@ -26,6 +26,7 @@ Route::resource('/banners', BannerController::class)->parameters([
 ]);
 Route::get('/banners/create/{page_id?}', [BannerController::class, 'create'])->name('banners.create.with.page');
 Route::delete('/category/icon/{id}', [CategoryController::class, 'deleteIcon'])->name('category.icon.delete');
+Route::delete('/category/image/{id}', [CategoryController::class, 'deleteImage'])->name('category.image.delete');
 Route::get('/webusers', [WebUserController::class, 'index'])->name('admin.webusers.index');
 Route::get('/webusers/{id}', [WebUserController::class, 'show'])->name('admin.webusers.show');
 Route::post('/webusers/{id}/approve-retailer', [WebUserController::class, 'approveRetailer'])->name('admin.webusers.approve-retailer');

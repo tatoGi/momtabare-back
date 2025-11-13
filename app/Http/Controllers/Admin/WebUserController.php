@@ -11,6 +11,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class WebUserController extends Controller
@@ -269,25 +271,87 @@ class WebUserController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $webUser = WebUser::findOrFail($id);
+        $webUser = WebUser::with([
+            'products.images',
+            'products.pages',
+            'products.bogPayments',
+            'products.comments',
+            'retailerShop',
+            'addresses',
+            'comments',
+        ])->findOrFail($id);
 
-        // Check if user has products or comments
-        $hasProducts = $webUser->products()->count() > 0;
-        $hasComments = $webUser->comments()->count() > 0;
+        try {
+            DB::transaction(function () use ($webUser) {
+                // Delete user avatar if stored locally
+                if (! empty($webUser->avatar) && Storage::disk('public')->exists($webUser->avatar)) {
+                    Storage::disk('public')->delete($webUser->avatar);
+                }
 
-        if ($hasProducts || $hasComments) {
+                // Remove associated retailer shop (and its assets)
+                if ($webUser->retailerShop) {
+                    if (! empty($webUser->retailerShop->avatar) && Storage::disk('public')->exists($webUser->retailerShop->avatar)) {
+                        Storage::disk('public')->delete($webUser->retailerShop->avatar);
+                    }
+
+                    if (! empty($webUser->retailerShop->cover_image) && Storage::disk('public')->exists($webUser->retailerShop->cover_image)) {
+                        Storage::disk('public')->delete($webUser->retailerShop->cover_image);
+                    }
+
+                    $webUser->retailerShop->delete();
+                }
+
+                // Detach promo codes if any
+                $webUser->promoCodes()->detach();
+
+                // Delete addresses
+                $webUser->addresses()->delete();
+
+                // Delete comments authored by the user
+                $webUser->comments()->delete();
+
+                // Delete products owned by the user along with related data
+                foreach ($webUser->products as $product) {
+                    foreach ($product->images as $image) {
+                        $paths = array_filter([
+                            $image->image_path ?? null,
+                            $image->image_name ? 'products/'.$image->image_name : null,
+                        ]);
+
+                        foreach ($paths as $path) {
+                            if (Storage::disk('public')->exists($path)) {
+                                Storage::disk('public')->delete($path);
+                            }
+                        }
+
+                        $image->delete();
+                    }
+
+                    $product->pages()->detach();
+                    $product->bogPayments()->detach();
+                    $product->comments()->delete();
+
+                    $product->delete();
+                }
+
+                $webUser->delete();
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Web user and related records deleted successfully.',
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Failed to delete web user', [
+                'web_user_id' => $id,
+                'error' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete user with existing products or comments. Please remove them first.',
-            ], 422);
+                'message' => 'Failed to delete user. Please try again later.',
+            ], 500);
         }
-
-        $webUser->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Web user deleted successfully.',
-        ]);
     }
 
     /**
