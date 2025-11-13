@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePageRequest;
 use App\Models\Page;
+use App\Services\TranslationService;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -12,6 +13,13 @@ use RalphJSmit\Laravel\SEO\Facades\SEO;
 
 class PageController extends Controller
 {
+    protected TranslationService $translationService;
+
+    public function __construct(TranslationService $translationService)
+    {
+        $this->translationService = $translationService;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -139,5 +147,28 @@ class PageController extends Controller
         Page::rearrange($array);
 
         return ['error' => false];
+    }
+
+    /**
+     * Translate page fields from one language to another
+     */
+    public function translateFields(Request $request)
+    {
+        $data = $request->validate([
+            'data' => 'required|array',
+            'sourceLang' => 'required|string|in:ka,en',
+            'targetLang' => 'required|string|in:ka,en',
+        ]);
+
+        $translated = $this->translationService->translatePageFields(
+            $data['data'],
+            $data['sourceLang'],
+            $data['targetLang']
+        );
+
+        return response()->json([
+            'success' => true,
+            'translated' => $translated,
+        ]);
     }
 }

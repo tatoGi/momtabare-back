@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateCategoryRequest;
 use App\Models\Category;
 use App\Services\ImageService;
+use App\Services\TranslationService;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -15,9 +16,12 @@ class CategoryController extends Controller
 {
     protected ImageService $imageService;
 
-    public function __construct(ImageService $imageService)
+    protected TranslationService $translationService;
+
+    public function __construct(ImageService $imageService, TranslationService $translationService)
     {
         $this->imageService = $imageService;
+        $this->translationService = $translationService;
     }
 
     /**
@@ -204,5 +208,28 @@ class CategoryController extends Controller
         }
 
         return response()->json(['success' => 'Files Deleted']);
+    }
+
+    /**
+     * Translate category fields from one language to another
+     */
+    public function translateFields(Request $request)
+    {
+        $data = $request->validate([
+            'data' => 'required|array',
+            'sourceLang' => 'required|string|in:ka,en',
+            'targetLang' => 'required|string|in:ka,en',
+        ]);
+
+        $translated = $this->translationService->translateCategoryFields(
+            $data['data'],
+            $data['sourceLang'],
+            $data['targetLang']
+        );
+
+        return response()->json([
+            'success' => true,
+            'translated' => $translated,
+        ]);
     }
 }

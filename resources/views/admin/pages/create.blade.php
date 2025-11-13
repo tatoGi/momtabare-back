@@ -72,6 +72,16 @@
                                     <span>{{ __('admin.locale_' . $locale) }}</span>
                                 </button>
                             @endforeach
+
+                            <!-- Auto-Translate Button -->
+                            <button type="button"
+                                    id="auto-translate-btn"
+                                    class="ml-auto flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md transition-all duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                                </svg>
+                                Auto Translate
+                            </button>
                         </div>
 
                         <!-- Language Content -->
@@ -267,12 +277,16 @@
         $(document).ready(function() {
             console.log('Script loaded');
 
+            // Store CKEditor instances
+            window.pageEditors = {};
+
             // Initialize CKEditor for all locale textareas (only if ClassicEditor is available)
             if (typeof ClassicEditor !== 'undefined') {
                 @foreach (config('app.locales') as $locale)
                     ClassicEditor
                         .create(document.querySelector('#description_{{ $locale }}'))
                         .then(editor => {
+                            window.pageEditors['{{ $locale }}'] = editor;
                             console.log('CKEditor initialized for {{ $locale }}');
                         })
                         .catch(error => {
@@ -305,6 +319,106 @@
                 $('#locale-' + locale).removeClass('hidden');
 
                 console.log('Content visibility changed');
+            });
+
+            // Auto-Translate Functionality
+            $('#auto-translate-btn').on('click', function() {
+                const locales = @json(config('app.locales'));
+
+                // Determine source and target languages
+                let sourceLang = null;
+                let targetLang = null;
+
+                // Check which language has data
+                locales.forEach(function(locale) {
+                    const title = $('#title_' + locale).val();
+                    const desc = $('#description_' + locale).next('.ck-editor').find('.ck-content').html();
+
+                    if (title && title.trim() !== '') {
+                        sourceLang = locale;
+                    }
+                });
+
+                if (!sourceLang) {
+                    alert('Please fill in at least one language before translating.');
+                    return;
+                }
+
+                // Set target language (opposite of source)
+                targetLang = locales.find(l => l !== sourceLang);
+
+                // Confirm translation
+                const sourceLabel = sourceLang === 'en' ? 'English' : 'Georgian';
+                const targetLabel = targetLang === 'en' ? 'English' : 'Georgian';
+
+                if (!confirm(`Translate from ${sourceLabel} to ${targetLabel}?`)) {
+                    return;
+                }
+
+                // Disable button and show loading
+                $(this).prop('disabled', true).html(`
+                    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Translating...
+                `);
+
+                // Collect source data
+                const sourceData = {
+                    title: $('#title_' + sourceLang).val(),
+                    slug: $('#slug_' + sourceLang).val(),
+                    keywords: $('#keywords_' + sourceLang).val(),
+                    desc: window.pageEditors[sourceLang] ? window.pageEditors[sourceLang].getData() : $('#description_' + sourceLang).val()
+                };
+
+                // Make AJAX request
+                $.ajax({
+                    url: '{{ route("admin.pages.translate", app()->getLocale()) }}',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    data: {
+                        data: sourceData,
+                        sourceLang: sourceLang,
+                        targetLang: targetLang
+                    },
+                    success: function(response) {
+                        if (response.success && response.translated) {
+                            // Fill in translated fields
+                            $('#title_' + targetLang).val(response.translated.title || '');
+                            $('#slug_' + targetLang).val(response.translated.slug || '');
+                            $('#keywords_' + targetLang).val(response.translated.keywords || '');
+
+                            // Update CKEditor content if available
+                            if (response.translated.desc) {
+                                if (window.pageEditors[targetLang]) {
+                                    window.pageEditors[targetLang].setData(response.translated.desc);
+                                } else {
+                                    $('#description_' + targetLang).val(response.translated.desc);
+                                }
+                            }
+
+                            alert('Translation completed successfully!');
+
+                            // Switch to translated language tab
+                            $('.language-tab[data-locale="' + targetLang + '"]').click();
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Translation error:', xhr);
+                        alert('Translation failed. Please try again.');
+                    },
+                    complete: function() {
+                        // Re-enable button
+                        $('#auto-translate-btn').prop('disabled', false).html(`
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                            </svg>
+                            Auto Translate
+                        `);
+                    }
+                });
             });
         });
     </script>

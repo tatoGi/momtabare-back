@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ConfidentialController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\HelpController;
 use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\PrivacyController;
@@ -14,6 +15,10 @@ use App\Http\Controllers\Admin\PromoCodeController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\WebUserController;
 use Illuminate\Support\Facades\Route;
+
+// Translation routes
+Route::post('/pages/translate', [PageController::class, 'translateFields'])->name('admin.pages.translate');
+Route::post('/categories/translate', [CategoryController::class, 'translateFields'])->name('admin.categories.translate');
 
 Route::resource('/categories', CategoryController::class);
 Route::get('/contact', [ContactController::class, 'index'])->name('admin.contact');
