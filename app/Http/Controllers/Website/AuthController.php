@@ -46,7 +46,7 @@ class AuthController extends Controller
                 'verification_code' => $verificationCode,
                 'verification_expires_at' => Carbon::now()->addMinutes(15),
                 'email_verification_token' => $emailVerificationToken,
-                'is_active' => false, // Require admin approval before activation
+                'is_active' => true, // Active by default
             ]);
 
             // Send verification email with code

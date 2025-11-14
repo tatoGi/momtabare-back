@@ -80,6 +80,13 @@
                                     <span>{{ __('admin.locale_' . $locale) }}</span>
                                 </button>
                             @endforeach
+                            <button type="button" id="autoTranslateBtn"
+                                    class="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md hover:from-purple-600 hover:to-purple-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                                </svg>
+                                <span>Auto Translate</span>
+                            </button>
                         </div>
 
                         <!-- Language Content -->
@@ -297,12 +304,16 @@
         $(document).ready(function() {
             console.log('Script loaded');
 
+            // Store CKEditor instances
+            window.bannerEditors = {};
+
             // Initialize CKEditor for all locale textareas (only if ClassicEditor is available)
             if (typeof ClassicEditor !== 'undefined') {
                 @foreach (config('app.locales') as $locale)
                     ClassicEditor
                         .create(document.querySelector('#description_{{ $locale }}'))
                         .then(editor => {
+                            window.bannerEditors['{{ $locale }}'] = editor;
                             console.log('CKEditor initialized for {{ $locale }}');
                         })
                         .catch(error => {
@@ -335,6 +346,75 @@
                 $('#locale-' + locale).removeClass('hidden');
 
                 console.log('Content visibility changed');
+            });
+
+            // Auto Translate Button
+            $('#autoTranslateBtn').on('click', function() {
+                const locales = {!! json_encode(config('app.locales')) !!};
+
+                // Find which language has content
+                let sourceLocale = null;
+                let targetLocale = null;
+
+                for (let locale of locales) {
+                    const title = $(`input[name="${locale}[title]"]`).val();
+                    if (title && title.trim() !== '') {
+                        sourceLocale = locale;
+                        break;
+                    }
+                }
+
+                if (!sourceLocale) {
+                    alert('Please fill in at least one language first!');
+                    return;
+                }
+
+                // Find target locale
+                targetLocale = locales.find(l => l !== sourceLocale);
+
+                // Collect source data
+                const sourceData = {
+                    title: $(`input[name="${sourceLocale}[title]"]`).val(),
+                    slug: $(`input[name="${sourceLocale}[slug]"]`).val(),
+                    desc: window.bannerEditors[sourceLocale] ? window.bannerEditors[sourceLocale].getData() : ''
+                };
+
+                // Show loading state
+                const btn = $(this);
+                const originalText = btn.html();
+                btn.prop('disabled', true).html('<svg class="animate-spin h-5 w-5 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Translating...');
+
+                $.ajax({
+                    url: '{{ route("admin.banners.translate", app()->getLocale()) }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        sourceLang: sourceLocale,
+                        targetLang: targetLocale,
+                        data: sourceData
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Fill target fields
+                            $(`input[name="${targetLocale}[title]"]`).val(response.translated.title);
+                            $(`input[name="${targetLocale}[slug]"]`).val(response.translated.slug);
+
+                            if (window.bannerEditors[targetLocale]) {
+                                window.bannerEditors[targetLocale].setData(response.translated.desc);
+                            }
+
+                            alert('Translation completed successfully!');
+                        } else {
+                            alert('Translation failed: ' + (response.message || 'Unknown error'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Translation failed: ' + (xhr.responseJSON?.message || 'Network error'));
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
             });
         });
     </script>

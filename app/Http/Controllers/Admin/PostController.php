@@ -8,6 +8,7 @@ use App\Models\Post;
 use App\Models\PostAttribute;
 use App\Services\ImageService;
 use App\Services\PageTypeService;
+use App\Services\TranslationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -16,9 +17,12 @@ class PostController extends Controller
 {
     protected ImageService $imageService;
 
-    public function __construct(ImageService $imageService)
+    protected TranslationService $translationService;
+
+    public function __construct(ImageService $imageService, TranslationService $translationService)
     {
         $this->imageService = $imageService;
+        $this->translationService = $translationService;
     }
 
     /**
@@ -413,5 +417,28 @@ class PostController extends Controller
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Translate post fields
+     */
+    public function translateFields(Request $request)
+    {
+        $data = $request->validate([
+            'data' => 'required|array',
+            'sourceLang' => 'required|string|in:ka,en',
+            'targetLang' => 'required|string|in:ka,en',
+        ]);
+
+        $translated = $this->translationService->translatePostFields(
+            $data['data'],
+            $data['sourceLang'],
+            $data['targetLang']
+        );
+
+        return response()->json([
+            'success' => true,
+            'translated' => $translated,
+        ]);
     }
 }

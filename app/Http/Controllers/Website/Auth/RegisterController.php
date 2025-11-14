@@ -30,7 +30,7 @@ class RegisterController extends Controller
                 'password' => Hash::make($request->password),
                 'email_verification_token' => $verificationToken,
                 'email_verified_at' => config('app.env') === 'testing' ? now() : null,
-                'is_active' => false,
+                'is_active' => true,
             ]);
 
             if (config('app.env') !== 'testing') {

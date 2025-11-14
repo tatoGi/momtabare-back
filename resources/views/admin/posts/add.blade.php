@@ -52,17 +52,17 @@
 
 @push('scripts')
 <script>
-  
+
     function slugify(text) {
         return text.toString()
-        .replace(/\s+/g, '-'); 
+        .replace(/\s+/g, '-');
     }
 
    function generateSlug(title, locale) {
     var slug = slugify(title);
     $('#' + locale + '-slug').val(slug).blur();
 }
-    
+
     @foreach (config('app.locales') as $locale)
     $('#{{ $locale }}-title').on('change', function() {
         var title = $(this).val().trim();
@@ -71,16 +71,16 @@
             generateSlug(title, '{{ $locale }}');
         }
     });
-@endforeach 
+@endforeach
     </script>
 
     <script>
  $('.unique-slug').on('change', function(){
     $(this).val($(this).val().replace(/\s+/g,"-")) //thanks @Sushil for the reminder to use the global flag
-   
+
 });
     </script>
-     
+
 <script>
     $('.unique-slug').on( "blur",function (){
        console.log(this)
@@ -95,9 +95,9 @@
            success: function(data) {
                console.log('ok')
                $input.parent().find('.print-error-msg').html('').css('color', '');
-               const btn = $('#save-button'); 
+               const btn = $('#save-button');
                btn.css('pointer-events', 'initial');
-               
+
            },
            error: function(data) {
                console.log(data)
@@ -132,5 +132,84 @@
 <script src="{{ asset('/admin/libs/bootstrap-maxlength/bootstrap-maxlength.min.js') }}"></script>
 <!-- Init js-->
 <script src="{{ asset('/admin/js/pages/form-advanced.init.js') }}"></script>
-    
+
+<script>
+    $(document).ready(function() {
+        // Auto Translate functionality
+        $('#autoTranslateBtn').on('click', function() {
+        const locales = {!! json_encode(config('app.locales')) !!};
+
+        // Find which language has content
+        let sourceLocale = null;
+        let targetLocale = null;
+
+        for (let locale of locales) {
+            const titleInput = $(`input[name="${locale}[title]"]`);
+            if (titleInput.length && titleInput.val() && titleInput.val().trim() !== '') {
+                sourceLocale = locale;
+                break;
+            }
+        }
+
+        if (!sourceLocale) {
+            alert('Please fill in at least one language first!');
+            return;
+        }
+
+        // Find target locale
+        targetLocale = locales.find(l => l !== sourceLocale);
+
+        // Collect source data - handle different field types dynamically
+        const sourceData = {};
+
+        // Get all translatable fields
+        $(`input[name^="${sourceLocale}["], textarea[name^="${sourceLocale}["]`).each(function() {
+            const name = $(this).attr('name');
+            const match = name.match(new RegExp(`${sourceLocale}\\[([^\\]]+)\\]`));
+            if (match) {
+                const fieldName = match[1];
+                sourceData[fieldName] = $(this).val();
+            }
+        });
+
+        // Show loading state
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i> Translating...');
+
+        $.ajax({
+            url: '{{ route("admin.posts.translate", app()->getLocale()) }}',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                sourceLang: sourceLocale,
+                targetLang: targetLocale,
+                data: sourceData
+            },
+            success: function(response) {
+                if (response.success && response.translated) {
+                    // Fill target fields
+                    Object.keys(response.translated).forEach(function(fieldName) {
+                        const targetInput = $(`input[name="${targetLocale}[${fieldName}]"], textarea[name="${targetLocale}[${fieldName}]"]`);
+                        if (targetInput.length) {
+                            targetInput.val(response.translated[fieldName]);
+                        }
+                    });
+
+                    alert('Translation completed successfully!');
+                } else {
+                    alert('Translation failed: ' + (response.message || 'Unknown error'));
+                }
+            },
+            error: function(xhr) {
+                alert('Translation failed: ' + (xhr.responseJSON?.message || 'Network error'));
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        });
+        });
+    });
+</script>
+
 @endpush

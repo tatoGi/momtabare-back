@@ -26,14 +26,14 @@
 
 
 
-        <form action="{{ route('admin.pages.posts.update', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}" 
+        <form action="{{ route('admin.pages.posts.update', ['locale' => app()->getLocale(), 'page' => $page->id, 'post' => $post->id]) }}"
               method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @method('PUT')
 
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('admin.Basic Information') }}</h3>
-                
+
                 {{-- Post Type Selection for Homepage Posts --}}
                 @if($page->type_id == 1)
                 <div class="mb-4">
@@ -78,7 +78,7 @@
                     </p>
                 </div>
                 @endif
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label for="active" class="block text-sm font-medium text-gray-700 mb-2">
@@ -89,7 +89,7 @@
                             <option value="0" {{ old('active', $post->active) == '0' ? 'selected' : '' }}>{{ __('admin.Inactive') }}</option>
                         </select>
                     </div>
-                    
+
                     <div>
                         <label for="sort_order" class="block text-sm font-medium text-gray-700 mb-2">
                             {{ __('admin.Sort Order') }}
@@ -97,12 +97,12 @@
                         <input type="number" name="sort_order" id="sort_order" value="{{ old('sort_order', $post->sort_order) }}"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                     </div>
-                    
+
                     <div>
                         <label for="published_at" class="block text-sm font-medium text-gray-700 mb-2">
                             {{ __('admin.Publish Date') }}
                         </label>
-                        <input type="datetime-local" name="published_at" id="published_at" 
+                        <input type="datetime-local" name="published_at" id="published_at"
                                value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                     </div>
@@ -113,20 +113,28 @@
             @if(!empty($translatableAttributes))
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('admin.Content') }}</h3>
-                
+
                 <!-- Language Tabs -->
                 <div class="border-b border-gray-200 mb-6" id="language-tabs-container">
-                    <nav class="-mb-px flex space-x-8" id="language-tabs-nav">
-                        @foreach(config('app.locales') as $locale)
-                            <button type="button"
-                               class="post-language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
-                               data-locale="{{ $locale }}"
-                               id="lang-tab-{{ $locale }}">
-                                {{ __('admin.locale_' . $locale) }}
-                                <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}" 
-                                     alt="{{ $locale }}" class="inline w-4 h-4 ml-1">
-                            </button>
-                        @endforeach
+                    <nav class="-mb-px flex flex-wrap items-center gap-4" id="language-tabs-nav">
+                        <div class="flex space-x-8 items-center">
+                            @foreach(config('app.locales') as $locale)
+                                <button type="button"
+                                   class="post-language-tab py-2 px-1 border-b-2 font-medium text-sm {{ $loop->first ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}"
+                                   data-locale="{{ $locale }}"
+                                   id="lang-tab-{{ $locale }}">
+                                    {{ __('admin.locale_' . $locale) }}
+                                    <img src="{{ $locale === 'en' ? asset('storage/flags/united-states.png') : asset('storage/flags/georgia.png') }}"
+                                         alt="{{ $locale }}" class="inline w-4 h-4 ml-1">
+                                </button>
+                            @endforeach
+                        </div>
+                        <button type="button" id="autoTranslateBtn" class="ml-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-2 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                            </svg>
+                            Auto Translate
+                        </button>
                     </nav>
                 </div>
 
@@ -134,7 +142,7 @@
                     <div class="post-language-content {{ !$loop->first ? 'hidden' : '' }}" data-locale="{{ $locale }}" id="lang-content-{{ $locale }}">
                         <div class="grid grid-cols-1 gap-4">
                             @foreach($translatableAttributes as $key => $config)
-                            <div class="field-group" 
+                            <div class="field-group"
                                  data-show-for-types="{{ isset($config['show_for_types']) ? json_encode($config['show_for_types']) : '[]' }}"
                                  style="{{ isset($config['show_for_types']) && !in_array($existingAttributes['post_type'] ?? '', $config['show_for_types'] ?? []) ? 'display: none;' : '' }}">
                                 <label for="{{ $locale }}_{{ $key }}" class="block text-sm font-medium text-gray-700 mb-2">
@@ -143,24 +151,24 @@
                                         <span class="text-red-500">*</span>
                                     @endif
                                 </label>
-                                    
+
                                     @if($config['type'] === 'text')
-                                        <input type="text" 
-                                               name="{{ $locale }}[{{ $key }}]" 
+                                        <input type="text"
+                                               name="{{ $locale }}[{{ $key }}]"
                                                id="{{ $locale }}_{{ $key }}"
                                                value="{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}"
                                                placeholder="{{ $config['placeholder'] ?? '' }}"
                                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                    
+
                                     @elseif($config['type'] === 'textarea')
-                                        <textarea name="{{ $locale }}[{{ $key }}]" 
+                                        <textarea name="{{ $locale }}[{{ $key }}]"
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="3"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
                                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($locale . '.' . $key, $existingAttributes[$locale][$key] ?? '') }}</textarea>
-                                    
+
                                     @elseif($config['type'] === 'editor')
-                                        <textarea name="{{ $locale }}[{{ $key }}]" 
+                                        <textarea name="{{ $locale }}[{{ $key }}]"
                                                   id="{{ $locale }}_{{ $key }}"
                                                   rows="6"
                                                   placeholder="{{ $config['placeholder'] ?? '' }}"
@@ -178,10 +186,10 @@
             @if(!empty($nonTranslatableAttributes))
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('admin.Additional Information') }}</h3>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @foreach($nonTranslatableAttributes as $key => $config)
-                        <div class="{{ $config['type'] === 'editor' ? 'md:col-span-2' : '' }} field-group" 
+                        <div class="{{ $config['type'] === 'editor' ? 'md:col-span-2' : '' }} field-group"
                              data-show-for-types="{{ isset($config['show_for_types']) ? json_encode($config['show_for_types']) : '[]' }}"
                              style="{{ isset($config['show_for_types']) && !in_array($existingAttributes['post_type'] ?? '', $config['show_for_types'] ?? []) ? 'display: none;' : '' }}">
                             <label for="{{ $key }}" class="block text-sm font-medium text-gray-700 mb-2">
@@ -190,32 +198,32 @@
                                     <span class="text-red-500">*</span>
                                 @endif
                             </label>
-                            
+
                             @if($config['type'] === 'text')
-                                <input type="text" 
-                                       name="{{ $key }}" 
+                                <input type="text"
+                                       name="{{ $key }}"
                                        id="{{ $key }}"
                                        value="{{ old($key, $existingAttributes[$key] ?? '') }}"
                                        placeholder="{{ $config['placeholder'] ?? '' }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                            
+
                             @elseif($config['type'] === 'number')
-                                <input type="number" 
-                                       name="{{ $key }}" 
+                                <input type="number"
+                                       name="{{ $key }}"
                                        id="{{ $key }}"
                                        value="{{ old($key, $existingAttributes[$key] ?? '') }}"
                                        placeholder="{{ $config['placeholder'] ?? '' }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                            
+
                             @elseif($config['type'] === 'textarea')
-                                <textarea name="{{ $key }}" 
+                                <textarea name="{{ $key }}"
                                           id="{{ $key }}"
                                           rows="3"
                                           placeholder="{{ $config['placeholder'] ?? '' }}"
                                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old($key, $existingAttributes[$key] ?? '') }}</textarea>
-                            
+
                             @elseif($config['type'] === 'select')
-                                <select name="{{ $key }}" 
+                                <select name="{{ $key }}"
                                         id="{{ $key }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                     @foreach($config['options'] ?? [] as $value => $label)
@@ -224,17 +232,17 @@
                                         </option>
                                     @endforeach
                                 </select>
-                            
+
                             @elseif($config['type'] === 'image')
                                 <div class="space-y-2">
                                     @if($existingAttributes[$key] ?? false)
                                         <div class="mb-2 current-image" data-attr-key="{{ $key }}">
-                                            <img src="{{ asset('storage/' . $existingAttributes[$key]) }}" 
-                                                 alt="Current {{ $key }}" 
+                                            <img src="{{ asset('storage/' . $existingAttributes[$key]) }}"
+                                                 alt="Current {{ $key }}"
                                                  class="w-32 h-32 object-cover rounded-lg border">
                                             <p class="text-sm text-gray-600 mt-1">Current image</p>
                                             <input type="hidden" name="remove_{{ $key }}" value="0">
-                                            <button type="button" 
+                                            <button type="button"
                                                     class="mt-2 inline-flex items-center px-3 py-1.5 remove-image text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 btn-remove-image focus:outline-none focus:ring-2 focus:ring-red-500"
                                                     data-attr-key="{{ $key }}">
                                                 Remove image
@@ -242,8 +250,8 @@
                                             <p class="text-xs text-red-600 mt-1 hidden removal-note">Marked for removal. Save to apply.</p>
                                         </div>
                                     @endif
-                                    <input type="file" 
-                                           name="{{ $key }}" 
+                                    <input type="file"
+                                           name="{{ $key }}"
                                            id="{{ $key }}"
                                            accept="{{ $config['accept'] ?? 'image/*' }}"
                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
@@ -252,8 +260,8 @@
                                     @endif
                                 </div>
                             @elseif($config['type'] === 'datetime-local')
-                                <input type="datetime-local" 
-                                       name="{{ $key }}" 
+                                <input type="datetime-local"
+                                       name="{{ $key }}"
                                        id="{{ $key }}"
                                        value="{{ old($key, $existingAttributes[$key] ?? '') }}"
                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
@@ -282,16 +290,16 @@
         function togglePostTypeFields() {
             const postTypeSelect = document.getElementById('post_type');
             if (!postTypeSelect) return;
-            
+
             const selectedType = postTypeSelect.value;
             console.log('Selected post type:', selectedType);
-            
+
             // Get all field groups (both translatable and non-translatable)
             const fieldGroups = document.querySelectorAll('.field-group');
-            
+
             fieldGroups.forEach(group => {
                 const showForTypes = group.getAttribute('data-show-for-types');
-                
+
                 if (showForTypes) {
                     try {
                         const types = JSON.parse(showForTypes);
@@ -323,22 +331,22 @@
             console.log('Target locale:', locale);
             console.log('Available tabs:', document.querySelectorAll('.post-language-tab'));
             console.log('Available content:', document.querySelectorAll('.post-language-content'));
-            
+
             // Remove active classes from all post language tabs
             const allTabs = document.querySelectorAll('.post-language-tab');
             console.log('Found tabs count:', allTabs.length);
-            
+
             allTabs.forEach((tab, index) => {
                 console.log(`Tab ${index}: locale="${tab.dataset.locale}", id="${tab.id}"`);
                 tab.classList.remove('border-green-500', 'text-green-600', 'bg-green-50');
                 tab.classList.add('border-transparent', 'text-gray-500');
             });
-            
+
             // Add active classes to selected tab
             const activeTab = document.getElementById(`lang-tab-${locale}`);
             console.log('Looking for tab with ID:', `lang-tab-${locale}`);
             console.log('Found active tab:', activeTab);
-            
+
             if (activeTab) {
                 activeTab.classList.add('border-green-500', 'text-green-600', 'bg-green-50');
                 activeTab.classList.remove('border-transparent', 'text-gray-500');
@@ -347,21 +355,21 @@
                 console.error('✗ Post tab not found for locale:', locale);
                 console.log('Available tab IDs:', Array.from(allTabs).map(t => t.id));
             }
-            
+
             // Hide all post language content sections
             const allContent = document.querySelectorAll('.post-language-content');
             console.log('Found content sections count:', allContent.length);
-            
+
             allContent.forEach((content, index) => {
                 console.log(`Content ${index}: locale="${content.dataset.locale}", id="${content.id}"`);
                 content.classList.add('hidden');
             });
-            
+
             // Show selected content section
             const activeContent = document.getElementById(`lang-content-${locale}`);
             console.log('Looking for content with ID:', `lang-content-${locale}`);
             console.log('Found active content:', activeContent);
-            
+
             if (activeContent) {
                 activeContent.classList.remove('hidden');
                 console.log('✓ Showed post content for locale:', locale);
@@ -369,55 +377,55 @@
                 console.error('✗ Post content not found for locale:', locale);
                 console.log('Available content IDs:', Array.from(allContent).map(c => c.id));
             }
-            
+
             console.log('=== END SWITCH ===');
         }
 
         // Initialize language tabs immediately when script loads
         function initializeLanguageTabs() {
             console.log('🚀 INITIALIZING LANGUAGE TABS 🚀');
-            
+
             // Wait a bit for DOM to be ready
             setTimeout(() => {
                 console.log('DOM should be ready now, setting up tabs...');
-                
+
                 // Post language tab switching - isolated from other tab systems
                 const postLanguageTabs = document.querySelectorAll('.post-language-tab');
                 console.log('Found post language tabs:', postLanguageTabs.length);
                 console.log('Tabs found:', postLanguageTabs);
-                
+
                 if (postLanguageTabs.length === 0) {
                     console.error('❌ NO LANGUAGE TABS FOUND!');
                     console.log('Available elements with class containing "tab":', document.querySelectorAll('[class*="tab"]'));
                     return;
                 }
-                
+
                 postLanguageTabs.forEach((tab, index) => {
                     console.log(`Setting up post tab ${index}:`, tab.dataset.locale, 'ID:', tab.id);
-                    
+
                     // Remove any existing event listeners by cloning the element
                     const newTab = tab.cloneNode(true);
                     tab.parentNode.replaceChild(newTab, tab);
-                    
+
                     // Add click event listener to the new element
                     newTab.addEventListener('click', function(e) {
                         console.log('🔥 CLICK EVENT FIRED! 🔥');
                         console.log('Clicked tab locale:', this.dataset.locale);
                         console.log('Clicked tab ID:', this.id);
-                        
+
                         e.preventDefault();
                         e.stopPropagation();
-                        
+
                         switchPostLanguageTab(this.dataset.locale);
                     });
-                    
+
                     // Make sure it's clickable
                     newTab.style.cursor = 'pointer';
                     newTab.style.userSelect = 'none';
-                    
+
                     console.log('✅ Tab setup complete for:', newTab.dataset.locale);
                 });
-                
+
                 // Initialize first post language tab as active
                 const firstPostTab = document.querySelector('.post-language-tab');
                 if (firstPostTab) {
@@ -426,23 +434,23 @@
                 } else {
                     console.error('No post language tabs found after setup!');
                 }
-                
+
             }, 500); // Increased delay to ensure DOM is fully ready
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded - Initializing components');
-            
+
             // Initialize post type field toggling
             const postTypeSelect = document.getElementById('post_type');
             if (postTypeSelect) {
                 postTypeSelect.addEventListener('change', togglePostTypeFields);
                 setTimeout(togglePostTypeFields, 100);
             }
-            
+
             // Initialize language tabs with multiple fallback methods
             initializeLanguageTabs();
-            
+
             // Fallback method 1: Try again after a longer delay
             setTimeout(() => {
                 console.log('🔄 FALLBACK 1: Trying to initialize tabs again...');
@@ -450,7 +458,7 @@
                     initializeLanguageTabs();
                 }
             }, 1000);
-            
+
             // Fallback method 2: Manual click handler setup
             setTimeout(() => {
                 console.log('🔄 FALLBACK 2: Setting up manual click handlers...');
@@ -466,7 +474,7 @@
                     }
                 });
             }, 1500);
-            
+
             // Using plain textareas now; no TinyMCE initialization
 
             // Handle image remove buttons in post edit form
@@ -495,6 +503,138 @@
                         fileInput.value = '';
                     }
                 });
+            });
+        });
+
+        // Auto Translate functionality
+        document.getElementById('autoTranslateBtn')?.addEventListener('click', function() {
+            const locales = {!! json_encode(config('app.locales')) !!};
+
+            // Find which language has content by checking ANY field with data (visible or in hidden tab)
+            let sourceLocale = null;
+            let targetLocale = null;
+
+            for (let locale of locales) {
+                // Check all input and textarea fields for this locale
+                const fields = document.querySelectorAll(`input[name^="${locale}["], textarea[name^="${locale}["]`);
+                let hasContent = false;
+
+                for (let field of fields) {
+                    // Check if field itself is visible (not the parent language tab)
+                    // Field is considered available if it's not in a hidden field-group
+                    const fieldGroup = field.closest('.field-group');
+                    const isFieldVisible = !fieldGroup || fieldGroup.style.display !== 'none';
+
+                    if (isFieldVisible && field.value && field.value.trim() !== '') {
+                        hasContent = true;
+                        break;
+                    }
+                }
+
+                if (hasContent) {
+                    sourceLocale = locale;
+                    break;
+                }
+            }
+
+            if (!sourceLocale) {
+                alert('Please fill in at least one language first!');
+                return;
+            }
+
+            // Find target locale
+            targetLocale = locales.find(l => l !== sourceLocale);
+
+            // Collect source data from fields that are not in hidden field-groups
+            const sourceData = {};
+            document.querySelectorAll(`input[name^="${sourceLocale}["], textarea[name^="${sourceLocale}["]`).forEach(function(field) {
+                // Check if field is in a visible field-group (not hidden by post type selector)
+                const fieldGroup = field.closest('.field-group');
+                const isFieldVisible = !fieldGroup || fieldGroup.style.display !== 'none';
+
+                if (!isFieldVisible) return;
+
+                const name = field.getAttribute('name');
+                const match = name.match(new RegExp(`${sourceLocale}\\[([^\\]]+)\\]`));
+                if (match && field.value && field.value.trim() !== '') {
+                    const fieldName = match[1];
+                    sourceData[fieldName] = field.value;
+                }
+            });
+
+            console.log('Source locale:', sourceLocale);
+            console.log('Target locale:', targetLocale);
+            console.log('Source data:', sourceData);
+
+            if (Object.keys(sourceData).length === 0) {
+                alert('No valid fields found to translate!');
+                return;
+            }
+
+            // Show loading state
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin w-4 h-4 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Translating...';
+
+            fetch('{{ route("admin.posts.translate", app()->getLocale()) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    sourceLang: sourceLocale,
+                    targetLang: targetLocale,
+                    data: sourceData
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Translation response:', data);
+                
+                if (data.success && data.translated) {
+                    console.log('Translated data:', data.translated);
+                    
+                    // Fill target fields (only those not in hidden field-groups)
+                    let filledCount = 0;
+                    Object.keys(data.translated).forEach(function(fieldName) {
+                        const selector = `input[name="${targetLocale}[${fieldName}]"], textarea[name="${targetLocale}[${fieldName}]"]`;
+                        console.log('Looking for field:', selector);
+                        
+                        const targetInput = document.querySelector(selector);
+                        console.log('Found field:', targetInput);
+                        
+                        if (targetInput) {
+                            // Check if field is in a visible field-group
+                            const fieldGroup = targetInput.closest('.field-group');
+                            const isFieldVisible = !fieldGroup || fieldGroup.style.display !== 'none';
+                            
+                            console.log('Field:', fieldName, 'Visible:', isFieldVisible);
+
+                            if (isFieldVisible) {
+                                targetInput.value = data.translated[fieldName];
+                                filledCount++;
+                                console.log('Filled field:', fieldName, 'with:', data.translated[fieldName]);
+                            }
+                        } else {
+                            console.log('Target field not found for:', fieldName);
+                        }
+                    });
+
+                    console.log('Total fields filled:', filledCount);
+                    alert('Translation completed successfully! Filled ' + filledCount + ' fields.');
+                } else {
+                    console.error('Translation failed:', data);
+                    alert('Translation failed: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Translation failed: Network error');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             });
         });
     </script>

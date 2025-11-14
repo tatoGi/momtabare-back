@@ -7,6 +7,7 @@ use App\Models\Banner;
 use App\Models\BannerImage;
 use App\Models\Page;
 use App\Services\ImageService;
+use App\Services\TranslationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
@@ -15,10 +16,13 @@ class BannerController extends Controller
 {
     protected ImageService $imageService;
 
-    public function __construct(ImageService $imageService)
+    protected TranslationService $translationService;
+
+    public function __construct(ImageService $imageService, TranslationService $translationService)
     {
         $this->middleware('auth');
         $this->imageService = $imageService;
+        $this->translationService = $translationService;
     }
 
     public function index()
@@ -186,5 +190,28 @@ class BannerController extends Controller
         return collect(Config::get('bannerTypes'))->sortBy(function ($value, $key) {
             return $value['id'];
         });
+    }
+
+    /**
+     * Translate banner fields
+     */
+    public function translateFields(Request $request)
+    {
+        $data = $request->validate([
+            'data' => 'required|array',
+            'sourceLang' => 'required|string|in:ka,en',
+            'targetLang' => 'required|string|in:ka,en',
+        ]);
+
+        $translated = $this->translationService->translateBannerFields(
+            $data['data'],
+            $data['sourceLang'],
+            $data['targetLang']
+        );
+
+        return response()->json([
+            'success' => true,
+            'translated' => $translated,
+        ]);
     }
 }

@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\Route;
 // Translation routes
 Route::post('/pages/translate', [PageController::class, 'translateFields'])->name('admin.pages.translate');
 Route::post('/categories/translate', [CategoryController::class, 'translateFields'])->name('admin.categories.translate');
+Route::post('/banners/translate', [BannerController::class, 'translateFields'])->name('admin.banners.translate');
+Route::post('/posts/translate', [PostController::class, 'translateFields'])->name('admin.posts.translate');
+Route::post('/about/translate', [AboutController::class, 'translateFields'])->name('admin.about.translate');
+Route::post('/service/translate', [ServiceController::class, 'translateFields'])->name('admin.service.translate');
+Route::post('/confidential/translate', [ConfidentialController::class, 'translateFields'])->name('admin.confidential.translate');
+Route::post('/privacy/translate', [PrivacyController::class, 'translateFields'])->name('admin.privacy.translate');
 
 Route::resource('/categories', CategoryController::class);
 Route::get('/contact', [ContactController::class, 'index'])->name('admin.contact');

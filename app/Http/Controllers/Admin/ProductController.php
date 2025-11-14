@@ -570,45 +570,24 @@ class ProductController extends Controller
         $request->validate([
             'source_locale' => 'required|string',
             'target_locale' => 'required|string',
-            'title' => 'required|string',
-            'description' => 'nullable|string',
-            'location' => 'nullable|string',
-            'brand' => 'nullable|string',
-            'color' => 'nullable|string',
+            'data' => 'required|array',
         ]);
 
         $sourceLocale = $request->source_locale;
         $targetLocale = $request->target_locale;
-
-        // Prepare translation data
-        $translationData = [
-            'name' => $request->title,
-            'description' => $request->description,
-            'location' => $request->location,
-            'local_additional' => [
-                'ბრენდი' => $request->brand,
-                'ფერი' => $request->color,
-            ],
-        ];
+        $data = $request->data;
 
         try {
-            // Translate using TranslationService
-            $translated = $this->translationService->translateProductFields(
-                $translationData,
+            // Use the dynamic translation method that handles all fields
+            $translated = $this->translationService->translatePostFields(
+                $data,
                 $sourceLocale,
                 $targetLocale
             );
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'title' => $translated['name'],
-                    'slug' => Str::slug($translated['name']),
-                    'description' => $translated['description'],
-                    'location' => $translated['location'],
-                    'brand' => $translated['local_additional']['ბრენდი'] ?? $request->brand,
-                    'color' => $translated['local_additional']['ფერი'] ?? $request->color,
-                ],
+                'translated' => $translated,
             ]);
         } catch (\Exception $e) {
             return response()->json([

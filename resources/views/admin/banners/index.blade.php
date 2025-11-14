@@ -1,5 +1,5 @@
 <div class="w-full py-4">
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-4 container">
         <h2 class="text-xl font-semibold text-gray-800">{{ isset($page_id) ? 'Page Banners' : 'Banners' }}</h2>
         <a href="/{{ app()->getLocale() }}/admin/banners/create/{{ $page_id ?? '' }}"
            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
@@ -63,7 +63,7 @@
                                 </a>
                                 @if(isset($page_id))
                                     <!-- Detach from page -->
-                                    <button type="button" 
+                                    <button type="button"
                                             class="text-orange-600 hover:text-orange-900 p-2 rounded-lg hover:bg-orange-50 transition-colors detach-banner"
                                             data-banner-id="{{ $banner->id }}"
                                             data-page-id="{{ $page_id }}"
@@ -147,7 +147,7 @@
                                    title="{{ __('admin.Edit') }}">
                                     <i class="material-icons-outlined text-sm">edit</i>
                                 </a>
-                                <button type="button" 
+                                <button type="button"
                                         class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm flex items-center space-x-1 attach-banner transition-colors"
                                         data-banner-id="{{ $banner->id }}"
                                         data-page-id="{{ $page_id }}"
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const bannerId = this.dataset.bannerId;
             const pageId = this.dataset.pageId;
             const locale = '{{ app()->getLocale() }}';
-            
+
             if (confirm('Are you sure you want to attach this banner to the page?')) {
                 fetch(`/${locale}/admin/pages/${pageId}/banners/attach`, {
                     method: 'POST',
@@ -215,14 +215,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     // Detach banner functionality
     document.querySelectorAll('.detach-banner').forEach(button => {
         button.addEventListener('click', function() {
             const bannerId = this.dataset.bannerId;
             const pageId = this.dataset.pageId;
             const locale = '{{ app()->getLocale() }}';
-            
+
             if (confirm('Are you sure you want to remove this banner from the page?')) {
                 fetch(`/${locale}/admin/pages/${pageId}/banners/${bannerId}/detach`, {
                     method: 'DELETE',
